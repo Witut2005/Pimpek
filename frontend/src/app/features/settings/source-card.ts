@@ -13,6 +13,10 @@ type Step = 'idle' | 'consent' | 'login' | 'mfa' | 'busy' | 'redirecting';
 /** Turns a backend error into something Pimpek can say. */
 function explain(err: unknown, source: SourceInfo): string {
   const status = err instanceof HttpErrorResponse ? err.status : 0;
+  // Every backend error carries FastAPI's JSON `detail`. A 5xx without it comes from the dev
+  // proxy (backend not running, or on another port) — not from the source.
+  const fromBackend = err instanceof HttpErrorResponse && typeof err.error?.detail === 'string';
+  if (status >= 500 && !fromBackend) return 'Nie mogę połączyć się z serwerem Pimpka. Czy backend działa?';
   switch (status) {
     case 401:
       return `${source.short} nie rozpoznaje tego e-maila lub hasła. Sprawdź je i spróbuj jeszcze raz.`;

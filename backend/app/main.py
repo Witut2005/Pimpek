@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from garminconnect import (
@@ -17,6 +19,8 @@ from .main_deps import current_user
 from .wearables_router import router as wearables_router
 
 app = FastAPI(title="HackYeah API")
+# uvicorn's own logger, so warnings land in the same terminal with the same format.
+log = logging.getLogger("uvicorn.error")
 
 app.add_middleware(
     CORSMiddleware,
@@ -55,10 +59,13 @@ def _map_fitatu_errors(fn, *args):
     except fitatu.InvalidCredentials as e:
         raise HTTPException(401, str(e))
     except fitatu.FitatuError as e:
+        # Fitatu's API is unofficial: when it changes, its answer here is the first clue.
+        log.warning("Fitatu returned %s: %s", e.status, e.detail)
         if e.status == 429:
             raise HTTPException(429, "Fitatu is rate limiting us, try again later")
         raise HTTPException(502, f"Fitatu: {e.detail}")
-    except fitatu.FitatuUnavailable:
+    except fitatu.FitatuUnavailable as e:
+        log.warning("Could not reach Fitatu: %s", e)
         raise HTTPException(502, "Could not reach Fitatu")
 
 app.include_router(wearables_router)

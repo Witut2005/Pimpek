@@ -177,5 +177,15 @@ def test_unreachable_is_502(monkeypatch):
     assert connect().status_code == 502
 
 
+def test_upstream_error_is_502_and_logged(monkeypatch, caplog):
+    rejected = httpx.Response(403, json={"message": "Invalid API secret"})
+    monkeypatch.setattr(fitatu, "_transport", httpx.MockTransport(lambda request: rejected))
+    r = connect()
+    assert r.status_code == 502
+    assert "Invalid API secret" in r.json()["detail"]
+    assert "Invalid API secret" in caplog.text
+    assert "tajne" not in caplog.text
+
+
 def test_rejects_bad_date(fake):
     assert client.get("/api/meals", params={"date": "03.10.2026"}).status_code == 422
