@@ -84,6 +84,20 @@ header {
     transform: scale(1.15);
     box-shadow: var(--shadow-clay);
   }
+
+  // Fixing an entry: only the steps whose answers moved, the current one included.
+  .changed button {
+    background: var(--honey-200);
+    color: var(--honey-700);
+    opacity: 1;
+    box-shadow: inset 0 0 0 0.15rem var(--honey-400);
+  }
+
+  .current.changed button {
+    box-shadow:
+      inset 0 0 0 0.15rem var(--honey-400),
+      var(--shadow-clay);
+  }
 }
 
 .body {
