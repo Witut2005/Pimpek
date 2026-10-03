@@ -1,8 +1,8 @@
 """One normalised day of meals, read from Fitatu.
 
 Like daily.py for wearables: the frontend only ever sees `/api/meals`, never Fitatu's
-own shape. Fitatu's planner mixes what was eaten with what is only planned (diet plan
-subscribers tick items off), so unticked items are listed but left out of the totals.
+own shape. Every item in the diary counts, like in Fitatu's own day total: its `eaten`
+flag stays false for products added the usual way, so it says nothing about the meal.
 """
 from datetime import date, datetime
 from typing import Any
@@ -52,8 +52,6 @@ def _item(raw: dict[str, Any]) -> dict[str, Any]:
         "name": raw.get("name") or "Bez nazwy",
         "brand": raw.get("brand") or None,
         "amount": _amount(raw),
-        # Plain diary entries come without the flag; only an explicit False means "planned, not eaten".
-        "eaten": raw.get("eaten") is not False,
         **{ours: round(_number(raw.get(theirs)), 1) for theirs, ours in NUTRIENTS.items()},
     }
 
@@ -66,7 +64,7 @@ def _meal(key: str, raw: dict[str, Any]) -> dict[str, Any] | None:
         "key": key,
         "name": raw.get("mealName") or MEAL_NAMES.get(key, key),
         "time": raw.get("mealTime") or None,
-        "kcal": round(sum(i["kcal"] for i in items if i["eaten"])),
+        "kcal": round(sum(i["kcal"] for i in items)),
         "items": items,
     }
 
@@ -86,7 +84,7 @@ def sources(user_id: str) -> list[dict[str, Any]]:
 
 
 def meals(user_id: str, day: str | None = None) -> dict[str, Any]:
-    """Meals with at least one item, in Fitatu's order, plus totals of what was eaten."""
+    """Meals with at least one item, in Fitatu's order, plus the day's totals."""
     day = day or date.today().isoformat()
     plan = fitatu.day_plan(user_id, day)
     diet = plan.get("dietPlan") if isinstance(plan, dict) else None
@@ -94,8 +92,8 @@ def meals(user_id: str, day: str | None = None) -> dict[str, Any]:
     if not isinstance(diet, dict):
         diet = {}
     found = [m for key, raw in diet.items() if isinstance(raw, dict) and (m := _meal(key, raw))]
-    eaten = [i for m in found for i in m["items"] if i["eaten"]]
-    totals = {k: round(sum(i[k] for i in eaten), 1) for k in NUTRIENTS.values()}
+    items = [i for m in found for i in m["items"]]
+    totals = {k: round(sum(i[k] for i in items), 1) for k in NUTRIENTS.values()}
     totals["kcal"] = round(totals["kcal"])
     return {
         "date": day,

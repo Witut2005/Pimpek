@@ -342,6 +342,24 @@ footer {
   font-weight: 600;
 }
 
+// A meal logged in the diary while the dialog is open shows up without closing it.
+.meals-reload {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
 .spin {
   animation: spin 1.4s linear infinite;
 }

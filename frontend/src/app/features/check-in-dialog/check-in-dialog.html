@@ -136,6 +136,11 @@
           } @else if (mealsStatus() === 'error') {
             <p class="meals-hint">Nie udało się pobrać posiłków z {{ diet()?.genitive }}. Oceń sam(a).</p>
           }
+          @if (diet() && mealsStatus() !== 'loading') {
+            <button type="button" class="meals-reload" (click)="reloadMeals()">
+              <app-icon name="refresh" /> Pobierz jeszcze raz z {{ diet()?.genitive }}
+            </button>
+          }
           <label class="field">
             <span class="center"
               >Jak zdrowo jadłeś/aś? <strong>{{ foodLabel() }}</strong></span

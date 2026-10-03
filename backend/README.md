@@ -20,8 +20,9 @@ and from the direct Garmin login otherwise. If OW is down, it falls back to the 
 than yesterday are cached in `data/cache/<user>.json`, so only the first sync is slow.
 
 - `GET /api/meals?date=YYYY-MM-DD` (default today): the day's meals from Fitatu,
-  `{date, source:"fitatu", meals:[{key, name, time, kcal, items:[{name, brand, amount, eaten, kcal, protein, fat, carbs, fiber, sugars}]}], totals}`.
-  Only meals with items are listed. Items with `eaten:false` (diet plan, not ticked off) are left out of `kcal` and `totals`.
+  `{date, source:"fitatu", meals:[{key, name, time, kcal, items:[{name, brand, amount, kcal, protein, fat, carbs, fiber, sugars}]}], totals}`.
+  Only meals with items are listed. Every item counts, like in Fitatu's own day total (its `eaten` flag is
+  false for products added the usual way, so it is ignored).
   Returns 409 when Fitatu is not connected or its session ended.
 
 ## Connecting Fitatu

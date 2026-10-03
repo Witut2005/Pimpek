@@ -132,9 +132,8 @@ def test_meals_are_normalised(fake):
     assert breakfast["kcal"] == 350
     assert supper["name"] == "Kolacja"
     assert supper["items"][0]["amount"] == "180 g"
-    assert supper["items"][1]["eaten"] is False
-    assert supper["kcal"] == 420  # the planned yoghurt isn't counted
-    assert body["totals"] == {"kcal": 770, "protein": 32.0, "fat": 23.0, "carbs": 100.0, "fiber": 7.0, "sugars": 9.0}
+    assert supper["kcal"] == 570  # the yoghurt counts although Fitatu says eaten: false
+    assert body["totals"] == {"kcal": 920, "protein": 42.0, "fat": 23.0, "carbs": 100.0, "fiber": 7.0, "sugars": 9.0}
 
 
 def test_expired_token_is_refreshed_and_rotation_saved(fake):

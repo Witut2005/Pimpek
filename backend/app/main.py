@@ -167,5 +167,5 @@ def meals(
     date: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     user: str = Depends(current_user),
 ):
-    """One day's meals with their items, and kcal/macro totals of what was eaten."""
+    """One day's meals with their items, and the day's kcal/macro totals."""
     return _map_fitatu_errors(nutrition.meals, user, date)

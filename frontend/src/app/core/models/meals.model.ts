@@ -13,8 +13,6 @@ export interface MealItem extends Nutrients {
   brand: string | null;
   /** "1,5 porcja" or "250 g", as the diary shows it. */
   amount: string | null;
-  /** False for diet-plan items not ticked off yet: listed, but left out of the totals. */
-  eaten: boolean;
 }
 
 export interface Meal {
@@ -31,6 +29,6 @@ export interface MealDay {
   /** Local calendar day, `YYYY-MM-DD`. */
   date: string;
   meals: Meal[];
-  /** What was eaten that day. */
+  /** Everything logged that day, like the diary's own day total. */
   totals: Nutrients;
 }

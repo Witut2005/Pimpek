@@ -56,6 +56,7 @@ export class CheckInDialog {
   private readonly api = inject(WearableApi);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
   private mealsRequest?: Subscription;
+  private mealsDate = '';
 
   readonly saved = output<SaveResult>();
 
@@ -151,10 +152,12 @@ export class CheckInDialog {
   }
 
   /**
-   * Fetched on every open: meals keep being logged all day. An edit only shows them;
-   * a new entry also gets the suggested score and note, unless the user already changed those.
+   * Fetched on every open, and again on request: meals keep being logged all day. An edit
+   * only shows them; a new entry also gets the suggested score and note, unless the user
+   * already changed those.
    */
   private loadMeals(date: string, prefill: boolean): void {
+    this.mealsDate = date;
     this.mealsRequest?.unsubscribe();
     this.mealDay.set(undefined);
     if (!this.diet()) {
@@ -180,19 +183,23 @@ export class CheckInDialog {
     });
   }
 
+  /** For a meal logged in the diary while the dialog is open. */
+  protected reloadMeals(): void {
+    this.loadMeals(this.mealsDate, !this.isEdit());
+  }
+
   private prefillFromMeals(day: MealDay): void {
     const { foodScore, foodNote } = this.form.controls;
+    // Our own setValue keeps a control pristine, so a reload may update its earlier suggestion.
     if (foodScore.pristine) foodScore.setValue(foodScoreFromMeals(day.totals, day.meals.length));
-    if (foodNote.pristine && !foodNote.value) {
-      const dishes = [...new Set(day.meals.flatMap((m) => m.items.filter((i) => i.eaten).map((i) => i.name)))];
+    if (foodNote.pristine) {
+      const dishes = [...new Set(day.meals.flatMap((m) => m.items.map((i) => i.name)))];
       foodNote.setValue(dishes.slice(0, NOTE_DISHES).join(', ') + (dishes.length > NOTE_DISHES ? '…' : ''));
     }
   }
 
-  /** What was eaten, matching the meal's kcal — planned-only items are left out there too. */
   protected dishes(meal: Meal): string {
-    const eaten = meal.items.filter((i) => i.eaten);
-    return eaten.length ? eaten.map((i) => i.name).join(', ') : 'na razie tylko w planie';
+    return meal.items.map((i) => i.name).join(', ');
   }
 
   protected mealsCount(count: number): string {
