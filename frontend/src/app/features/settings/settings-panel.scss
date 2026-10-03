@@ -4,6 +4,11 @@
   gap: 1rem;
 }
 
+// The studio's sheet is a dialog of its own; its host shouldn't take a gap in the list.
+app-sheet {
+  display: contents;
+}
+
 .text-input {
   width: 9rem;
   text-align: right;

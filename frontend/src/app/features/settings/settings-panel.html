@@ -75,6 +75,10 @@
         <span class="plus" aria-hidden="true">{{ uploading() ? '…' : '+' }}</span>
         <strong>{{ uploading() ? 'Rozpakowuję' : 'Wgraj .zip' }}</strong>
       </label>
+      <button type="button" class="skin upload" (click)="studio.open()">
+        <span class="plus" aria-hidden="true"><app-icon name="sparkle" /></span>
+        <strong>Narysuj z AI</strong>
+      </button>
     </div>
     @if (uploadError(); as message) {
       <p class="upload-error" role="alert">{{ message }}</p>
@@ -101,6 +105,13 @@
     </details>
   </div>
 </section>
+
+<app-sheet #studio title="Pracownia Pimpka">
+  <!-- Most people never open the studio, so it stays out of the initial bundle. -->
+  @defer (on idle) {
+    <app-skin-studio (saved)="studio.close()" />
+  }
+</app-sheet>
 
 <section class="card">
   <h3><app-icon name="flag" /> Cele</h3>

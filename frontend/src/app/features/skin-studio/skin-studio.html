@@ -1,0 +1,214 @@
+<section class="card">
+  <h3><app-icon name="sparkle" /> Model AI</h3>
+  <div class="providers" role="radiogroup" aria-label="Dostawca AI">
+    @for (p of ai.providers; track p.id) {
+      <button
+        type="button"
+        role="radio"
+        class="provider"
+        [attr.aria-checked]="ai.provider().id === p.id"
+        [disabled]="busy()"
+        (click)="ai.select(p.id)"
+      >
+        <strong>{{ p.label }}</strong>
+        <small>{{ p.vendor }}</small>
+      </button>
+    }
+  </div>
+
+  <label class="field">
+    <span>Klucz API</span>
+    <span class="key">
+      <input
+        class="text-input"
+        [type]="showKey() ? 'text' : 'password'"
+        autocomplete="off"
+        spellcheck="false"
+        [placeholder]="ai.provider().keyPlaceholder"
+        [value]="ai.apiKey()"
+        (input)="setKey($event)"
+      />
+      <button
+        type="button"
+        class="icon-btn"
+        [attr.aria-label]="showKey() ? 'Ukryj klucz' : 'Pokaż klucz'"
+        [attr.aria-pressed]="showKey()"
+        (click)="showKey.set(!showKey())"
+      >
+        {{ showKey() ? '🙈' : '👁' }}
+      </button>
+    </span>
+    <a class="hint-link" [href]="ai.provider().keyUrl" target="_blank" rel="noopener">
+      Skąd wziąć klucz {{ ai.provider().vendor }}?
+    </a>
+  </label>
+
+  <label class="field">
+    <span>Model</span>
+    <input
+      class="text-input"
+      [attr.list]="'models-' + ai.provider().id"
+      spellcheck="false"
+      [placeholder]="ai.provider().defaultModel"
+      [value]="ai.settings().models[ai.provider().id] ?? ''"
+      (change)="setModel($event)"
+    />
+    <datalist [id]="'models-' + ai.provider().id">
+      @for (m of ai.provider().models; track m) {
+        <option [value]="m"></option>
+      }
+    </datalist>
+  </label>
+
+  <label class="row">
+    <span class="with-hint">
+      <strong>Zapamiętaj klucz</strong>
+      <small>Tylko w tej przeglądarce. Inaczej zniknie po odświeżeniu.</small>
+    </span>
+    <input
+      type="checkbox"
+      class="switch"
+      [checked]="ai.settings().remember"
+      (change)="ai.setRemember(!ai.settings().remember)"
+    />
+  </label>
+  <p class="muted">
+    <app-icon name="shield" />
+    Zapytania idą prosto z Twojej przeglądarki do {{ ai.provider().vendor }} — nasz serwer nie widzi
+    klucza. Rysowanie zużywa Twój limit u dostawcy.
+  </p>
+</section>
+
+<section class="card">
+  <h3><app-icon name="heart" /> Jaki ma być?</h3>
+  <label class="field">
+    <span>Imię wyglądu</span>
+    <input
+      class="text-input"
+      maxlength="32"
+      placeholder="np. Chmurek"
+      [value]="name()"
+      (input)="setText('name', $event)"
+    />
+  </label>
+  <label class="field">
+    <span>Opis</span>
+    <textarea
+      class="text-input"
+      rows="3"
+      maxlength="600"
+      placeholder="Kim jest, jakie ma kolory, co nosi…"
+      [value]="description()"
+      (input)="setText('description', $event)"
+    ></textarea>
+  </label>
+  <div class="chips" aria-label="Pomysły">
+    @for (idea of ideas; track idea) {
+      <button type="button" class="chip" [attr.aria-pressed]="description() === idea" (click)="description.set(idea)">
+        {{ idea }}
+      </button>
+    }
+  </div>
+</section>
+
+<div class="go">
+  @if (busy()) {
+    <button type="button" class="btn ghost" (click)="cancel()">Przerwij</button>
+  } @else {
+    <button type="button" class="btn primary with-icon" [disabled]="!canGenerate()" (click)="generate()">
+      <app-icon name="sparkle" /> {{ started() ? 'Narysuj od nowa' : 'Narysuj wygląd' }}
+    </button>
+  }
+  @if (!ai.apiKey()) {
+    <small>Wklej klucz API, żeby zacząć.</small>
+  } @else if (!description().trim()) {
+    <small>Opisz, jak ma wyglądać.</small>
+  }
+</div>
+
+@if (started()) {
+  <section class="card" aria-live="polite">
+    <h3>
+      <app-icon name="pencil" /> Nastroje
+      <span class="pill" [class.warm]="busy()">{{ doneCount() }} / {{ poses.length }}</span>
+    </h3>
+    <p class="muted">
+      Każdy nastrój ma własną animację, a Pimpek dokłada do niej oddech, podskoki i kołysanie.
+    </p>
+    <ul class="poses">
+      @for (pose of poses; track pose) {
+        @let draft = drafts()[pose];
+        <li class="pose" [attr.data-status]="draft.status">
+          <div class="thumb">
+            @switch (draft.status) {
+              @case ('done') {
+                <img [src]="thumbs()[pose]" alt="" draggable="false" />
+              }
+              @case ('drawing') {
+                <span class="pencil" aria-hidden="true">✏️</span>
+              }
+              @case ('error') {
+                <span class="oops" aria-hidden="true">!</span>
+              }
+              @default {
+                <span class="dots" aria-hidden="true">···</span>
+              }
+            }
+          </div>
+          <strong>{{ briefs[pose].label }}</strong>
+          @if (draft.status === 'error') {
+            <small class="error" role="alert">{{ draft.error }}</small>
+          } @else {
+            <small>{{ draft.status === 'drawing' ? 'Rysuję…' : briefs[pose].hint }}</small>
+          }
+          @if (draft.status === 'done' || draft.status === 'error') {
+            <button
+              type="button"
+              class="redo"
+              [attr.aria-label]="'Narysuj jeszcze raz: ' + briefs[pose].label"
+              (click)="redraw(pose)"
+            >
+              <app-icon name="refresh" />
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+@if (preview(); as skin) {
+  <section class="card">
+    <h3><app-icon name="star" /> Podgląd</h3>
+    <div class="stage">
+      <app-skin-player [skin]="skin" [state]="previewMood()" [celebrating]="celebrating()" />
+    </div>
+    <div class="chips" aria-label="Nastrój w podglądzie">
+      @for (mood of moods; track mood) {
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="previewMood() === mood"
+          (click)="previewMood.set(mood)"
+        >
+          {{ briefs[mood].label }}
+        </button>
+      }
+      <button type="button" class="chip" (click)="celebrate()">🎉 {{ briefs.celebrate.label }}</button>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn ghost small with-icon" (click)="download()">
+        <app-icon name="download" /> Pobierz .zip
+      </button>
+      <button type="button" class="btn primary small with-icon" [disabled]="busy() || saving()" (click)="save()">
+        <app-icon name="check" /> {{ saving() ? 'Zapisuję…' : 'Zapisz i załóż' }}
+      </button>
+    </div>
+    @if (busy()) {
+      <small class="muted">Poczekaj, aż dorysuję resztę nastrojów.</small>
+    }
+    @if (saveError(); as message) {
+      <p class="error" role="alert">{{ message }}</p>
+    }
+  </section>
+}
