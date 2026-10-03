@@ -1,0 +1,361 @@
+:host {
+  --body: #4c8ec4;
+  --ink: #010204;
+  display: block;
+  position: relative;
+}
+
+:host(.is-sad) {
+  --body: #6f8fae;
+}
+
+:host(.is-sick) {
+  --body: #78a98b;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.body,
+.eyelid {
+  fill: var(--body);
+  transition: fill 0.8s ease;
+}
+
+.eye-white {
+  fill: #fff;
+}
+
+.eye-shade {
+  fill: #dce7ee;
+}
+
+.pupils,
+.brow,
+.ink {
+  fill: var(--ink);
+}
+
+.ink-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+
+.band {
+  fill: none;
+}
+
+.sunglasses {
+  fill: #1f2233;
+
+  .shine {
+    fill: none;
+    stroke: rgb(255 255 255 / 0.4);
+    stroke-width: 10;
+    stroke-linecap: round;
+  }
+}
+
+// ---- body ----
+
+.body-group {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: breathe 3.2s ease-in-out infinite;
+}
+
+:host(.is-happy) .body-group {
+  animation: bounce 1.2s ease-in-out infinite;
+}
+
+:host(.is-sleepy) .body-group {
+  animation: sway 4s ease-in-out infinite;
+}
+
+:host(.is-sad) .body-group {
+  animation: droop 4.5s ease-in-out infinite;
+}
+
+:host(.is-sick) .body-group {
+  animation: shiver 2.6s linear infinite;
+}
+
+:host(.is-celebrating) .body-group {
+  animation: jump 0.55s ease-out 3;
+}
+
+// ---- face ----
+
+.eyelid {
+  transform: translateY(-200px);
+  animation: blink 4.5s infinite;
+}
+
+:host(.is-sleepy) .eyelid {
+  animation: doze 5s ease-in-out infinite;
+}
+
+:host(.is-sick) .eyelid {
+  animation: none;
+  transform: translateY(-115px);
+}
+
+.pupils {
+  animation: look 7s ease-in-out infinite;
+}
+
+:host(.is-sad) .pupils,
+:host(.is-sick) .pupils {
+  animation: none;
+  transform: translateY(16px);
+}
+
+.brow {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.5s ease;
+}
+
+:host(.is-happy) .brow {
+  transform: translateY(-14px);
+}
+
+:host(.is-sleepy) .brow {
+  transform: translateY(10px);
+}
+
+:host(.is-sad) {
+  .brow-left {
+    transform: rotate(-14deg) translateY(-6px);
+  }
+  .brow-right {
+    transform: rotate(14deg) translateY(-6px);
+  }
+}
+
+:host(.is-sick) {
+  .brow-left {
+    transform: rotate(-9deg);
+  }
+  .brow-right {
+    transform: rotate(9deg);
+  }
+}
+
+.yawn {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: yawn 5s ease-in-out infinite;
+}
+
+.drop {
+  fill: #7cc6ff;
+  animation: drip 2.4s ease-in infinite;
+}
+
+// ---- floating effects ----
+
+.fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    opacity: 0;
+  }
+}
+
+.z {
+  right: 8%;
+  top: 14%;
+  font-weight: 800;
+  color: #5b6b8c;
+  font-size: 1.6rem;
+  animation: float-up 3s ease-out infinite;
+
+  &:nth-child(2) {
+    animation-delay: 1s;
+    font-size: 1.2rem;
+  }
+  &:nth-child(3) {
+    animation-delay: 2s;
+    font-size: 0.9rem;
+  }
+}
+
+.spark {
+  top: 12%;
+  left: 8%;
+  font-size: 1.5rem;
+  animation: float-up 2.8s ease-out infinite;
+
+  &:nth-child(2) {
+    left: auto;
+    right: 6%;
+    animation-delay: 1.4s;
+  }
+}
+
+.burst {
+  left: 50%;
+  top: 45%;
+  font-size: 1.6rem;
+  animation: burst 1.2s ease-out forwards;
+}
+
+// ---- keyframes ----
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.02, 0.98);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+  50% {
+    transform: translateY(-4%) scale(0.98, 1.02);
+  }
+}
+
+@keyframes sway {
+  0%, 100% {
+    transform: rotate(-2deg) scale(1, 0.98);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes droop {
+  0%, 100% {
+    transform: translateY(2%) scale(1.03, 0.95);
+  }
+  50% {
+    transform: translateY(2%) scale(1.02, 0.96);
+  }
+}
+
+@keyframes shiver {
+  0%, 70%, 100% {
+    transform: translateX(0);
+  }
+  74%, 82%, 90% {
+    transform: translateX(-1%);
+  }
+  78%, 86%, 94% {
+    transform: translateX(1%);
+  }
+}
+
+@keyframes jump {
+  0% {
+    transform: scale(1.08, 0.9);
+  }
+  45% {
+    transform: translateY(-14%) scale(0.95, 1.05);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes blink {
+  0%, 92%, 100% {
+    transform: translateY(-200px);
+  }
+  95% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes doze {
+  0%, 100% {
+    transform: translateY(-105px);
+  }
+  50% {
+    transform: translateY(-50px);
+  }
+}
+
+@keyframes look {
+  0%, 20%, 100% {
+    transform: translate(0, 0);
+  }
+  30%, 45% {
+    transform: translate(-14px, 4px);
+  }
+  55%, 75% {
+    transform: translate(16px, 2px);
+  }
+}
+
+@keyframes yawn {
+  0%, 60%, 100% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.5, 1.8);
+  }
+}
+
+@keyframes drip {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(90px);
+    opacity: 0;
+  }
+}
+
+@keyframes float-up {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(1.5rem, -3rem);
+    opacity: 0;
+  }
+}
+
+@keyframes burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0) rotate(calc(-1 * var(--angle)));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-9rem)
+      rotate(calc(-1 * var(--angle)));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body-group,
+  .eyelid,
+  .pupils,
+  .yawn,
+  .drop,
+  .fx span {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+}

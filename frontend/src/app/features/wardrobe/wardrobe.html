@@ -1,0 +1,29 @@
+<p class="hint">Dbaj o siebie, a Pimpek zdobędzie nowe rzeczy. Kliknij odblokowany przedmiot, żeby go założyć.</p>
+
+<ul>
+  @for (item of store.items(); track item.id) {
+    @let worn = store.wornItems().includes(item.id);
+    <li>
+      <button
+        type="button"
+        class="item"
+        [class.locked]="!item.unlocked"
+        [class.worn]="worn"
+        [disabled]="!item.unlocked"
+        [attr.aria-pressed]="item.unlocked ? worn : null"
+        (click)="store.toggleItem(item.id)"
+      >
+        <span class="icon" aria-hidden="true">{{ item.unlocked ? item.icon : '🔒' }}</span>
+        <strong>{{ item.name }}</strong>
+        <small>{{ item.requirement }}</small>
+        @if (item.unlocked) {
+          <span class="tag">{{ worn ? 'Założone ✓' : 'Załóż' }}</span>
+        } @else {
+          <span class="progress" [style.--p]="(item.progress / item.target) * 100">
+            {{ item.progress | number: '1.0-1' }} / {{ item.target }}
+          </span>
+        }
+      </button>
+    </li>
+  }
+</ul>

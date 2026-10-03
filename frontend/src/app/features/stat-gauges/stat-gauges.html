@@ -1,0 +1,19 @@
+<ul>
+  @for (g of gauges(); track g.key) {
+    <li [title]="g.label + ': ' + g.value + '%'">
+      <span
+        class="ring"
+        [class]="g.level"
+        [style.--value]="g.value"
+        role="meter"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-valuenow]="g.value"
+        [attr.aria-label]="g.label"
+      >
+        <span class="icon" aria-hidden="true">{{ g.icon }}</span>
+      </span>
+      <span class="value">{{ g.value }}%</span>
+    </li>
+  }
+</ul>

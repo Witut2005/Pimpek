@@ -1,0 +1,120 @@
+:host {
+  --pet-width: min(72vw, 19rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bubble {
+  position: relative;
+  max-width: 22rem;
+  margin: 0;
+  padding: 0.85rem 1.1rem;
+  border-radius: 1.4rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: var(--shadow-soft);
+  animation: pop-in 0.35s ease-out;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -0.6rem;
+    width: 1.3rem;
+    height: 1.3rem;
+    background: inherit;
+    border-radius: 0.25rem;
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  &.attention {
+    outline: 3px solid var(--accent);
+    animation: nudge 2.4s ease-in-out infinite;
+  }
+}
+
+.pet {
+  position: relative;
+  z-index: 1;
+  width: var(--pet-width);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+
+  &:hover {
+    transform: scale(1.03);
+  }
+
+  &:active {
+    transform: scale(0.95, 0.9);
+  }
+
+  &:focus-visible {
+    outline: 3px dashed var(--accent);
+    outline-offset: 6px;
+    border-radius: 50%;
+  }
+}
+
+// Pimpek sits on it: pulled up so his bottom lands a bit below the rug's middle
+// (the avatar SVG has ~4% empty space under the body).
+.rug {
+  width: calc(var(--pet-width) * 1.2);
+  height: calc(var(--pet-width) * 0.26);
+  margin-top: calc(var(--pet-width) * -0.2);
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    ellipse at center,
+    #e8676b 0 14%,
+    #f6b26b 14% 22%,
+    #fbe3b0 22% 27%,
+    #f6b26b 27% 32%
+  );
+  box-shadow:
+    0 0.35rem 0 #c9504f,
+    0 0.6rem 1rem rgb(120 70 30 / 0.2);
+  outline: 0.2rem dashed rgb(255 244 220 / 0.85);
+  outline-offset: -0.55rem;
+}
+
+.badge {
+  position: absolute;
+  z-index: 1;
+  top: 18%;
+  right: 4%;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.3rem;
+  box-shadow: var(--shadow-soft);
+  animation: nudge 1.2s ease-in-out infinite;
+}
+
+@keyframes pop-in {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+
+@keyframes nudge {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
