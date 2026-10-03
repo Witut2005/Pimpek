@@ -8,7 +8,6 @@ import { SoftBar, SoftBars } from '../../shared/soft-bars/soft-bars';
 import { History } from '../history/history';
 import { NEEDS } from '../needs/needs';
 import { PimpekAvatar } from '../pimpek/pimpek-avatar';
-import { HabitGarden } from './habit-garden';
 import { Trainings } from './trainings';
 
 const TREND_ORDER: readonly StatKey[] = ['energy', 'fitness', 'nutrition', 'screen', 'mood'];
@@ -43,10 +42,10 @@ function comparison(key: StatKey, now: number, before: number | undefined): stri
   }
 }
 
-/** Trends without spreadsheets: faces for the week, soft bars per need, a garden for the month. */
+/** Trends without spreadsheets: faces for the week, soft bars per need. */
 @Component({
   selector: 'app-progress',
-  imports: [PimpekAvatar, SoftBars, Icon, History, HabitGarden, Trainings],
+  imports: [PimpekAvatar, SoftBars, Icon, History, Trainings],
   templateUrl: './progress.html',
   styleUrl: './progress.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
