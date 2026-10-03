@@ -185,8 +185,9 @@ export class CheckInDialog {
       this.prefillFromWearable();
     }
     this.mealsDate = existing?.date ?? this.store.today();
-    // An edit keeps the list as saved; the diary only comes in when the user asks for it.
-    this.loadMeals(!existing);
+    // Every open pulls the diary again and rates it again, an edit included: meals keep being
+    // logged all day. Hand edits survive the merge. Fixing another need leaves the food alone.
+    this.loadMeals(!need || need === 'nutrition');
     this.dialog().nativeElement.showModal();
   }
 
@@ -206,7 +207,8 @@ export class CheckInDialog {
       next: (day) => {
         this.mealDay.set(day);
         this.mealsStatus.set('idle');
-        if (merge && day.meals.length) {
+        // Also when the diary is now empty: what was removed there must leave the list too.
+        if (merge) {
           this.foodEntries.set(mergeDiary(this.foodEntries(), day));
           this.requestRating();
         }

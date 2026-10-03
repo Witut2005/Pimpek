@@ -26,7 +26,7 @@ than yesterday are cached in `data/cache/<user>.json`, so only the first sync is
   Returns 409 when Fitatu is not connected or its session ended.
 
 - `POST /api/food/rating` `{date, meals:[{name, time?, items:[{name, amount?, source:"fitatu"|"manual", kcal?, protein?, fat?, carbs?, fiber?, sugars?}]}]}`
-  -> `{score, label, summary, positives, improvements, incomplete, model}`: Gemini's 0–100 rating of the day's food.
+  -> `{score, label, summary, positives, improvements, model}`: Gemini's 0–100 rating of the day's food.
   503 when `GEMINI_API_KEY` is not set (the frontend then shows its own rough estimate), 502/429 when Gemini fails.
 
 ## AI food rating (Gemini)

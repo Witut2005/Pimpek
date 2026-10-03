@@ -28,7 +28,6 @@ DAY = {
 ANSWER = {
     "positives": ["Kurczak to dobre białko", "Surówka dorzuciła warzyw", "Regularny obiad", "Za dużo"],
     "improvements": ["Dorzuć warzywa do kolacji"],
-    "incomplete": True,
     "score": 140,
     "label": "całkiem nieźle",
     "summary": "Obiad z białkiem i surówką, ale reszta dnia nie jest wpisana.",
@@ -76,7 +75,6 @@ def test_rating_sends_prompt_and_meals_and_cleans_the_answer(monkeypatch):
         "summary": ANSWER["summary"],
         "positives": ANSWER["positives"][:3],  # trimmed
         "improvements": ANSWER["improvements"],
-        "incomplete": True,
         "model": "gemini-test",
     }
     (request,) = requests

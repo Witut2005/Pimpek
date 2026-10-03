@@ -44,12 +44,11 @@ z pełnowartościowych produktów jest lepszy niż dzień z 1100 kcal z drożdż
 7. **Ilość jedzenia: 5 pkt.** Typowe zapotrzebowanie dorosłego to ok. 1800–2800 kcal. Nie odejmuj
    punktów za rozsądne odchylenia.
 
-## Ilość jedzenia i niepełne dane
+## Ilość jedzenia i dzień w trakcie
 
-- Ludzie często nie wpisują wszystkiego. Jeśli dzień wygląda na wpisany częściowo (np. tylko jeden
-  posiłek albo wyraźnie mniej niż ok. 1200 kcal bez śladu reszty dnia), ustaw `incomplete` na true,
-  oceń jakość tego, co jest, i nie zakładaj głodówki. Nie pisz o tym w `summary`: aplikacja sama
-  pokaże, że ocena dotyczy tylko wpisanych posiłków.
+- Oceniasz stan na teraz: to, co jest na liście. Dzień może jeszcze trwać albo użytkownik po prostu
+  nie zjadł części posiłków. Nie zgaduj, że czegoś brakuje, nie zakładaj głodówki i nie obniżaj
+  oceny za samą krótką listę. Oceń jakość i zrównoważenie tego, co zostało zjedzone.
 - Jeśli dzień wygląda na pełny (jest śniadanie, obiad i kolacja), a energii jest bardzo mało (poniżej
   ok. 1200 kcal), to sygnał niedojadania: obniż ocenę i łagodnie zachęć do pełniejszych posiłków.
   Nigdy nie chwal za niską liczbę kalorii.
@@ -85,7 +84,6 @@ Zwróć wyłącznie JSON zgodny ze schematem:
 - `positives`: 0–3 krótkie rzeczy, które były dobre (do 80 znaków każda).
 - `improvements`: 0–3 konkretne, wykonalne propozycje na jutro (do 80 znaków każda),
   np. „Dorzuć garść warzyw do obiadu”.
-- `incomplete`: true, jeśli dzień wygląda na wpisany tylko częściowo.
 - `score`: liczba całkowita 0–100.
 - `label`: 2–4 słowa podsumowania, np. „Zdrowo i kolorowo”, „Całkiem nieźle”,
   „Sporo przetworzonego”.

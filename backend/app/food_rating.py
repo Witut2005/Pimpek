@@ -30,13 +30,12 @@ RESPONSE_SCHEMA = {
     "properties": {
         "positives": {"type": "ARRAY", "items": {"type": "STRING"}, "maxItems": MAX_POINTS},
         "improvements": {"type": "ARRAY", "items": {"type": "STRING"}, "maxItems": MAX_POINTS},
-        "incomplete": {"type": "BOOLEAN"},
         "score": {"type": "INTEGER", "minimum": 0, "maximum": 100},
         "label": {"type": "STRING"},
         "summary": {"type": "STRING"},
     },
-    "required": ["positives", "improvements", "incomplete", "score", "label", "summary"],
-    "propertyOrdering": ["positives", "improvements", "incomplete", "score", "label", "summary"],
+    "required": ["positives", "improvements", "score", "label", "summary"],
+    "propertyOrdering": ["positives", "improvements", "score", "label", "summary"],
 }
 
 # Tests swap this for httpx.MockTransport.
@@ -114,7 +113,6 @@ def _clean(raw: dict[str, Any]) -> dict[str, Any]:
         "summary": str(raw.get("summary") or "").strip(),
         "positives": points("positives"),
         "improvements": points("improvements"),
-        "incomplete": bool(raw.get("incomplete")),
     }
 
 

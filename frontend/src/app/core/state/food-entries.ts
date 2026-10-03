@@ -115,7 +115,6 @@ export function estimateFoodRating(entries: FoodEntry[]): FoodRating {
     summary: 'Ocena przybliżona z kalorii i makroskładników, bo AI jest teraz niedostępne. Spróbuj ponownie za chwilę.',
     positives: [],
     improvements: [],
-    incomplete: false,
     source: 'estimate',
   };
 }
