@@ -27,7 +27,8 @@ DAY_PLAN = {
             "mealName": "Śniadanie",
             "mealTime": "08:00",
             "items": [
-                {"name": "Owsianka", "measureQuantity": "1.5", "measureName": "porcja", "energy": "350.4",
+                {"planDayDietItemId": "a1b2", "name": "Owsianka", "measureQuantity": "1.5",
+                 "measureName": "porcja", "energy": "350.4",
                  "protein": 12, "fat": 8, "carbohydrate": 55, "fiber": 7, "sugars": 9, "eaten": True},
                 {"name": "Kawa", "weight": 250, "energy": 5, "deletedAt": "2026-10-03 08:10:00"},
             ],
@@ -129,6 +130,7 @@ def test_meals_are_normalised(fake):
     assert breakfast["name"] == "Śniadanie" and breakfast["time"] == "08:00"
     assert [i["name"] for i in breakfast["items"]] == ["Owsianka"]  # deleted coffee is gone
     assert breakfast["items"][0]["amount"] == "1.5 porcja"
+    assert breakfast["items"][0]["id"] == "a1b2"
     assert breakfast["kcal"] == 350
     assert supper["name"] == "Kolacja"
     assert supper["items"][0]["amount"] == "180 g"

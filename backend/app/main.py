@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from . import daily
 from . import fitatu_service as fitatu
+from . import food_rating
 from . import garmin_service as garmin
 from . import nutrition
 from . import open_wearables as ow
@@ -67,6 +69,21 @@ def _map_fitatu_errors(fn, *args):
     except fitatu.FitatuUnavailable as e:
         log.warning("Could not reach Fitatu: %s", e)
         raise HTTPException(502, "Could not reach Fitatu")
+
+
+def _map_rating_errors(fn, *args):
+    try:
+        return fn(*args)
+    except food_rating.NotConfigured as e:
+        raise HTTPException(503, str(e))
+    except food_rating.RatingError as e:
+        log.warning("Gemini returned %s: %s", e.status, e.detail)
+        if e.status == 429:
+            raise HTTPException(429, "Gemini is rate limiting us, try again later")
+        raise HTTPException(502, f"Gemini: {e.detail}")
+    except food_rating.RatingUnavailable as e:
+        log.warning("Could not reach Gemini: %s", e)
+        raise HTTPException(502, "Could not reach Gemini")
 
 app.include_router(wearables_router)
 
@@ -169,3 +186,39 @@ def meals(
 ):
     """One day's meals with their items, and the day's kcal/macro totals."""
     return _map_fitatu_errors(nutrition.meals, user, date)
+
+
+# --- AI food rating (Gemini) --------------------------------------------------------
+
+
+class RatedItem(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    amount: str | None = Field(None, max_length=60)
+    # "fitatu": nutrients come from its product database; "manual": typed in, Gemini estimates.
+    source: Literal["fitatu", "manual"] = "manual"
+    kcal: float | None = Field(None, ge=0, le=10_000)
+    protein: float | None = Field(None, ge=0, le=1_000)
+    fat: float | None = Field(None, ge=0, le=1_000)
+    carbs: float | None = Field(None, ge=0, le=1_000)
+    fiber: float | None = Field(None, ge=0, le=1_000)
+    sugars: float | None = Field(None, ge=0, le=1_000)
+
+
+class RatedMeal(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+    time: str | None = Field(None, max_length=8)
+    items: list[RatedItem] = Field(min_length=1, max_length=40)
+
+
+class RatingBody(BaseModel):
+    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    meals: list[RatedMeal] = Field(min_length=1, max_length=10)
+
+
+@app.post("/api/food/rating")
+def rate_food(body: RatingBody, user: str = Depends(current_user)):
+    """Gemini's 0–100 rating of the day's food, with a short summary, positives and tips.
+
+    503 when no GEMINI_API_KEY is set: the frontend then shows its own rough estimate.
+    """
+    return _map_rating_errors(food_rating.rate, body.model_dump(exclude_none=True))

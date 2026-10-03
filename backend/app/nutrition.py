@@ -48,7 +48,10 @@ def _amount(raw: dict[str, Any]) -> str | None:
 
 
 def _item(raw: dict[str, Any]) -> dict[str, Any]:
+    item_id = raw.get("planDayDietItemId")
     return {
+        # Stable across reloads, so the check-in can tell an item it already has from a new one.
+        "id": str(item_id) if item_id else None,
         "name": raw.get("name") or "Bez nazwy",
         "brand": raw.get("brand") or None,
         "amount": _amount(raw),

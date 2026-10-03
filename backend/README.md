@@ -20,10 +20,21 @@ and from the direct Garmin login otherwise. If OW is down, it falls back to the 
 than yesterday are cached in `data/cache/<user>.json`, so only the first sync is slow.
 
 - `GET /api/meals?date=YYYY-MM-DD` (default today): the day's meals from Fitatu,
-  `{date, source:"fitatu", meals:[{key, name, time, kcal, items:[{name, brand, amount, kcal, protein, fat, carbs, fiber, sugars}]}], totals}`.
+  `{date, source:"fitatu", meals:[{key, name, time, kcal, items:[{id, name, brand, amount, kcal, protein, fat, carbs, fiber, sugars}]}], totals}`.
   Only meals with items are listed. Every item counts, like in Fitatu's own day total (its `eaten` flag is
   false for products added the usual way, so it is ignored).
   Returns 409 when Fitatu is not connected or its session ended.
+
+- `POST /api/food/rating` `{date, meals:[{name, time?, items:[{name, amount?, source:"fitatu"|"manual", kcal?, protein?, fat?, carbs?, fiber?, sugars?}]}]}`
+  -> `{score, label, summary, positives, improvements, incomplete, model}`: Gemini's 0–100 rating of the day's food.
+  503 when `GEMINI_API_KEY` is not set (the frontend then shows its own rough estimate), 502/429 when Gemini fails.
+
+## AI food rating (Gemini)
+Put a key from https://aistudio.google.com/apikey into `backend/.env` as `GEMINI_API_KEY` and restart the backend.
+`GEMINI_MODEL` picks the model (default `gemini-3.8-flash`). The key stays on the backend, never in the browser.
+The rating instructions are in `app/prompts/food_rating.md`: edit them there, no code change needed.
+Meal names typed by users only go into the user turn as JSON, never into the instructions.
+The meals are sent to Google; on the free tier Google may use them to improve its products.
 
 ## Connecting Fitatu
 `POST /api/fitatu/connect` `{email, password}` -> `{status:"connected"}`, or 401 for a wrong e-mail/password.
