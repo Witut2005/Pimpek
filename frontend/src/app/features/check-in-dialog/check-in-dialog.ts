@@ -12,34 +12,49 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { map } from 'rxjs';
 import { CheckInInput, DailyCheckIn } from '../../core/models/check-in.model';
-import { GOALS, moodLabel } from '../../core/state/pet-rules';
+import { foodLabel, moodLabel } from '../../core/state/pet-rules';
 import { PetStore, SaveResult } from '../../core/state/pet.store';
+import { SettingsStore } from '../../core/state/settings.store';
+import { SourcesStore } from '../../core/state/sources.store';
+import { formatHours, formatSteps } from '../../shared/format';
+import { Icon, IconName } from '../../shared/icon/icon';
 
-const STEPS = [
-  { title: 'Nastrój', icon: '😊' },
-  { title: 'Sen', icon: '💤' },
-  { title: 'Jedzenie', icon: '🍎' },
-  { title: 'Ruch i ekran', icon: '🏃' },
-  { title: 'Ludzie', icon: '🫶' },
-] as const;
+const STEPS: readonly { title: string; icon: IconName }[] = [
+  { title: 'Nastrój', icon: 'smile' },
+  { title: 'Sen', icon: 'moon' },
+  { title: 'Jedzenie', icon: 'apple' },
+  { title: 'Ruch i ekran', icon: 'steps' },
+  { title: 'Ludzie', icon: 'heart' },
+];
 
 const MOOD_EMOJI = ['😫', '😣', '😞', '😕', '😐', '🙂', '😊', '😄', '😁', '🤩'];
 
 @Component({
   selector: 'app-check-in-dialog',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, Icon],
   templateUrl: './check-in-dialog.html',
   styleUrl: './check-in-dialog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CheckInDialog {
   private readonly store = inject(PetStore);
+  private readonly sources = inject(SourcesStore);
+  private readonly settings = inject(SettingsStore);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   readonly saved = output<SaveResult>();
 
   protected readonly steps = STEPS;
-  protected readonly goals = GOALS;
+  protected readonly goals = this.store.goals;
+  /** With a wearable, sleep and steps are confirmations, not questions. */
+  protected readonly measured = this.store.todayWearable;
+  protected readonly sourceName = computed(() => this.sources.primary()?.genitive ?? 'zegarka');
+  protected readonly submitLabel = computed(() => {
+    if (this.isEdit()) return 'Zapisz zmiany';
+    return this.settings.petName() === 'Pimpek' ? 'Nakarm Pimpka' : 'Zapisz dzień';
+  });
+  protected readonly formatHours = formatHours;
+  protected readonly formatSteps = formatSteps;
   protected readonly step = signal(0);
   protected readonly isEdit = signal(false);
   protected readonly saving = this.store.saving;
@@ -70,6 +85,12 @@ export class CheckInDialog {
     const score = this.values().foodScore;
     return score < 30 ? '🍟' : score < 60 ? '🍝' : score < 80 ? '🥪' : '🥗';
   });
+  protected readonly foodLabel = computed(() => foodLabel(this.values().foodScore));
+
+  /** Filled share of a range track, 0–100, used to paint the soft progress on sliders. */
+  protected fill(value: number, min: number, max: number): number {
+    return ((value - min) / (max - min)) * 100;
+  }
 
   open(existing?: DailyCheckIn): void {
     this.isEdit.set(!!existing);
@@ -126,16 +147,21 @@ export class CheckInDialog {
       return;
     }
     const v = this.form.getRawValue();
+    const measured = this.measured();
     const input: CheckInInput = {
       date: this.store.today(),
       mood: { score: v.moodScore, label: moodLabel(v.moodScore) },
       sleep: {
-        durationHours: v.sleepHours,
+        durationHours: measured?.sleepHours ?? v.sleepHours,
         feelingRested: v.feelingRested,
         qualityNote: v.sleepNote.trim() || undefined,
       },
       food: { qualityScore: v.foodScore, note: v.foodNote.trim() || undefined },
-      metrics: { runningDistanceKm: v.runningKm ?? 0, screenTimeHours: v.screenHours },
+      metrics: {
+        runningDistanceKm: v.runningKm ?? 0,
+        screenTimeHours: v.screenHours,
+        steps: measured?.steps,
+      },
       social: {
         metWithFriends: v.metWithFriends,
         context: (v.metWithFriends && v.socialContext.trim()) || undefined,

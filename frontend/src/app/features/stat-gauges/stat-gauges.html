@@ -1,19 +1,23 @@
-<ul>
+<ul aria-label="Jak się czuje Pimpek">
   @for (g of gauges(); track g.key) {
-    <li [title]="g.label + ': ' + g.value + '%'">
-      <span
-        class="ring"
-        [class]="g.level"
-        [style.--value]="g.value"
-        role="meter"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        [attr.aria-valuenow]="g.value"
-        [attr.aria-label]="g.label"
+    <li [class]="g.level">
+      <button
+        type="button"
+        (click)="select.emit(g.key)"
+        [attr.aria-label]="g.label + ': ' + g.word + '. Pokaż szczegóły'"
       >
-        <span class="icon" aria-hidden="true">{{ g.icon }}</span>
-      </span>
-      <span class="value">{{ g.value }}%</span>
+        <span
+          class="pebble"
+          role="meter"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="g.value"
+          [attr.aria-valuetext]="g.word"
+        >
+          <app-icon [name]="g.icon" />
+        </span>
+        <span class="word" aria-hidden="true">{{ g.word }}</span>
+      </button>
     </li>
   }
 </ul>

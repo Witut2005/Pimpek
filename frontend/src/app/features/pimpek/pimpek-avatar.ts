@@ -22,15 +22,22 @@ const BURST = ['💙', '⭐', '✨', '💚', '⭐', '💙', '✨', '💛'].map((
   host: {
     '[class]': "'is-' + state()",
     '[class.is-celebrating]': 'celebrating()',
+    '[style.--body-base]': 'color()',
+    '[class.is-quiet]': 'quiet()',
   },
 })
 export class PimpekAvatar {
   readonly state = input.required<AvatarState>();
   readonly celebrating = input(false);
   readonly items = input<readonly ItemId[]>([]);
+  /** Body colour picked in settings; sad and sick states still tint over it. */
+  readonly color = input<string>();
+  /** Thumbnails skip the floating sparkles and Zzz — at that size they're just noise. */
+  readonly quiet = input(false);
 
   protected readonly paths = PIMPEK_PATHS;
   protected readonly burst = BURST;
+  protected readonly petals = [0, 72, 144, 216, 288];
 
   private readonly uid = `pimpek-${nextId++}`;
   protected readonly ids = {

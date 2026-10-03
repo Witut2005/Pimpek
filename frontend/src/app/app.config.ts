@@ -6,7 +6,7 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 import { routes } from './app.routes';
 import { CheckInService } from './core/services/check-in.service';
@@ -18,7 +18,8 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
-    provideRouter(routes),
+    // Query params (?source=, ?panel=) arrive as component inputs.
+    provideRouter(routes, withComponentInputBinding()),
     { provide: LOCALE_ID, useValue: 'pl' },
     { provide: CheckInService, useClass: MockCheckInService }
   ]

@@ -14,7 +14,12 @@
   @if (needsAttention()) {
     <span class="badge" aria-hidden="true">!</span>
   }
-  <app-pimpek-avatar [state]="state()" [items]="items()" [celebrating]="celebrating()" />
+  <app-pimpek-avatar
+    [state]="state()"
+    [items]="items()"
+    [celebrating]="celebrating()"
+    [color]="color()"
+  />
 </button>
 
 <div class="rug" aria-hidden="true"></div>

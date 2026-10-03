@@ -50,7 +50,7 @@
     @if (wears().has('headband')) {
       <g [attr.clip-path]="url(ids.body)">
         <path class="band" d="M200 360 Q550 230 900 370" stroke="#ef476f" stroke-width="44" />
-        <path class="band" d="M200 360 Q550 230 900 370" stroke="#fff" stroke-width="8" />
+        <path class="band" d="M200 360 Q550 230 900 370" stroke="#fffaf3" stroke-width="8" />
       </g>
     }
     @if (wears().has('sunglasses')) {
@@ -61,12 +61,39 @@
         <path class="shine" d="M405 465 Q420 440 450 432 M583 465 Q598 440 628 432" />
       </g>
     }
+    @if (wears().has('round-glasses')) {
+      <g fill="none" stroke="#7a5640" stroke-width="13">
+        <circle cx="460" cy="488" r="84" />
+        <circle cx="638" cy="488" r="84" />
+        <path d="M544 478 Q549 464 554 478" />
+      </g>
+    }
+    @if (wears().has('scarf')) {
+      <g [attr.clip-path]="url(ids.body)">
+        <path d="M190 700 Q550 790 910 690" fill="none" stroke="#c9694a" stroke-width="70" />
+        <path
+          d="M190 700 Q550 790 910 690"
+          fill="none"
+          stroke="#f3c4a4"
+          stroke-width="70"
+          stroke-dasharray="26 52"
+        />
+      </g>
+      <path d="M690 738 L736 862 Q712 874 686 868 L656 748 Z" fill="#c9694a" />
+    }
+    @if (wears().has('bow-tie')) {
+      <g>
+        <path d="M548 735 L470 690 Q455 735 470 780 Z" fill="#d98a68" />
+        <path d="M548 735 L626 690 Q641 735 626 780 Z" fill="#d98a68" />
+        <rect x="528" y="713" width="40" height="44" rx="14" fill="#a85b3c" />
+      </g>
+    }
     <!-- hats are drawn small and scaled up from their brim, so they stay seated on the head -->
     <g transform="translate(540 262) scale(1.3) translate(-540 -262)">
       @if (wears().has('party-hat')) {
         <g>
           <path d="M455 268 L540 95 L625 255 Z" fill="#ff6fb5" />
-          <g [attr.clip-path]="url(ids.partyHat)" fill="#fff" opacity="0.85">
+          <g [attr.clip-path]="url(ids.partyHat)" fill="#fffaf3" opacity="0.85">
             <circle cx="520" cy="200" r="10" />
             <circle cx="560" cy="165" r="8" />
             <circle cx="505" cy="242" r="9" />
@@ -100,16 +127,25 @@
           />
           <path d="M500 190 l6 14 l15 1 l-12 9 l4 15 l-13 -8 l-13 8 l4 -15 l-12 -9 l15 -1 Z" fill="#ffd23f" />
           <path d="M590 150 l4 10 l11 1 l-9 7 l3 11 l-9 -6 l-9 6 l3 -11 l-9 -7 l11 -1 Z" fill="#ffd23f" />
-          <path d="M432 272 Q540 230 652 258" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" />
-          <circle cx="762" cy="218" r="24" fill="#fff" />
+          <path d="M432 272 Q540 230 652 258" fill="none" stroke="#fffaf3" stroke-width="30" stroke-linecap="round" />
+          <circle cx="762" cy="218" r="24" fill="#fffaf3" />
         </g>
       }
       @if (wears().has('chef-hat')) {
-        <g fill="#fff" stroke="#d7dde3" stroke-width="6">
+        <g fill="#fffaf3" stroke="#e5d9c9" stroke-width="6">
           <circle cx="475" cy="190" r="50" />
           <circle cx="610" cy="185" r="50" />
           <circle cx="542" cy="155" r="60" />
           <path d="M455 270 L462 205 L618 198 L628 258 Q540 246 455 270 Z" />
+        </g>
+      }
+      @if (wears().has('flower')) {
+        <g transform="translate(600 205)">
+          <path d="M0 26 Q-5 38 2 48" fill="none" stroke="#6e8a64" stroke-width="9" stroke-linecap="round" />
+          @for (angle of petals; track angle) {
+            <ellipse cx="0" cy="-30" rx="20" ry="30" fill="#f5c4a1" [attr.transform]="'rotate(' + angle + ')'" />
+          }
+          <circle r="20" fill="#e3b664" />
         </g>
       }
     </g>

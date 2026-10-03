@@ -1,0 +1,127 @@
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 0.9rem;
+  border: 2px solid transparent;
+  border-radius: 1.4rem 1.7rem 1.3rem 1.6rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-clay);
+
+  &.connected {
+    border-color: var(--sage-400);
+  }
+
+  &.native {
+    background: transparent;
+    box-shadow: var(--shadow-pressed);
+  }
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-size: 1.25rem;
+
+  .connected & {
+    background: var(--sage-200);
+    color: var(--sage-700);
+  }
+}
+
+.name {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+
+  small {
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+}
+
+.spinning app-icon {
+  animation: spin 1.4s linear infinite;
+}
+
+.consent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 1.2rem;
+  background: var(--peach-100);
+  animation: unfold 0.3s ease-out;
+
+  p {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0;
+    color: var(--terracotta-700);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  label::first-letter {
+    text-transform: uppercase;
+  }
+
+  label {
+    display: inline-block;
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.link {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes unfold {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4rem);
+  }
+}

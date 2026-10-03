@@ -1,0 +1,371 @@
+:host {
+  display: block;
+}
+
+// The mood tints the whole room softly instead of swapping hard gradients.
+.room {
+  --tint: var(--peach-100);
+  --tint-strong: var(--peach-300);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 100dvh;
+  padding: 1.25rem 1.25rem 6.75rem;
+  overflow: hidden;
+  background: radial-gradient(130% 60% at 50% 0%, var(--tint) 0%, transparent 70%), var(--bg);
+  transition: background 1.2s ease;
+
+  > .top,
+  > .stage,
+  > app-daily-quest,
+  > app-stat-gauges,
+  > .welcome {
+    width: 100%;
+    max-width: 30rem;
+    margin-inline: auto;
+  }
+
+  &.mood-happy {
+    --tint: var(--honey-200);
+    --tint-strong: var(--peach-300);
+  }
+
+  &.mood-sleepy {
+    --tint: var(--lavender-200);
+    --tint-strong: #d6cce6;
+  }
+
+  &.mood-sad {
+    --tint: #ece6df;
+    --tint-strong: #ddd3c8;
+  }
+
+  &.mood-sick {
+    --tint: var(--sage-200);
+    --tint-strong: #cad9c0;
+  }
+}
+
+// ---- scenery: paper-cut blobs, a warm glow behind Pimpek and a rounded floor ----
+
+.scenery {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  span {
+    position: absolute;
+    display: block;
+  }
+}
+
+.blob {
+  opacity: 0.7;
+  transition: background 1.2s ease;
+}
+
+.blob-sage {
+  top: -4rem;
+  left: -5rem;
+  width: 15rem;
+  height: 13rem;
+  border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+  background: var(--sage-200);
+}
+
+.blob-peach {
+  top: 30%;
+  right: -4.5rem;
+  width: 9.5rem;
+  height: 11rem;
+  border-radius: 42% 58% 38% 62% / 47% 41% 59% 53%;
+  background: var(--tint);
+}
+
+.glow {
+  left: 50%;
+  top: 42%;
+  width: min(30rem, 120vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--tint-strong) 0%, transparent 65%);
+  opacity: 0.55;
+  transform: translate(-50%, -50%);
+  transition: background 1.2s ease;
+}
+
+.floor {
+  left: -25%;
+  bottom: 0;
+  width: 150%;
+  height: 38%;
+  border-radius: 50% 50% 0 0 / 3.5rem 3.5rem 0 0;
+  background: linear-gradient(180deg, var(--sand-200) 0%, var(--sand-300) 100%);
+  box-shadow: inset 0 0.5rem 1rem rgb(255 250 240 / 0.6);
+}
+
+// ---- header ----
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.hello {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+
+  p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    line-height: 1.1;
+    color: var(--terracotta-600);
+  }
+}
+
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.75rem 0.3rem 0.55rem;
+  border-radius: 2rem 1.6rem 2rem 1.4rem;
+  background: var(--sage-200);
+  color: var(--sage-700);
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: var(--shadow-clay);
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+// ---- stage ----
+
+.stage {
+  position: relative;
+  flex: 1;
+  display: grid;
+  place-items: end center;
+}
+
+.loading {
+  align-self: center;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.leaves-float {
+  position: absolute;
+  left: 50%;
+  bottom: 45%;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 1.5rem;
+  background: var(--sage-200);
+  color: var(--sage-700);
+  font-size: 1.2rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-clay);
+  animation: float-away 2.2s ease-out forwards;
+}
+
+@keyframes float-away {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 1rem) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.05);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -4rem) scale(1);
+  }
+}
+
+// ---- first-run invitation instead of a row of scary empty needs ----
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: 1.75rem 2.1rem 1.6rem 2rem;
+  background: rgb(255 250 243 / 0.85);
+  box-shadow: var(--shadow-clay);
+
+  p {
+    margin: 0;
+    color: var(--text-muted);
+  }
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+// ---- dock ----
+
+.dock {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 1;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border-radius: 2rem;
+  background: var(--surface);
+  box-shadow:
+    var(--shadow-clay),
+    0 1rem 2rem -1rem rgb(120 80 50 / 0.35);
+  transform: translateX(-50%);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.75rem 1.05rem;
+    border: 0;
+    border-radius: 1.6rem;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      transform 0.15s ease;
+
+    &:hover {
+      background: var(--surface-alt);
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
+
+    &.main {
+      background: var(--accent);
+      color: var(--cream);
+      box-shadow:
+        0 0.5rem 1rem -0.4rem rgb(168 91 60 / 0.6),
+        inset 0 -0.15rem 0.35rem rgb(90 40 20 / 0.2);
+    }
+  }
+
+  app-icon {
+    font-size: 1.15rem;
+  }
+
+  @media (max-width: 26rem) {
+    button {
+      flex-direction: column;
+      gap: 0.1rem;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.8rem;
+    }
+
+    app-icon {
+      font-size: 1.35rem;
+    }
+  }
+}
+
+// ---- toast & the gentle reminder question ----
+
+.toast,
+.ask {
+  position: fixed;
+  left: 50%;
+  z-index: 2;
+  max-width: calc(100vw - 2rem);
+  background: var(--surface);
+  box-shadow:
+    var(--shadow-clay),
+    0 1.2rem 2.4rem -1rem rgb(120 80 50 / 0.4);
+  transform: translateX(-50%);
+}
+
+.toast {
+  top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: max-content;
+  padding: 0.8rem 0.8rem 0.8rem 1.1rem;
+  border-radius: 1.75rem;
+  animation: drop-in 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.toast-icon {
+  font-size: 2.2rem;
+}
+
+.ask {
+  bottom: 6.5rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem 0.75rem;
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 1rem 1.1rem;
+  border-radius: 1.75rem 2rem 1.6rem 1.9rem;
+  animation: rise-in 0.4s ease-out;
+
+  app-icon {
+    color: var(--terracotta-600);
+    font-size: 1.4rem;
+  }
+
+  p {
+    margin: 0;
+    font-weight: 700;
+  }
+}
+
+.ask-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+@keyframes drop-in {
+  from {
+    transform: translate(-50%, -150%);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 1.5rem);
+  }
+}

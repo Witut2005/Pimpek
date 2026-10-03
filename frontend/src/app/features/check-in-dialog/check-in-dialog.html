@@ -4,7 +4,9 @@
       <h2 id="check-in-title">
         {{ isEdit() ? 'Popraw dzisiejszy wpis' : 'Jak minął dzień?' }}
       </h2>
-      <button type="button" class="icon-btn" (click)="close()" aria-label="Zamknij">✕</button>
+      <button type="button" class="icon-btn" (click)="close()" aria-label="Zamknij">
+        <app-icon name="close" />
+      </button>
     </header>
 
     <ol class="steps" aria-label="Kroki">
@@ -15,7 +17,7 @@
           [attr.aria-current]="i === step() ? 'step' : null"
         >
           <button type="button" (click)="step.set(i)" [attr.aria-label]="s.title">
-            {{ s.icon }}
+            <app-icon [name]="s.icon" />
           </button>
         </li>
       }
@@ -28,16 +30,40 @@
         @case (0) {
           <div class="big-emoji" aria-hidden="true">{{ moodEmoji() }}</div>
           <label class="field">
-            <span>Nastrój: <strong>{{ values().moodScore }}/10</strong> · {{ moodLabel() }}</span>
-            <input type="range" min="1" max="10" step="1" formControlName="moodScore" />
+            <span class="center">Dziś jest <strong>{{ moodLabel() }}</strong></span>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              step="1"
+              formControlName="moodScore"
+              aria-label="Nastrój"
+              [attr.aria-valuetext]="moodLabel()"
+              [style.--pct]="fill(values().moodScore, 1, 10)"
+            />
           </label>
         }
         @case (1) {
-          <label class="field">
-            <span>Ile spałeś/aś? <strong>{{ values().sleepHours }} h</strong></span>
-            <input type="range" min="0" max="12" step="0.5" formControlName="sleepHours" />
-            <small>Cel: {{ goals.sleepHours }} h</small>
-          </label>
+          @if (measured(); as m) {
+            <div class="measured">
+              <app-icon name="moon" />
+              <span>Według {{ sourceName() }} spałeś/aś <strong>{{ formatHours(m.sleepHours) }}</strong></span>
+              <app-icon class="ok" name="check" />
+            </div>
+          } @else {
+            <label class="field">
+              <span>Ile spałeś/aś? <strong>{{ formatHours(values().sleepHours) }}</strong></span>
+              <input
+                type="range"
+                min="0"
+                max="12"
+                step="0.5"
+                formControlName="sleepHours"
+                [style.--pct]="fill(values().sleepHours, 0, 12)"
+              />
+              <small>Cel: {{ formatHours(goals().sleepHours) }}</small>
+            </label>
+          }
           <div class="field">
             <span>Czujesz się wyspany/a?</span>
             <div class="toggle" role="radiogroup">
@@ -47,7 +73,7 @@
                 [attr.aria-checked]="values().feelingRested"
                 (click)="form.controls.feelingRested.setValue(true)"
               >
-                😌 Tak
+                Tak, w pełni
               </button>
               <button
                 type="button"
@@ -55,7 +81,7 @@
                 [attr.aria-checked]="!values().feelingRested"
                 (click)="form.controls.feelingRested.setValue(false)"
               >
-                🥱 Nie
+                Nie bardzo
               </button>
             </div>
           </div>
@@ -67,8 +93,17 @@
         @case (2) {
           <div class="big-emoji" aria-hidden="true">{{ foodEmoji() }}</div>
           <label class="field">
-            <span>Jak zdrowo jadłeś/aś? <strong>{{ values().foodScore }}/100</strong></span>
-            <input type="range" min="0" max="100" step="5" formControlName="foodScore" />
+            <span class="center">Jak zdrowo jadłeś/aś? <strong>{{ foodLabel() }}</strong></span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              formControlName="foodScore"
+              aria-label="Jak zdrowo jadłeś/aś"
+              [attr.aria-valuetext]="foodLabel()"
+              [style.--pct]="values().foodScore"
+            />
           </label>
           <label class="field">
             <span>Co dobrego (lub nie) wjechało?</span>
@@ -76,8 +111,15 @@
           </label>
         }
         @case (3) {
+          @if (measured(); as m) {
+            <div class="measured">
+              <app-icon name="steps" />
+              <span>Dziś już <strong>{{ formatSteps(m.steps) }}</strong> kroków według {{ sourceName() }}</span>
+              <app-icon class="ok" name="check" />
+            </div>
+          }
           <div class="field">
-            <label for="running-km">Bieganie / ruch (km)</label>
+            <label for="running-km">{{ measured() ? 'Bieganie (km, opcjonalnie)' : 'Bieganie / ruch (km)' }}</label>
             <div class="stepper">
               <button type="button" class="icon-btn" (click)="adjustKm(-0.5)" aria-label="Mniej o 0,5 km">−</button>
               <input id="running-km" type="number" min="0" max="100" step="0.1" formControlName="runningKm" />
@@ -86,13 +128,20 @@
             @if (form.controls.runningKm.invalid && form.controls.runningKm.touched) {
               <small class="error">Podaj dystans od 0 do 100 km</small>
             } @else {
-              <small>Cel: {{ goals.runningKm }} km</small>
+              <small>Cel: {{ goals().runningKm }} km</small>
             }
           </div>
           <label class="field">
             <span>Czas przed ekranem: <strong>{{ values().screenHours }} h</strong></span>
-            <input type="range" min="0" max="16" step="0.5" formControlName="screenHours" />
-            <small>Cel: max {{ goals.screenMaxHours }} h</small>
+            <input
+              type="range"
+              min="0"
+              max="16"
+              step="0.5"
+              formControlName="screenHours"
+              [style.--pct]="fill(values().screenHours, 0, 16)"
+            />
+            <small>Cel: max {{ goals().screenMaxHours }} h</small>
           </label>
         }
         @case (4) {
@@ -105,7 +154,7 @@
                 [attr.aria-checked]="values().metWithFriends"
                 (click)="form.controls.metWithFriends.setValue(true)"
               >
-                🫶 Tak
+                Tak, było miło
               </button>
               <button
                 type="button"
@@ -113,7 +162,7 @@
                 [attr.aria-checked]="!values().metWithFriends"
                 (click)="form.controls.metWithFriends.setValue(false)"
               >
-                🏠 Nie
+                Dziś w domu
               </button>
             </div>
           </div>
@@ -139,7 +188,7 @@
         @if (saving()) {
           Zapisuję…
         } @else if (isLastStep()) {
-          {{ isEdit() ? 'Zapisz zmiany' : 'Nakarm Pimpka 💙' }}
+          {{ submitLabel() }}
         } @else {
           Dalej
         }

@@ -23,6 +23,8 @@ export interface DailyCheckIn {
   metrics: {
     runningDistanceKm: number;
     screenTimeHours: number;
+    /** Filled in from a connected wearable, absent for manual-only days. */
+    steps?: number;
   };
   social: {
     metWithFriends: boolean;

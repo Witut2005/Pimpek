@@ -1,0 +1,118 @@
+<main class="room" [class]="'mood-' + store.avatarState()">
+  <div class="scenery" aria-hidden="true">
+    <span class="blob blob-sage"></span>
+    <span class="blob blob-peach"></span>
+    <span class="glow"></span>
+    <span class="floor"></span>
+  </div>
+
+  <header class="top">
+    <div class="hello">
+      <p>{{ greeting }}</p>
+      <h1>{{ settings.petName() }}</h1>
+      @if (store.streak() > 0) {
+        <span class="streak" title="Dni z rzędu z wpisem">
+          <app-icon name="sprout" />
+          {{ store.streak() }} {{ store.streak() === 1 ? 'dzień' : 'dni' }} razem
+        </span>
+      }
+    </div>
+    <div class="actions">
+      <app-sync-badge (connectRequested)="openSettings()" />
+      <button type="button" class="icon-btn" aria-label="Profil i ustawienia" (click)="openSettings()">
+        <app-icon name="user" />
+      </button>
+    </div>
+  </header>
+
+  <section class="stage">
+    @if (store.loading()) {
+      <p class="loading">Pimpek się przeciąga i budzi…</p>
+    } @else {
+      <app-pimpek
+        [state]="store.avatarState()"
+        [message]="store.bubbleMessage()"
+        [items]="store.wornItems()"
+        [celebrating]="celebrating()"
+        [color]="settings.petHex()"
+        [needsAttention]="!store.todayEntry()"
+        (petClick)="openCheckIn()"
+      />
+      @if (leavesEarned()) {
+        <span class="leaves-float" role="status">+{{ leavesEarned() }} <app-icon name="leaf" /></span>
+      }
+    }
+  </section>
+
+  @if (!store.loading()) {
+    @if (store.hasAnyData()) {
+      <app-daily-quest (completed)="onQuestDone($event)" />
+      <app-stat-gauges
+        [stats]="store.stats()"
+        [known]="store.knownStats()"
+        (select)="openNeed($event)"
+      />
+    } @else {
+      <section class="welcome">
+        <strong>{{ settings.petName() }} dopiero Cię poznaje</strong>
+        <p>Opowiedz mu o swoim dniu albo połącz zegarek, a sam zobaczy, jak spałeś/aś.</p>
+        <div class="welcome-actions">
+          <button type="button" class="btn primary small" (click)="openCheckIn()">Pierwszy wpis</button>
+          <button type="button" class="btn ghost small" (click)="openSettings()">Połącz zegarek</button>
+        </div>
+      </section>
+    }
+  }
+
+  <nav class="dock">
+    <button type="button" (click)="wardrobe.open()">
+      <app-icon name="hanger" /> Szafa
+    </button>
+    <button type="button" class="main" (click)="openCheckIn()" [disabled]="store.loading()">
+      <app-icon name="pencil" /> {{ store.todayEntry() ? 'Edytuj wpis' : 'Dodaj wpis' }}
+    </button>
+    <button type="button" (click)="progress.open()">
+      <app-icon name="chart" /> Postępy
+    </button>
+  </nav>
+</main>
+
+<app-check-in-dialog (saved)="onSaved($event)" />
+
+<app-sheet #wardrobe title="Szafa">
+  <app-wardrobe />
+</app-sheet>
+
+<app-sheet #progress title="Postępy">
+  <app-progress />
+</app-sheet>
+
+<app-sheet #settingsSheet title="Ty i Pimpek">
+  <app-settings-panel />
+</app-sheet>
+
+<app-sheet #needSheet [title]="needTitle()">
+  <app-need-detail [stat]="selectedNeed()" />
+</app-sheet>
+
+@if (unlockedToast(); as item) {
+  <div class="toast" role="status">
+    <span class="toast-icon" aria-hidden="true">{{ item.icon }}</span>
+    <div>
+      <strong>Nowy przedmiot!</strong>
+      <div>{{ item.name }}</div>
+    </div>
+    <button type="button" class="btn primary" (click)="wearUnlocked(item)">Załóż</button>
+  </div>
+}
+
+@if (askReminders()) {
+  <div class="ask" role="dialog" aria-labelledby="ask-title">
+    <app-icon name="bell" />
+    <p id="ask-title">Przypomnieć Ci jutro o {{ settings.settings().reminders.checkInTime }}, żebyśmy razem podsumowali dzień?</p>
+    <div class="ask-actions">
+      <button type="button" class="btn ghost small" (click)="answerReminders(false)">Nie teraz</button>
+      <button type="button" class="btn primary small" (click)="answerReminders(true)">Tak, przypomnij</button>
+    </div>
+  </div>
+}

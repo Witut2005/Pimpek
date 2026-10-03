@@ -1,5 +1,8 @@
 import { AvatarState, CheckInInput, DailyCheckIn } from '../models/check-in.model';
+import { WearableDay } from '../models/metrics.model';
+import { Goals } from '../models/settings.model';
 import { avatarStateFor, GOALS, statsFor } from '../state/pet-rules';
+import { formatHours, formatSteps } from '../../shared/format';
 
 const INTROS: Record<AvatarState, string> = {
   happy: 'Czuję się świetnie! 🥳',
@@ -10,28 +13,50 @@ const INTROS: Record<AvatarState, string> = {
 };
 
 /** Rule-based stand-in for what the backend (or an LLM) would answer. */
-export function buildCompanionReaction(input: CheckInInput): DailyCheckIn['companionReaction'] {
-  const avatarState = avatarStateFor(statsFor(input));
+export function buildCompanionReaction(
+  input: CheckInInput,
+  goals: Goals = GOALS,
+): DailyCheckIn['companionReaction'] {
+  const avatarState = avatarStateFor(statsFor(input, goals));
   const { sleep, food, metrics, social, mood } = input;
 
   const praise: string[] = [];
-  if (metrics.runningDistanceKm >= GOALS.runningKm) {
+  if (metrics.steps !== undefined && metrics.steps >= goals.steps) {
+    praise.push(`${formatSteps(metrics.steps)} kroków – brawo! 🥾`);
+  } else if (metrics.runningDistanceKm >= goals.runningKm) {
     praise.push(`${metrics.runningDistanceKm} km przebiegnięte – brawo! 🏃`);
   }
   if (social.metWithFriends) praise.push('Spotkanie z ludźmi to super sprawa 🫶');
   if (food.qualityScore >= 80) praise.push('Świetnie zjedzone 🥗');
-  if (sleep.durationHours >= GOALS.sleepHours && sleep.feelingRested) {
+  if (sleep.durationHours >= goals.sleepHours && sleep.feelingRested) {
     praise.push('Dobrze przespana noc to podstawa 💤');
   }
   if (metrics.screenTimeHours <= 2) praise.push('Mało ekranu – oczy dziękują 👀');
 
   const tips: string[] = [];
-  if (sleep.durationHours < GOALS.sleepHours) tips.push('Dziś połóż się wcześniej 🛌');
+  if (sleep.durationHours < goals.sleepHours) tips.push('Dziś połóż się wcześniej 🛌');
   if (mood.score <= 4) tips.push('Gorszy dzień się zdarza. Jestem z Tobą 💙');
-  if (metrics.runningDistanceKm === 0) tips.push('Jutro choć krótki spacer? 👟');
+  if (metrics.runningDistanceKm === 0 && (metrics.steps ?? 0) < goals.steps / 2) {
+    tips.push('Jutro choć krótki spacer? 👟');
+  }
   if (food.qualityScore < 50) tips.push('Postaw jutro na coś zielonego 🥦');
   if (metrics.screenTimeHours > 5) tips.push('Odłóż telefon godzinę przed snem 📵');
 
   const message = [INTROS[avatarState], ...praise.slice(0, 2), ...tips.slice(0, 1)].join(' ');
   return { message, avatarState };
+}
+
+/** What Pimpek says right after fresh wearable data arrives, before today's check-in. */
+export function wearableGreeting(day: WearableDay, sourceName: string, goals: Goals, longAway: boolean): string {
+  const parts: string[] = [];
+  if (day.sleepHours < goals.sleepHours - 1) {
+    parts.push(`${sourceName} pokazuje tylko ${formatHours(day.sleepHours)} snu… ziew 😴`);
+  } else if (day.sleepHours >= goals.sleepHours) {
+    parts.push(`${formatHours(day.sleepHours)} snu, czuję się wyspany! 💤`);
+  } else {
+    parts.push(`${formatHours(day.sleepHours)} snu, prawie jak trzeba.`);
+  }
+  if (day.steps >= goals.steps) parts.push(`I już ${formatSteps(day.steps)} kroków!`);
+  parts.push(longAway ? 'Długo Cię nie było, tęskniłem 💭' : 'Opowiesz, jak minął dzień?');
+  return parts.join(' ');
 }

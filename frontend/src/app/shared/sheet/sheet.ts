@@ -1,14 +1,18 @@
 import { ChangeDetectionStrategy, Component, ElementRef, input, viewChild } from '@angular/core';
+import { Icon } from '../icon/icon';
 
 /** Bottom sheet built on the native <dialog> (focus trap, Esc and backdrop for free). */
 @Component({
   selector: 'app-sheet',
+  imports: [Icon],
   template: `
     <dialog #dialog (click)="onDialogClick($event)" [attr.aria-label]="title()">
       <div class="panel">
         <header>
           <h2>{{ title() }}</h2>
-          <button type="button" class="icon-btn" (click)="close()" aria-label="Zamknij">✕</button>
+          <button type="button" class="icon-btn" (click)="close()" aria-label="Zamknij">
+            <app-icon name="close" />
+          </button>
         </header>
         <ng-content />
       </div>

@@ -1,0 +1,150 @@
+<section class="card">
+  <h3><app-icon name="heart" /> Pimpek</h3>
+  <label class="row">
+    <span>Imię</span>
+    <input
+      class="text-input"
+      maxlength="16"
+      [value]="settings.settings().petName"
+      (change)="rename($event)"
+    />
+  </label>
+  <div class="row">
+    <span>Kolor</span>
+    <div class="swatches" role="radiogroup" aria-label="Kolor Pimpka">
+      @for (c of colors; track c[0]) {
+        <button
+          type="button"
+          role="radio"
+          class="swatch"
+          [style.background]="c[1].hex"
+          [attr.aria-checked]="settings.settings().petColor === c[0]"
+          [attr.aria-label]="c[1].label"
+          (click)="settings.update({ petColor: c[0] })"
+        ></button>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h3><app-icon name="flag" /> Cele</h3>
+  <app-goals-picker />
+</section>
+
+<section class="card">
+  <h3><app-icon name="watch" /> Źródła danych</h3>
+  <p class="muted">Sen i kroki Pimpek bierze z zegarka. Nastrój, jedzenie i ludzi opowiadasz mu sam(a).</p>
+  @for (source of sources; track source.id) {
+    <app-source-card [source]="source" returnTo="/?panel=ustawienia" />
+  }
+</section>
+
+<section class="card">
+  <h3><app-icon name="bell" /> Przypomnienia</h3>
+  <label class="row">
+    <span>Przypominaj o wpisie</span>
+    <input
+      type="checkbox"
+      class="switch"
+      [checked]="settings.settings().reminders.enabled"
+      (change)="settings.updateReminders({ enabled: !settings.settings().reminders.enabled, asked: true })"
+    />
+  </label>
+  @if (settings.settings().reminders.enabled) {
+    <label class="row sub">
+      <span>Wieczorny wpis o</span>
+      <input type="time" [value]="settings.settings().reminders.checkInTime" (change)="setTime('checkInTime', $event)" />
+    </label>
+  }
+  <label class="row">
+    <span>Pimpek ziewa przed snem</span>
+    <input
+      type="checkbox"
+      class="switch"
+      [checked]="settings.settings().reminders.bedtimeNudge"
+      (change)="settings.updateReminders({ bedtimeNudge: !settings.settings().reminders.bedtimeNudge })"
+    />
+  </label>
+  @if (settings.settings().reminders.bedtimeNudge) {
+    <label class="row sub">
+      <span>Pora snu</span>
+      <input type="time" [value]="settings.settings().reminders.bedtime" (change)="setTime('bedtime', $event)" />
+    </label>
+  }
+  <label class="row">
+    <span>Cisza nocna (22:00–7:00)</span>
+    <input
+      type="checkbox"
+      class="switch"
+      [checked]="settings.settings().reminders.quietNights"
+      (change)="settings.updateReminders({ quietNights: !settings.settings().reminders.quietNights })"
+    />
+  </label>
+</section>
+
+<section class="card">
+  <label class="row">
+    <span class="with-hint">
+      <strong>Łagodny tryb</strong>
+      <small>Pimpek nigdy nie choruje, a jego słowa są jeszcze delikatniejsze.</small>
+    </span>
+    <input
+      type="checkbox"
+      class="switch"
+      [checked]="settings.settings().gentleMode"
+      (change)="settings.update({ gentleMode: !settings.settings().gentleMode })"
+    />
+  </label>
+</section>
+
+<section class="card">
+  <h3><app-icon name="shield" /> Prywatność</h3>
+  <p class="muted">
+    Dane zdrowotne trzymamy tylko po to, żeby Pimpek mógł na nie reagować. Nie sprzedajemy ich i nie
+    pokazujemy nikomu.
+  </p>
+  <button type="button" class="btn ghost small with-icon" (click)="exportData()">
+    <app-icon name="download" /> Pobierz moje dane
+  </button>
+  @if (confirmDelete()) {
+    <div class="danger">
+      <p>To usunie wszystkie wpisy, połączenia i Pimpka. Nie da się tego cofnąć.</p>
+      <div class="actions">
+        <button type="button" class="btn ghost small" (click)="confirmDelete.set(false)">Zostaw</button>
+        <button type="button" class="btn primary small" (click)="demo.resetAll()">Usuń wszystko</button>
+      </div>
+    </div>
+  } @else {
+    <button type="button" class="btn ghost small with-icon" (click)="confirmDelete.set(true)">
+      <app-icon name="trash" /> Usuń moje dane
+    </button>
+  }
+</section>
+
+<section class="card demo">
+  <h3><app-icon name="sparkle" /> Tryb demo</h3>
+  <p class="muted">Pilot dla jury. Każdy scenariusz podmienia dane i od razu synchronizuje „zegarek”.</p>
+  <div class="scenarios">
+    @for (s of scenarios; track s.id) {
+      <button
+        type="button"
+        class="chip"
+        [attr.aria-pressed]="demo.scenario() === s.id"
+        (click)="demo.load(s.id)"
+      >
+        <strong>{{ s.label }}</strong>
+        <small>{{ s.hint }}</small>
+      </button>
+    }
+  </div>
+  <div class="chips">
+    <button type="button" class="btn soft small" (click)="demo.advanceDay()">
+      Przewiń o dzień
+      @if (demo.dayOffset()) {
+        (+{{ demo.dayOffset() }})
+      }
+    </button>
+    <button type="button" class="btn ghost small" (click)="demo.failNextSync()">Zepsuj synchronizację</button>
+  </div>
+</section>

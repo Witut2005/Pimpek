@@ -32,6 +32,7 @@
               }
             ],
             "styles": [
+              "@fontsource-variable/nunito/index.css",
               "src/styles.scss"
             ]
           },
@@ -86,6 +87,7 @@
               }
             ],
             "styles": [
+              "@fontsource-variable/nunito/index.css",
               "src/styles.scss"
             ]
           }

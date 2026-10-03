@@ -1,16 +1,18 @@
+// Pimpek keeps his blue, just a touch dustier so he sits in the warm room. Ink is a deep
+// warm brown rather than pure black.
 :host {
-  --body: #4c8ec4;
-  --ink: #010204;
+  --body: var(--body-base, #5b93c0);
+  --ink: #2e2622;
   display: block;
   position: relative;
 }
 
 :host(.is-sad) {
-  --body: #6f8fae;
+  --body: #8499ad;
 }
 
 :host(.is-sick) {
-  --body: #78a98b;
+  --body: #8fae96;
 }
 
 svg {
@@ -27,11 +29,11 @@ svg {
 }
 
 .eye-white {
-  fill: #fff;
+  fill: #fffaf3;
 }
 
 .eye-shade {
-  fill: #dce7ee;
+  fill: #ebe2d6;
 }
 
 .pupils,
@@ -52,7 +54,7 @@ svg {
 }
 
 .sunglasses {
-  fill: #1f2233;
+  fill: #3a302b;
 
   .shine {
     fill: none;
@@ -155,7 +157,7 @@ svg {
 }
 
 .drop {
-  fill: #7cc6ff;
+  fill: #9cc3e3;
   animation: drip 2.4s ease-in infinite;
 }
 
@@ -176,7 +178,7 @@ svg {
   right: 8%;
   top: 14%;
   font-weight: 800;
-  color: #5b6b8c;
+  color: var(--bark-muted);
   font-size: 1.6rem;
   animation: float-up 3s ease-out infinite;
 
@@ -358,4 +360,8 @@ svg {
     animation-duration: 0s !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+:host(.is-quiet) .fx {
+  display: none;
 }

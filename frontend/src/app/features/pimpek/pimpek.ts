@@ -16,6 +16,7 @@ export class Pimpek {
   readonly message = input.required<string>();
   readonly items = input<readonly ItemId[]>([]);
   readonly celebrating = input(false);
+  readonly color = input<string>();
   /** Pimpek is waiting for today's check-in. */
   readonly needsAttention = input(false);
 

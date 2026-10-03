@@ -1,0 +1,86 @@
+<div class="source" [class.connected]="connected()" [class.native]="!source().web">
+  <div class="top">
+    <span class="logo"><app-icon [name]="source().icon" /></span>
+    <div class="name">
+      <strong>{{ source().name }}</strong>
+      @if (connected()) {
+        <small>
+          @if (primary()) {
+            @switch (sync.status()) {
+              @case ('syncing') { Synchronizuję… }
+              @case ('error') { Nie udało się, spróbuj ponownie }
+              @default { Zsynchronizowano {{ sync.since() }} }
+            }
+          } @else {
+            Połączono, zapasowe źródło
+          }
+        </small>
+      } @else if (!source().web) {
+        <small>Tylko w aplikacji mobilnej</small>
+      } @else {
+        <small>Czyta: {{ source().reads.join(', ') }}</small>
+      }
+    </div>
+
+    @if (connected()) {
+      @if (primary()) {
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label="Synchronizuj teraz"
+          [class.spinning]="sync.status() === 'syncing'"
+          (click)="sync.sync()"
+        >
+          <app-icon name="refresh" />
+        </button>
+      }
+    } @else if (source().web && step() === 'idle') {
+      <button type="button" class="btn soft small" (click)="openConsent()">Połącz</button>
+    } @else if (!source().web) {
+      <span class="pill warm">wkrótce</span>
+    }
+  </div>
+
+  @if (step() === 'consent' || step() === 'redirecting') {
+    <div class="consent">
+      <p>
+        <app-icon name="shield" />
+        Pimpek poprosi {{ source().genitive }} tylko o to, co zaznaczysz. Nie czytamy lokalizacji ani
+        wiadomości, a połączenie możesz zerwać w każdej chwili.
+      </p>
+      <ul>
+        @for (type of source().reads; track type) {
+          <li class="row">
+            <label [for]="source().id + '-' + type">{{ type }}</label>
+            <input
+              type="checkbox"
+              class="switch"
+              [id]="source().id + '-' + type"
+              [checked]="allowed().has(type)"
+              (change)="toggle(type)"
+            />
+          </li>
+        }
+      </ul>
+      <div class="actions">
+        <button type="button" class="btn ghost small" (click)="step.set('idle')">Anuluj</button>
+        <button
+          type="button"
+          class="btn primary small"
+          [disabled]="!allowed().size || step() === 'redirecting'"
+          (click)="goToProvider()"
+        >
+          @if (step() === 'redirecting') {
+            Otwieram {{ source().short }}…
+          } @else {
+            Przejdź do {{ source().genitive }}
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (connected()) {
+    <button type="button" class="link" (click)="disconnect()">Odłącz</button>
+  }
+</div>

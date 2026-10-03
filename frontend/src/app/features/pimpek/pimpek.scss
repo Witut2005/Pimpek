@@ -1,5 +1,5 @@
 :host {
-  --pet-width: min(72vw, 19rem);
+  --pet-width: min(64vw, 17rem, 31dvh);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -10,31 +10,36 @@
   position: relative;
   max-width: 22rem;
   margin: 0;
-  padding: 0.85rem 1.1rem;
-  border-radius: 1.4rem;
+  padding: 1rem 1.3rem;
+  border-radius: 1.9rem 2.2rem 2rem 1.7rem;
   background: var(--surface);
   color: var(--text);
-  font-size: 1rem;
-  line-height: 1.35;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.45;
   text-align: center;
-  box-shadow: var(--shadow-soft);
-  animation: pop-in 0.35s ease-out;
+  box-shadow: var(--shadow-clay);
+  animation: pop-in 0.4s ease-out;
 
   &::after {
     content: '';
     position: absolute;
     left: 50%;
-    bottom: -0.6rem;
+    bottom: -0.55rem;
     width: 1.3rem;
     height: 1.3rem;
     background: inherit;
-    border-radius: 0.25rem;
+    border-radius: 0.35rem;
     transform: translateX(-50%) rotate(45deg);
   }
 
   &.attention {
-    outline: 3px solid var(--accent);
-    animation: nudge 2.4s ease-in-out infinite;
+    box-shadow:
+      var(--shadow-clay),
+      0 0 0 0.3rem var(--peach-100);
+    animation:
+      pop-in 0.4s ease-out,
+      nudge 3.2s ease-in-out 0.4s infinite;
   }
 }
 
@@ -58,7 +63,7 @@
   }
 
   &:focus-visible {
-    outline: 3px dashed var(--accent);
+    outline: 3px dashed var(--terracotta-400);
     outline-offset: 6px;
     border-radius: 50%;
   }
@@ -70,19 +75,15 @@
   width: calc(var(--pet-width) * 1.2);
   height: calc(var(--pet-width) * 0.26);
   margin-top: calc(var(--pet-width) * -0.2);
+  // A woven felt rug: soft peach with a cream stitch, no hard offset shadow.
   border-radius: 50%;
-  background: repeating-radial-gradient(
-    ellipse at center,
-    #e8676b 0 14%,
-    #f6b26b 14% 22%,
-    #fbe3b0 22% 27%,
-    #f6b26b 27% 32%
-  );
+  background: radial-gradient(ellipse at 50% 35%, var(--peach-300) 0 55%, #e9ad8b 100%);
   box-shadow:
-    0 0.35rem 0 #c9504f,
-    0 0.6rem 1rem rgb(120 70 30 / 0.2);
-  outline: 0.2rem dashed rgb(255 244 220 / 0.85);
-  outline-offset: -0.55rem;
+    0 0.9rem 1.4rem -0.5rem rgb(120 70 40 / 0.35),
+    inset 0 -0.3rem 0.6rem rgb(140 70 40 / 0.18),
+    inset 0 0.2rem 0.4rem rgb(255 240 225 / 0.5);
+  outline: 0.18rem dashed rgb(255 248 238 / 0.85);
+  outline-offset: -0.6rem;
 }
 
 .badge {
@@ -96,11 +97,13 @@
   height: 2.2rem;
   border-radius: 50%;
   background: var(--accent);
-  color: #fff;
+  color: var(--cream);
   font-weight: 800;
   font-size: 1.3rem;
-  box-shadow: var(--shadow-soft);
-  animation: nudge 1.2s ease-in-out infinite;
+  box-shadow:
+    0 0.5rem 1rem -0.3rem rgb(168 91 60 / 0.5),
+    inset 0 -0.15rem 0.3rem rgb(90 40 20 / 0.25);
+  animation: nudge 2s ease-in-out infinite;
 }
 
 @keyframes pop-in {

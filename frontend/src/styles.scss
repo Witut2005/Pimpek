@@ -1,15 +1,53 @@
+// Cozy palette: oat, cream, sage, peach and terracotta. No pure black, no pure white.
 :root {
-  --accent: #3f7fd0;
-  --accent-soft: #e3efff;
-  --surface: #ffffff;
-  --surface-alt: #f2f6fb;
-  --text: #1f2a44;
-  --text-muted: #5f6b85;
-  --track: #dde5ef;
-  --good: #3ec27a;
-  --ok: #f5b52e;
-  --low: #ef5a5a;
-  --shadow-soft: 0 0.4rem 1rem rgb(30 50 90 / 0.12);
+  --oat-50: #fbf6ee;
+  --oat-100: #f4ebdd;
+  --oat-200: #e9dcc8;
+  --cream: #fffaf3;
+  --sand-200: #f1e1c9;
+  --sand-300: #e6cfae;
+  --sage-200: #e0e8d5;
+  --sage-400: #a9bd9c;
+  --sage-700: #566f4f;
+  --peach-100: #fde8d7;
+  --peach-300: #f5c4a1;
+  --terracotta-400: #d98a68;
+  --terracotta-600: #a85b3c;
+  --terracotta-700: #8a4529;
+  --honey-200: #f7e5c0;
+  --honey-400: #e3b664;
+  --honey-700: #85601c;
+  --rose-200: #f6d9d0;
+  --rose-400: #d9917f;
+  --lavender-200: #e7e1ef;
+  --bark: #4a3f37;
+  --bark-muted: #75675c;
+
+  --bg: var(--oat-50);
+  --surface: var(--cream);
+  --surface-alt: var(--oat-100);
+  --track: var(--oat-200);
+  --text: var(--bark);
+  --text-muted: var(--bark-muted);
+  --accent: var(--terracotta-600);
+  --accent-soft: var(--peach-100);
+  --good: var(--sage-400);
+  --ok: var(--honey-400);
+  --low: var(--rose-400);
+  --danger-text: var(--terracotta-700);
+
+  // Clay: a wide warm drop shadow, a light top bevel and a darker bottom bevel.
+  --shadow-clay:
+    0 0.9rem 1.8rem -0.7rem rgb(120 80 50 / 0.24),
+    0 0.15rem 0.4rem rgb(120 80 50 / 0.06),
+    inset 0 -0.25rem 0.6rem rgb(150 105 70 / 0.09),
+    inset 0 0.2rem 0.35rem rgb(255 253 248 / 0.9);
+  --shadow-soft: 0 0.6rem 1.4rem -0.5rem rgb(120 80 50 / 0.2);
+  --shadow-pressed: inset 0 0.15rem 0.45rem rgb(120 80 50 / 0.14);
+  --backdrop: rgb(74 56 42 / 0.32);
+
+  --radius-m: 1.5rem;
+  --radius-l: 2.25rem;
 
   color-scheme: light;
 }
@@ -25,11 +63,19 @@ body {
 }
 
 body {
-  background: #e8f6ff;
+  background: var(--bg);
   color: var(--text);
-  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-family: 'Nunito Variable', 'Nunito', ui-rounded, system-ui, sans-serif;
   font-size: 1rem;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 button {
@@ -39,20 +85,24 @@ button {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
+  outline: 3px solid var(--terracotta-400);
+  outline-offset: 3px;
 }
 
 .btn {
-  padding: 0.75rem 1.1rem;
+  padding: 0.85rem 1.25rem;
   border: 0;
-  border-radius: 1.2rem;
-  font-weight: 700;
+  border-radius: var(--radius-m);
+  font-weight: 800;
   cursor: pointer;
-  transition: transform 0.1s ease, opacity 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
 
   &:active:not(:disabled) {
-    transform: scale(0.96);
+    transform: scale(0.97);
+    box-shadow: var(--shadow-pressed);
   }
 
   &:disabled {
@@ -62,13 +112,17 @@ textarea:focus-visible {
 
   &.primary {
     background: var(--accent);
-    color: #fff;
-    box-shadow: 0 0.3rem 0 #2c5f9f;
+    color: var(--cream);
+    box-shadow:
+      0 0.7rem 1.3rem -0.5rem rgb(168 91 60 / 0.55),
+      inset 0 -0.2rem 0.4rem rgb(90 40 20 / 0.22),
+      inset 0 0.15rem 0.3rem rgb(255 225 205 / 0.35);
   }
 
   &.ghost {
     background: var(--surface-alt);
     color: var(--text);
+    box-shadow: var(--shadow-clay);
   }
 }
 
@@ -76,13 +130,175 @@ textarea:focus-visible {
   display: grid;
   flex: none;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 0;
   border-radius: 50%;
   background: var(--surface-alt);
-  color: var(--text);
-  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  box-shadow: var(--shadow-clay);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+
+  &:active {
+    transform: scale(0.94);
+    box-shadow: var(--shadow-pressed);
+  }
+}
+
+.btn.small {
+  padding: 0.55rem 0.95rem;
+  border-radius: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.btn.soft {
+  background: var(--peach-100);
+  color: var(--terracotta-700);
+  box-shadow: var(--shadow-clay);
+}
+
+// ---- shared building blocks for sheets and onboarding ----
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 1.6rem 1.9rem 1.5rem 1.8rem;
+  background: var(--surface-alt);
+  box-shadow: var(--shadow-clay);
+
+  > h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 1.05rem;
+  }
+}
+
+.muted {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+// Selectable pill, used for presets ("7–8 h snu") instead of number inputs.
+.chip {
+  padding: 0.5rem 0.85rem;
+  border: 2px solid transparent;
+  border-radius: 1.4rem;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: var(--shadow-pressed);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+
+  &[aria-pressed='true'] {
+    border-color: var(--terracotta-400);
+    background: var(--peach-100);
+    color: var(--terracotta-700);
+    box-shadow: var(--shadow-clay);
+  }
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 1.2rem;
+  background: var(--sage-200);
+  color: var(--sage-700);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+
+  &.warm {
+    background: var(--honey-200);
+    color: var(--honey-700);
+  }
+}
+
+// Soft toggle switch on a native checkbox.
+.switch {
+  position: relative;
+  flex: none;
+  width: 3.1rem;
+  height: 1.8rem;
+  margin: 0;
+  border-radius: 1rem;
+  background: var(--track);
+  box-shadow: var(--shadow-pressed);
+  appearance: none;
+  cursor: pointer;
+  transition: background 0.25s ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0.2rem;
+    left: 0.2rem;
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    background: var(--cream);
+    box-shadow: 0 0.2rem 0.4rem rgb(120 80 50 / 0.3);
+    transition: transform 0.25s ease;
+  }
+
+  &:checked {
+    background: var(--sage-400);
+
+    &::after {
+      transform: translateX(1.3rem);
+    }
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 600;
+}
+
+input[type='time'],
+.text-input {
+  padding: 0.55rem 0.8rem;
+  border: 2px solid transparent;
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: var(--shadow-pressed);
+
+  &:focus {
+    outline: none;
+    border-color: var(--terracotta-400);
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

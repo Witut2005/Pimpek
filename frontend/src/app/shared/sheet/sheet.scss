@@ -1,37 +1,51 @@
 dialog {
   width: min(34rem, 100vw);
   max-width: 100vw;
-  max-height: 80dvh;
+  max-height: 88dvh;
   margin: auto auto 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0;
   border: 0;
-  border-radius: 1.75rem 1.75rem 0 0;
+  border-radius: var(--radius-l) var(--radius-l) 0 0;
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 -1rem 3rem rgb(20 30 60 / 0.2);
+  box-shadow: 0 -1rem 3rem -1rem rgb(90 60 40 / 0.3);
 
   &[open] {
-    animation: slide-up 0.3s ease-out;
+    animation: slide-up 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
 
   &::backdrop {
-    background: rgb(25 35 70 / 0.4);
+    background: var(--backdrop);
+    backdrop-filter: blur(4px);
   }
 }
 
 .panel {
-  padding: 1rem 1.25rem 1.5rem;
+  padding: 0.75rem 1.5rem 2rem;
+
+  // Grab handle, like a soft fabric tab.
+  &::before {
+    content: '';
+    display: block;
+    width: 2.75rem;
+    height: 0.35rem;
+    margin: 0 auto 0.75rem;
+    border-radius: 1rem;
+    background: var(--track);
+  }
 }
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 
   h2 {
     margin: 0;
-    font-size: 1.4rem;
+    font-size: 1.45rem;
   }
 }
 

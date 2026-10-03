@@ -3,91 +3,99 @@ dialog {
   max-height: calc(100dvh - 2rem);
   padding: 0;
   border: 0;
-  border-radius: 1.75rem;
+  border-radius: var(--radius-l);
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 1.5rem 3rem rgb(20 30 60 / 0.25);
+  box-shadow: 0 1.5rem 3rem -1rem rgb(90 60 40 / 0.35);
 
   &[open] {
-    animation: rise 0.3s ease-out;
+    animation: rise 0.35s ease-out;
   }
 
   &::backdrop {
-    background: rgb(25 35 70 / 0.45);
-    backdrop-filter: blur(3px);
+    background: var(--backdrop);
+    backdrop-filter: blur(4px);
   }
 
   @media (max-width: 30rem) {
     width: 100vw;
     max-width: 100vw;
     margin: auto 0 0;
-    border-radius: 1.75rem 1.75rem 0 0;
+    border-radius: var(--radius-l) var(--radius-l) 0 0;
   }
 }
 
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem 1.25rem 1.5rem;
+  gap: 1.25rem;
+  padding: 1.5rem 1.5rem 1.75rem;
 }
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
 
   h2 {
     margin: 0;
-    font-size: 1.4rem;
+    font-size: 1.45rem;
   }
 }
 
 .steps {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   margin: 0;
   padding: 0;
   list-style: none;
 
   button {
-    width: 2.6rem;
-    height: 2.6rem;
-    border: 3px solid var(--track);
-    border-radius: 50%;
-    background: var(--surface);
+    display: grid;
+    place-items: center;
+    width: 2.7rem;
+    height: 2.7rem;
+    border: 0;
+    border-radius: 48% 52% 45% 55% / 56% 46% 54% 44%;
+    background: var(--surface-alt);
+    color: var(--text-muted);
     font-size: 1.15rem;
+    opacity: 0.7;
     cursor: pointer;
-    filter: grayscale(1);
-    opacity: 0.6;
-    transition: all 0.2s ease;
+    box-shadow: var(--shadow-pressed);
+    transition:
+      transform 0.25s ease,
+      background 0.25s ease,
+      opacity 0.25s ease;
   }
 
   .done button {
-    border-color: var(--good);
-    filter: none;
+    background: var(--sage-200);
+    color: var(--sage-700);
     opacity: 1;
   }
 
   .current button {
-    border-color: var(--accent);
-    filter: none;
+    background: var(--peach-100);
+    color: var(--terracotta-600);
     opacity: 1;
-    transform: scale(1.12);
+    transform: scale(1.15);
+    box-shadow: var(--shadow-clay);
   }
 }
 
 .body {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
   min-height: 15rem;
 
   h3 {
     margin: 0;
-    font-size: 1.1rem;
     color: var(--text-muted);
+    font-size: 1.05rem;
   }
 }
 
@@ -95,65 +103,139 @@ header {
   font-size: 4rem;
   line-height: 1;
   text-align: center;
-  animation: rise 0.25s ease-out;
+  animation: rise 0.3s ease-out;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  font-weight: 600;
+
+  .center {
+    text-align: center;
+  }
+
+  strong {
+    color: var(--terracotta-600);
+  }
 
   small {
     color: var(--text-muted);
+    font-weight: 500;
   }
 
   .error {
-    color: var(--low);
+    color: var(--danger-text);
+    font-weight: 700;
   }
 }
 
+// Inputs look pressed into soft clay.
 input[type='text'],
 input[type='number'],
 textarea {
   width: 100%;
-  box-sizing: border-box;
-  padding: 0.7rem 0.9rem;
-  border: 2px solid var(--track);
-  border-radius: 1rem;
+  padding: 0.8rem 1rem;
+  border: 2px solid transparent;
+  border-radius: 1.2rem;
   background: var(--surface-alt);
   color: inherit;
   font: inherit;
+  font-weight: 500;
+  box-shadow: var(--shadow-pressed);
   resize: vertical;
+  transition: border-color 0.2s ease;
+
+  &::placeholder {
+    color: rgb(117 103 92 / 0.75);
+  }
 
   &:focus {
     outline: none;
-    border-color: var(--accent);
+    border-color: var(--terracotta-400);
   }
+}
+
+// ---- range: a fat soft track with a cream pebble thumb ----
+
+@mixin track {
+  height: 0.8rem;
+  border-radius: 1rem;
+  background: linear-gradient(
+    90deg,
+    var(--peach-300) calc(var(--pct, 0) * 1%),
+    var(--track) calc(var(--pct, 0) * 1%)
+  );
+  box-shadow: var(--shadow-pressed);
+}
+
+@mixin thumb {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 0.3rem solid var(--terracotta-400);
+  border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 0.35rem 0.7rem -0.15rem rgb(120 70 40 / 0.4);
+  cursor: grab;
 }
 
 input[type='range'] {
   width: 100%;
-  accent-color: var(--accent);
+  height: 2rem;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+
+  &::-webkit-slider-runnable-track {
+    @include track;
+  }
+
+  &::-moz-range-track {
+    @include track;
+  }
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    margin-top: -0.5rem;
+    @include thumb;
+  }
+
+  &::-moz-range-thumb {
+    @include thumb;
+  }
+
+  &:focus-visible {
+    outline-offset: 0.3rem;
+    border-radius: 1rem;
+  }
 }
 
 .toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.6rem;
 
   button {
-    padding: 0.7rem;
-    border: 2px solid var(--track);
-    border-radius: 1rem;
+    padding: 0.85rem 0.6rem;
+    border: 2px solid transparent;
+    border-radius: 1.3rem;
     background: var(--surface-alt);
-    color: inherit;
+    color: var(--text-muted);
     font: inherit;
     font-weight: 700;
     cursor: pointer;
+    box-shadow: var(--shadow-pressed);
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
 
     &[aria-checked='true'] {
-      border-color: var(--accent);
-      background: var(--accent-soft);
+      border-color: var(--terracotta-400);
+      background: var(--peach-100);
+      color: var(--terracotta-700);
+      box-shadow: var(--shadow-clay);
     }
   }
 }
@@ -161,19 +243,20 @@ input[type='range'] {
 .stepper {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 
   input {
     text-align: center;
     font-size: 1.3rem;
-    font-weight: 700;
+    font-weight: 800;
   }
 }
 
 footer {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.8rem;
+  padding-top: 0.25rem;
 
   .btn {
     flex: 1;
@@ -184,5 +267,29 @@ footer {
   from {
     transform: translateY(1.5rem);
     opacity: 0;
+  }
+}
+
+// Wearable data shown as a confirmation, not a question.
+.measured {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1.3rem;
+  background: var(--sage-200);
+  color: var(--sage-700);
+  font-weight: 600;
+
+  span {
+    flex: 1;
+  }
+
+  strong {
+    color: inherit;
+  }
+
+  app-icon {
+    font-size: 1.2rem;
   }
 }
