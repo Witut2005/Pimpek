@@ -147,6 +147,9 @@
         (+{{ demo.dayOffset() }})
       }
     </button>
+    @if (demo.dayOffset()) {
+      <button type="button" class="btn ghost small" (click)="demo.backToToday()">Wróć do dzisiaj</button>
+    }
     <button type="button" class="btn ghost small" (click)="demo.failNextSync()">Zepsuj synchronizację</button>
   </div>
 </section>

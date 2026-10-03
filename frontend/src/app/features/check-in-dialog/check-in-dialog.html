@@ -127,7 +127,12 @@
                 }
               </ul>
             } @else {
-              <p class="meals-hint">W {{ diet()?.short }} nie ma jeszcze posiłków z tego dnia.</p>
+              <p class="meals-hint">
+                W {{ diet()?.short }} nie ma posiłków z {{ formatDayMonth(day.date) }}.
+                @if (demoShifted()) {
+                  Ten dzień jest przewinięty w trybie demo, a Fitatu zna tylko prawdziwe dni.
+                }
+              </p>
             }
           } @else if (mealsStatus() === 'loading') {
             <p class="meals-hint" role="status">

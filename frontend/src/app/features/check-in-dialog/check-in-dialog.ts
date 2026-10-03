@@ -16,10 +16,11 @@ import { CheckInInput, DailyCheckIn } from '../../core/models/check-in.model';
 import { Meal, MealDay } from '../../core/models/meals.model';
 import { WearableApi } from '../../core/services/wearable-api';
 import { foodLabel, foodScoreFromMeals, moodLabel, StatKey } from '../../core/state/pet-rules';
+import { ClockStore } from '../../core/state/clock.store';
 import { PetStore, SaveResult } from '../../core/state/pet.store';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
-import { formatHours, formatKm, formatSteps } from '../../shared/format';
+import { formatDayMonth, formatHours, formatKm, formatSteps } from '../../shared/format';
 import { Icon, IconName } from '../../shared/icon/icon';
 import { NEEDS } from '../needs/needs';
 
@@ -54,6 +55,7 @@ export class CheckInDialog {
   private readonly sources = inject(SourcesStore);
   private readonly settings = inject(SettingsStore);
   private readonly api = inject(WearableApi);
+  private readonly clock = inject(ClockStore);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
   private mealsRequest?: Subscription;
   private mealsDate = '';
@@ -69,6 +71,9 @@ export class CheckInDialog {
   protected readonly diet = this.sources.diet;
   protected readonly mealDay = signal<MealDay | undefined>(undefined);
   protected readonly mealsStatus = signal<'idle' | 'loading' | 'error'>('idle');
+  /** A fast-forwarded demo day asks the real diary about a day that hasn't happened yet. */
+  protected readonly demoShifted = computed(() => this.clock.offsetDays() !== 0);
+  protected readonly formatDayMonth = formatDayMonth;
   protected readonly submitLabel = computed(() => {
     if (this.isEdit()) return 'Zapisz zmiany';
     return this.settings.petName() === 'Pimpek' ? 'Nakarm Pimpka' : 'Zapisz dzień';

@@ -21,6 +21,14 @@ export function formatKm(km: number): string {
   return `${KM.format(km)} km`;
 }
 
+const DAY_MONTH = new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long' });
+
+/** `YYYY-MM-DD` → "3 października" */
+export function formatDayMonth(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return DAY_MONTH.format(new Date(y, m - 1, d));
+}
+
 /** `YYYY-MM-DD` → "pn", "wt", … */
 export function weekdayShort(dateKey: string): string {
   const [y, m, d] = dateKey.split('-').map(Number);
