@@ -4,12 +4,15 @@
     [state]="state()"
     [celebrating]="cheering()"
     [reacting]="celebrating() && !cheering()"
+    [gaze]="gaze()"
   />
 } @else {
   <app-pimpek-drawing
     [state]="state()"
     [celebrating]="celebrating()"
     [color]="color()"
+    [gaze]="gaze()"
+    [petted]="petted()"
   />
 }
 

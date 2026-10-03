@@ -11,6 +11,7 @@ import {
 import type { AnimationItem } from 'lottie-web';
 import { AvatarState } from '../../core/models/check-in.model';
 import { PetSkin } from '../../core/models/skin.model';
+import { Gaze } from './gaze';
 
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -28,6 +29,7 @@ const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').match
     '[class.is-celebrating]': 'celebrating()',
     '[class.is-reacting]': 'reacting()',
     '[class.is-moving]': 'skin().motion',
+    '[style.transform]': 'lean()',
   },
 })
 export class SkinPlayer {
@@ -35,6 +37,13 @@ export class SkinPlayer {
   readonly state = input.required<AvatarState>();
   readonly celebrating = input(false);
   readonly reacting = input(false);
+  /** A pack's pupils are out of reach, so the whole skin leans towards the pointer instead. */
+  readonly gaze = input<Gaze | null>(null);
+
+  protected readonly lean = computed(() => {
+    const gaze = this.gaze();
+    return gaze ? `rotate(${(gaze.x * 4).toFixed(2)}deg) translateX(${(gaze.x * 2).toFixed(2)}%)` : '';
+  });
 
   protected readonly clip = computed(() => {
     const clips = this.skin().clips;

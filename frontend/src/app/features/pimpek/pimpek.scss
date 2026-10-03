@@ -53,6 +53,9 @@
   cursor: pointer;
   transition: transform 0.15s ease;
   -webkit-tap-highlight-color: transparent;
+  // A finger stroking Pimpek pets him instead of scrolling the room.
+  touch-action: none;
+  user-select: none;
 
   &:hover {
     transform: scale(1.03);
@@ -60,6 +63,11 @@
 
   &:active {
     transform: scale(0.95, 0.9);
+  }
+
+  // Purring: a soft squish in rhythm with the stroking.
+  &.petting {
+    animation: purr 0.45s ease-in-out infinite alternate;
   }
 
   &:focus-visible {
@@ -104,6 +112,39 @@
     0 0.5rem 1rem -0.3rem rgb(168 91 60 / 0.5),
     inset 0 -0.15rem 0.3rem rgb(90 40 20 / 0.25);
   animation: nudge 2s ease-in-out infinite;
+}
+
+.heart {
+  position: absolute;
+  z-index: 2;
+  font-size: 1.6rem;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: float-heart 1.3s ease-out forwards;
+}
+
+@keyframes purr {
+  from {
+    transform: scale(1.03, 0.97);
+  }
+  to {
+    transform: scale(0.98, 1.02);
+  }
+}
+
+@keyframes float-heart {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -80%) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-30%, -260%) scale(0.9) rotate(12deg);
+  }
 }
 
 @keyframes pop-in {

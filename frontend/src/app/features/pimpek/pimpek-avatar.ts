@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { AvatarState } from '../../core/models/check-in.model';
 import { SkinStore } from '../../core/state/skin.store';
+import { Gaze } from './gaze';
 import { PimpekDrawing } from './pimpek-drawing';
 import { SkinPlayer } from './skin-player';
 
@@ -30,6 +31,10 @@ export class PimpekAvatar {
   readonly color = input<string>();
   /** Thumbnails skip the floating sparkles and Zzz — at that size they're just noise. */
   readonly quiet = input(false);
+  /** Where the pointer is, relative to his eyes; null lets him look around on his own. */
+  readonly gaze = input<Gaze | null>(null);
+  /** Being stroked right now. */
+  readonly petted = input(false);
 
   protected readonly skin = inject(SkinStore).active;
   protected readonly burst = BURST;

@@ -1,24 +1,31 @@
 <div aria-live="polite">
   <!-- @for keyed by the text re-creates the bubble, so the pop-in replays on every new message -->
-  @for (text of [message()]; track text) {
-    <p class="bubble" [class.attention]="needsAttention()">{{ text }}</p>
+  @for (text of [shownMessage()]; track text) {
+    <p class="bubble" [class.attention]="needsAttention() && !petting()">{{ text }}</p>
   }
 </div>
 
 <button
+  #pet
   type="button"
   class="pet"
-  (click)="petClick.emit()"
+  [class.petting]="petting()"
+  (click)="onClick()"
   [attr.aria-label]="needsAttention() ? 'Pimpek – dodaj dzisiejszy wpis' : 'Pimpek – edytuj dzisiejszy wpis'"
 >
-  @if (needsAttention()) {
+  @if (needsAttention() && !petting()) {
     <span class="badge" aria-hidden="true">!</span>
   }
   <app-pimpek-avatar
-    [state]="state()"
+    [state]="shownState()"
     [celebrating]="celebrating()"
     [color]="color()"
+    [gaze]="gaze()"
+    [petted]="petting()"
   />
+  @for (heart of hearts(); track heart.id) {
+    <span class="heart" aria-hidden="true" [style.left.%]="heart.x" [style.top.%]="heart.y">{{ heart.icon }}</span>
+  }
 </button>
 
 <div class="rug" aria-hidden="true"></div>

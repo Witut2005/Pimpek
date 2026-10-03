@@ -81,6 +81,41 @@ svg {
   transform: translateY(16px);
 }
 
+// Eyes follow the pointer; a sad or sick Pimpek keeps looking down. The idle
+// look-around comes back on its own once the pointer rests (the stage drops the gaze).
+:host(.is-tracking:not(.is-sad):not(.is-sick)) .pupils {
+  animation: none;
+  transform: translate(var(--gaze-x, 0), var(--gaze-y, 0));
+  transition: transform 0.12s ease-out;
+}
+
+// Being stroked: lids shut under the happy ^ ^ arcs.
+:host(.is-petted) .eyelid {
+  animation: none;
+  transform: translateY(0);
+}
+
+.petted {
+  animation: pop 0.25s ease-out;
+
+  ellipse {
+    fill: #ff8fa8;
+    opacity: 0.55;
+  }
+
+  .lid-patch {
+    fill: var(--body);
+    opacity: 1;
+    transition: fill 0.8s ease;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+  }
+}
+
 .brow {
   transform-box: fill-box;
   transform-origin: center;

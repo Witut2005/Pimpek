@@ -4,6 +4,9 @@
 :host {
   display: block;
   aspect-ratio: 780 / 850;
+  // Leaning towards the pointer pivots on the feet.
+  transform-origin: 50% 100%;
+  transition: transform 0.3s ease-out;
 }
 
 .stage {
