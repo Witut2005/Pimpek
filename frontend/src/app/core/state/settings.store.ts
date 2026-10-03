@@ -1,5 +1,6 @@
-import { computed, effect, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { bmi, Body, DEFAULT_SETTINGS, Goals, PET_COLORS, Reminders, Settings } from '../models/settings.model';
+import { SkinStore } from './skin.store';
 import { KEYS, readJson, writeJson } from '../../shared/storage';
 
 function load(): Settings {
@@ -15,10 +16,12 @@ function load(): Settings {
 
 @Injectable({ providedIn: 'root' })
 export class SettingsStore {
+  private readonly skins = inject(SkinStore);
   readonly settings = signal<Settings>(load());
 
   readonly goals = computed(() => this.settings().goals);
-  readonly petName = computed(() => this.settings().petName.trim() || 'Pimpek');
+  /** Every look is a different Pimpek with a name of its own; petName belongs to the hand-drawn one. */
+  readonly petName = computed(() => this.skins.active()?.name ?? (this.settings().petName.trim() || 'Pimpek'));
   readonly petHex = computed(() => PET_COLORS[this.settings().petColor].hex);
   readonly bmi = computed(() => bmi(this.settings().body));
 

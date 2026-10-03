@@ -44,8 +44,12 @@ export class SettingsPanel {
     this.settings.updateBody({ [key]: value > 0 ? value : null });
   }
 
+  /** Renames whichever Pimpek is on screen — each look keeps its own name. */
   protected rename(event: Event): void {
-    this.settings.update({ petName: (event.target as HTMLInputElement).value });
+    const name = (event.target as HTMLInputElement).value;
+    const skin = this.skins.active();
+    if (skin) void this.skins.rename(skin.id, name);
+    else this.settings.update({ petName: name });
   }
 
   protected pick(event: Event): void {

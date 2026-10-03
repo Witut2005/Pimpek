@@ -4,8 +4,8 @@
     <span>Imię</span>
     <input
       class="text-input"
-      maxlength="16"
-      [value]="settings.settings().petName"
+      [attr.maxlength]="skins.active() ? 32 : 16"
+      [value]="skins.active()?.name ?? settings.settings().petName"
       (change)="rename($event)"
     />
   </label>

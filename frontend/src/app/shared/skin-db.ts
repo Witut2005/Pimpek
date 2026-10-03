@@ -4,6 +4,8 @@ export interface StoredSkinPack {
   fileName: string;
   zip: Blob;
   addedAt: string;
+  /** What the user calls this Pimpek; without it, the pack's own name. */
+  name?: string;
 }
 
 const DB_NAME = 'pimpek';
@@ -37,6 +39,7 @@ async function run<T>(
 
 export const skinDb = {
   all: () => run<StoredSkinPack[]>('readonly', (store) => store.getAll()),
+  get: (id: string) => run<StoredSkinPack | undefined>('readonly', (store) => store.get(id)),
   put: (pack: StoredSkinPack) => run('readwrite', (store) => store.put(pack)),
   delete: (id: string) => run('readwrite', (store) => store.delete(id)),
   clear: () => run('readwrite', (store) => store.clear()),

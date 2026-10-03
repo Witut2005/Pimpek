@@ -13,6 +13,8 @@ export class SkinStore {
   /** null is the built-in, hand-drawn Pimpek. */
   readonly activeId = signal<string | null>(readJson<string | null>(KEYS.skin, null));
   readonly active = computed(() => this.skins().find((s) => s.id === this.activeId()));
+  /** Names the packs came with, to fall back on when the user clears theirs. */
+  private readonly packNames = new Map<string, string>();
 
   constructor() {
     effect(() => writeJson(KEYS.skin, this.activeId()));
@@ -26,6 +28,7 @@ export class SkinStore {
     }
     const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const skin = readSkinPack(id, file.name, new Uint8Array(await file.arrayBuffer()));
+    this.packNames.set(id, skin.name);
     // Without storage (private mode) the skin still works until the next reload.
     await skinDb
       .put({ id, fileName: file.name, zip: file, addedAt: new Date().toISOString() })
@@ -39,9 +42,20 @@ export class SkinStore {
     this.activeId.set(id);
   }
 
+  /** Each look is its own Pimpek, so the name lives with the pack. An empty name brings back the pack's own. */
+  async rename(id: string, name: string): Promise<void> {
+    const own = name.trim().slice(0, 32);
+    const next = own || this.packNames.get(id);
+    if (!next) return;
+    this.skins.update((list) => list.map((s) => (s.id === id ? { ...s, name: next } : s)));
+    const pack = await skinDb.get(id).catch(() => undefined);
+    if (pack) await skinDb.put({ ...pack, name: own || undefined }).catch(() => undefined);
+  }
+
   async remove(id: string): Promise<void> {
     this.skins().find((s) => s.id === id)?.urls.forEach((url) => URL.revokeObjectURL(url));
     this.skins.update((list) => list.filter((s) => s.id !== id));
+    this.packNames.delete(id);
     if (this.activeId() === id) this.activeId.set(null);
     await skinDb.delete(id).catch(() => undefined);
   }
@@ -51,7 +65,9 @@ export class SkinStore {
     const skins: PetSkin[] = [];
     for (const pack of stored.sort((a, b) => a.addedAt.localeCompare(b.addedAt))) {
       try {
-        skins.push(readSkinPack(pack.id, pack.fileName, new Uint8Array(await pack.zip.arrayBuffer())));
+        const skin = readSkinPack(pack.id, pack.fileName, new Uint8Array(await pack.zip.arrayBuffer()));
+        this.packNames.set(pack.id, skin.name);
+        skins.push(pack.name ? { ...skin, name: pack.name } : skin);
       } catch {
         // A pack that no longer unpacks is skipped; Pimpek falls back to his own look.
       }
