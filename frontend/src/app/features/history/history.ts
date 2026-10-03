@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { AvatarState } from '../../core/models/check-in.model';
 import { PetStore } from '../../core/state/pet.store';
 import { addDays } from '../../shared/date';
@@ -16,7 +16,7 @@ const STATE_EMOJI: Record<AvatarState, string> = {
 
 @Component({
   selector: 'app-history',
-  imports: [DatePipe],
+  imports: [DatePipe, DecimalPipe],
   templateUrl: './history.html',
   styleUrl: './history.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
