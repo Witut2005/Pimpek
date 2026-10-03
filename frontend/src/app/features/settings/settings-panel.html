@@ -34,7 +34,9 @@
 
 <section class="card">
   <h3><app-icon name="watch" /> Źródła danych</h3>
-  <p class="muted">Sen i kroki Pimpek bierze z zegarka. Nastrój, jedzenie i ludzi opowiadasz mu sam(a).</p>
+  <p class="muted">
+    Sen i kroki Pimpek bierze z zegarka, a posiłki z Fitatu. Nastrój i ludzi opowiadasz mu sam(a).
+  </p>
   @for (source of sources; track source.id) {
     <app-source-card [source]="source" returnTo="/?panel=ustawienia" />
   }

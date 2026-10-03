@@ -8,7 +8,9 @@ from garminconnect import (
 from pydantic import BaseModel, Field
 
 from . import daily
+from . import fitatu_service as fitatu
 from . import garmin_service as garmin
+from . import nutrition
 from . import open_wearables as ow
 from .config import settings
 from .main_deps import current_user
@@ -43,6 +45,21 @@ def _map_garmin_errors(fn, *args):
         raise HTTPException(429, "Garmin is rate limiting us, try again later")
     except GarminConnectConnectionError:
         raise HTTPException(502, "Could not reach Garmin")
+
+
+def _map_fitatu_errors(fn, *args):
+    try:
+        return fn(*args)
+    except fitatu.NotConnected as e:
+        raise HTTPException(409, str(e))
+    except fitatu.InvalidCredentials as e:
+        raise HTTPException(401, str(e))
+    except fitatu.FitatuError as e:
+        if e.status == 429:
+            raise HTTPException(429, "Fitatu is rate limiting us, try again later")
+        raise HTTPException(502, f"Fitatu: {e.detail}")
+    except fitatu.FitatuUnavailable:
+        raise HTTPException(502, "Could not reach Fitatu")
 
 app.include_router(wearables_router)
 
@@ -104,13 +121,19 @@ def activity(activity_id: str, user: str = Depends(current_user)):
 
 @app.get("/api/sources")
 def sources(user: str = Depends(current_user)):
-    """Connected wearables: [{id, via: open_wearables|garmin_connect, connectedAt}]."""
-    return daily.sources(user)
+    """Connected sources: [{id, via: open_wearables|garmin_connect|fitatu, connectedAt}]."""
+    return daily.sources(user) + nutrition.sources(user)
 
 
 @app.delete("/api/sources/garmin")
 def disconnect_source(user: str = Depends(current_user)):
     _map_garmin_errors(daily.disconnect, user)
+    return {"connected": False}
+
+
+@app.delete("/api/sources/fitatu")
+def disconnect_fitatu(user: str = Depends(current_user)):
+    fitatu.disconnect(user)
     return {"connected": False}
 
 
@@ -122,3 +145,20 @@ def days(
 ):
     """Sleep, steps, resting HR and running km per day, newest first."""
     return _map_garmin_errors(daily.days, user, count, today)
+
+
+# --- Meals (Fitatu) ---------------------------------------------------------------
+
+
+@app.post("/api/fitatu/connect")
+def fitatu_connect(body: ConnectBody, user: str = Depends(current_user)):
+    return _map_fitatu_errors(fitatu.login, user, body.email, body.password)
+
+
+@app.get("/api/meals")
+def meals(
+    date: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    user: str = Depends(current_user),
+):
+    """One day's meals with their items, and kcal/macro totals of what was eaten."""
+    return _map_fitatu_errors(nutrition.meals, user, date)

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,9 +11,11 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { map } from 'rxjs';
+import { map, Subscription } from 'rxjs';
 import { CheckInInput, DailyCheckIn } from '../../core/models/check-in.model';
-import { foodLabel, moodLabel, StatKey } from '../../core/state/pet-rules';
+import { Meal, MealDay } from '../../core/models/meals.model';
+import { WearableApi } from '../../core/services/wearable-api';
+import { foodLabel, foodScoreFromMeals, moodLabel, StatKey } from '../../core/state/pet-rules';
 import { PetStore, SaveResult } from '../../core/state/pet.store';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
@@ -36,6 +39,9 @@ const RESTED_SLEEP_SCORE = 70;
 
 const MOOD_EMOJI = ['😫', '😣', '😞', '😕', '😐', '🙂', '😊', '😄', '😁', '🤩'];
 
+/** How many dishes from the diary go into the food note before it gets too long to read. */
+const NOTE_DISHES = 4;
+
 @Component({
   selector: 'app-check-in-dialog',
   imports: [ReactiveFormsModule, Icon],
@@ -47,7 +53,9 @@ export class CheckInDialog {
   private readonly store = inject(PetStore);
   private readonly sources = inject(SourcesStore);
   private readonly settings = inject(SettingsStore);
+  private readonly api = inject(WearableApi);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
+  private mealsRequest?: Subscription;
 
   readonly saved = output<SaveResult>();
 
@@ -56,6 +64,10 @@ export class CheckInDialog {
   /** With a wearable, sleep and steps are confirmations, not questions. */
   protected readonly measured = this.store.todayWearable;
   protected readonly sourceName = computed(() => this.sources.primary()?.genitive ?? 'zegarka');
+  /** With a food diary, the food step shows what was logged and suggests a score. */
+  protected readonly diet = this.sources.diet;
+  protected readonly mealDay = signal<MealDay | undefined>(undefined);
+  protected readonly mealsStatus = signal<'idle' | 'loading' | 'error'>('idle');
   protected readonly submitLabel = computed(() => {
     if (this.isEdit()) return 'Zapisz zmiany';
     return this.settings.petName() === 'Pimpek' ? 'Nakarm Pimpka' : 'Zapisz dzień';
@@ -134,7 +146,57 @@ export class CheckInDialog {
     } else {
       this.prefillFromWearable();
     }
+    this.loadMeals(existing?.date ?? this.store.today(), !existing);
     this.dialog().nativeElement.showModal();
+  }
+
+  /**
+   * Fetched on every open: meals keep being logged all day. An edit only shows them;
+   * a new entry also gets the suggested score and note, unless the user already changed those.
+   */
+  private loadMeals(date: string, prefill: boolean): void {
+    this.mealsRequest?.unsubscribe();
+    this.mealDay.set(undefined);
+    if (!this.diet()) {
+      this.mealsStatus.set('idle');
+      return;
+    }
+    this.mealsStatus.set('loading');
+    this.mealsRequest = this.api.fetchMeals(date).subscribe({
+      next: (day) => {
+        this.mealDay.set(day);
+        this.mealsStatus.set('idle');
+        if (prefill && day.meals.length) this.prefillFromMeals(day);
+      },
+      error: (err: unknown) => {
+        // 409: the Fitatu session ended — show the source as disconnected, ask the user instead.
+        if (err instanceof HttpErrorResponse && err.status === 409) {
+          this.sources.refresh().subscribe();
+          this.mealsStatus.set('idle');
+          return;
+        }
+        this.mealsStatus.set('error');
+      },
+    });
+  }
+
+  private prefillFromMeals(day: MealDay): void {
+    const { foodScore, foodNote } = this.form.controls;
+    if (foodScore.pristine) foodScore.setValue(foodScoreFromMeals(day.totals, day.meals.length));
+    if (foodNote.pristine && !foodNote.value) {
+      const dishes = [...new Set(day.meals.flatMap((m) => m.items.filter((i) => i.eaten).map((i) => i.name)))];
+      foodNote.setValue(dishes.slice(0, NOTE_DISHES).join(', ') + (dishes.length > NOTE_DISHES ? '…' : ''));
+    }
+  }
+
+  /** What was eaten, matching the meal's kcal — planned-only items are left out there too. */
+  protected dishes(meal: Meal): string {
+    const eaten = meal.items.filter((i) => i.eaten);
+    return eaten.length ? eaten.map((i) => i.name).join(', ') : 'na razie tylko w planie';
+  }
+
+  protected mealsCount(count: number): string {
+    return count === 1 ? '1 posiłku' : `${count} posiłkach`;
   }
 
   /** Whatever the watch already knows is answered for the user — they only confirm or tweak. */

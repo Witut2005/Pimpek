@@ -21,6 +21,8 @@
                 }
               }
             }
+          } @else if (isDiet()) {
+            Połączono, posiłki trafią do wieczornego wpisu
           } @else {
             Połączono, zapasowe źródło
           }
@@ -58,9 +60,9 @@
       <div class="consent">
         <p>
           <app-icon name="shield" />
-          Pimpek będzie co rano sam sprawdzał w {{ source().short }}:
-          {{ source().reads.join(', ') }}. Nie czytamy lokalizacji ani wiadomości, a połączenie
-          zerwiesz w każdej chwili.
+          Pimpek będzie {{ isDiet() ? 'przy wieczornym wpisie' : 'co rano' }} sam sprawdzał w
+          {{ source().short }}: {{ source().reads.join(', ') }}. Nie czytamy lokalizacji ani
+          wiadomości, a połączenie zerwiesz w każdej chwili.
         </p>
         <div class="actions">
           <button type="button" class="btn ghost small" (click)="cancel()">Anuluj</button>
@@ -73,8 +75,8 @@
     @case ('login') {
       <form class="consent" (ngSubmit)="login()">
         <p>
-          <app-icon name="watch" />
-          Zaloguj się kontem Garmin Connect. Hasła nie zapisujemy, tylko token sesji.
+          <app-icon [name]="source().icon" />
+          Zaloguj się kontem {{ source().name }}. Hasła nie zapisujemy, tylko token sesji.
         </p>
         <label class="field">
           <span>E-mail</span>
@@ -107,9 +109,11 @@
             Połącz z {{ source().short }}
           </button>
         </div>
-        <button type="button" class="link" (click)="oauth()">
-          Albo zaloguj się na stronie {{ source().genitive }} (Open Wearables)
-        </button>
+        @if (source().oauth) {
+          <button type="button" class="link" (click)="oauth()">
+            Albo zaloguj się na stronie {{ source().genitive }} (Open Wearables)
+          </button>
+        }
       </form>
     }
     @case ('busy') {

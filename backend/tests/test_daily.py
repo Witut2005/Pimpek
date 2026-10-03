@@ -58,6 +58,7 @@ def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "user_map_file", tmp_path / "map.json")
     monkeypatch.setattr(settings, "cache_dir", tmp_path / "cache")
     monkeypatch.setattr(settings, "token_dir", tmp_path / "tokens")
+    monkeypatch.setattr(settings, "fitatu_token_dir", tmp_path / "fitatu")
     monkeypatch.setattr(settings, "open_wearables_api_key", "key")
     monkeypatch.setattr(ow, "_transport", httpx.MockTransport(ow_not_connected))
 

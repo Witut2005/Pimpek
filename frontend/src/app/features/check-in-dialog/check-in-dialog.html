@@ -107,6 +107,35 @@
         }
         @case (2) {
           <div class="big-emoji" aria-hidden="true">{{ foodEmoji() }}</div>
+          @if (mealDay(); as day) {
+            @if (day.meals.length) {
+              <div class="measured">
+                <app-icon name="apple" />
+                <span
+                  >Według {{ diet()?.genitive }}: <strong>{{ day.totals.kcal }} kcal</strong> w
+                  {{ mealsCount(day.meals.length) }}</span
+                >
+                <app-icon class="ok" name="check" />
+              </div>
+              <ul class="meals">
+                @for (meal of day.meals; track meal.key) {
+                  <li>
+                    <span class="meal-name">{{ meal.name }}</span>
+                    <small>{{ dishes(meal) }}</small>
+                    <strong>{{ meal.kcal }} kcal</strong>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="meals-hint">W {{ diet()?.short }} nie ma jeszcze posiłków z tego dnia.</p>
+            }
+          } @else if (mealsStatus() === 'loading') {
+            <p class="meals-hint" role="status">
+              <app-icon name="refresh" class="spin" /> Zaglądam do {{ diet()?.genitive }}…
+            </p>
+          } @else if (mealsStatus() === 'error') {
+            <p class="meals-hint">Nie udało się pobrać posiłków z {{ diet()?.genitive }}. Oceń sam(a).</p>
+          }
           <label class="field">
             <span class="center"
               >Jak zdrowo jadłeś/aś? <strong>{{ foodLabel() }}</strong></span

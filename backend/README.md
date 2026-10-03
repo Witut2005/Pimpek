@@ -8,8 +8,9 @@ Port 8001, because Open Wearables uses 8000. The Angular dev server proxies `/ap
 (`frontend/proxy.conf.json`). Docs: http://localhost:8001/docs. Tests: `.venv/bin/pytest`.
 
 ## What the frontend uses
-- `GET /api/sources`: connected wearables, `[{id:"garmin", via:"open_wearables"|"garmin_connect", connectedAt}]`
+- `GET /api/sources`: connected sources, `[{id:"garmin"|"fitatu", via:"open_wearables"|"garmin_connect"|"fitatu", connectedAt}]`
 - `DELETE /api/sources/garmin`: disconnect, whichever way it was connected
+- `DELETE /api/sources/fitatu`: forget the Fitatu session
 - `GET /api/days?count=28&today=YYYY-MM-DD`: one row per day, newest first:
   `{date, source, sleepHours, sleepScore, steps, restingHr, runningKm, complete}`. Missing values are `null`.
   Returns 409 when nothing is connected.
@@ -17,6 +18,19 @@ Port 8001, because Open Wearables uses 8000. The Angular dev server proxies `/ap
 `/api/days` reads from Open Wearables when it has an active Garmin connection for the user,
 and from the direct Garmin login otherwise. If OW is down, it falls back to the direct login. Days older
 than yesterday are cached in `data/cache/<user>.json`, so only the first sync is slow.
+
+- `GET /api/meals?date=YYYY-MM-DD` (default today): the day's meals from Fitatu,
+  `{date, source:"fitatu", meals:[{key, name, time, kcal, items:[{name, brand, amount, eaten, kcal, protein, fat, carbs, fiber, sugars}]}], totals}`.
+  Only meals with items are listed. Items with `eaten:false` (diet plan, not ticked off) are left out of `kcal` and `totals`.
+  Returns 409 when Fitatu is not connected or its session ended.
+
+## Connecting Fitatu
+`POST /api/fitatu/connect` `{email, password}` -> `{status:"connected"}`, or 401 for a wrong e-mail/password.
+
+The password is never stored, only the JWT and refresh token (`data/fitatu/<user>.json`), refreshed on expiry.
+Fitatu has no public API: this uses the private API of its mobile app (base URL and client headers in `app/config.py`,
+overridable with `FITATU_*` env vars), as documented by community clients. It may break without notice and is not
+covered by Fitatu's terms.
 
 ## Connecting Garmin
 **Direct login** (works today):
