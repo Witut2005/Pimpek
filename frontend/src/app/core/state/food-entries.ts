@@ -54,13 +54,14 @@ export function entriesFromDiary(day: MealDay): FoodEntry[] {
 }
 
 /**
- * A reload from the diary. Its items replace the untouched ones taken from it before;
- * typed-in and hand-edited entries stay, and items the user removed don't come back.
+ * A reload from the diary. Its items replace the untouched ones taken from it before, and
+ * one removed here comes back while it's still in the diary. Typed-in and hand-edited
+ * entries stay as they are, without a second copy from the diary.
  */
-export function mergeDiary(current: FoodEntry[], day: MealDay, dismissed: ReadonlySet<string>): FoodEntry[] {
+export function mergeDiary(current: FoodEntry[], day: MealDay): FoodEntry[] {
   const kept = current.filter((e) => !e.fitatuId || e.edited);
   const keptIds = new Set(kept.map((e) => e.fitatuId));
-  const fresh = entriesFromDiary(day).filter((e) => !keptIds.has(e.fitatuId) && !dismissed.has(e.fitatuId!));
+  const fresh = entriesFromDiary(day).filter((e) => !keptIds.has(e.fitatuId));
   return sortByMeal([...fresh, ...kept]);
 }
 
@@ -111,7 +112,7 @@ export function estimateFoodRating(entries: FoodEntry[]): FoodRating {
   return {
     score,
     label: foodLabel(score),
-    summary: 'Ocena przybliżona z kalorii i makroskładników, bo AI jest teraz niedostępne.',
+    summary: 'Ocena przybliżona z kalorii i makroskładników, bo AI jest teraz niedostępne. Spróbuj ponownie za chwilę.',
     positives: [],
     improvements: [],
     incomplete: false,

@@ -5,6 +5,8 @@ code. Meal names are user input: they only ever go into the user turn as JSON da
 never into the system instruction, and the prompt says to treat them as data.
 """
 import json
+import logging
+import time
 from pathlib import Path
 from typing import Any
 
@@ -12,8 +14,14 @@ import httpx
 
 from .config import settings
 
-PROMPT = (Path(__file__).parent / "prompts" / "food_rating.md").read_text(encoding="utf-8")
+PROMPT_FILE = Path(__file__).parent / "prompts" / "food_rating.md"
 MAX_POINTS = 3
+# Gemini answers 503 ("high demand") when a model is overloaded, and now and then 500.
+# Both usually pass within seconds: retry once, then try the fallback model.
+RETRY_STATUSES = {500, 503}
+RETRY_DELAY_SECONDS = 1.0
+
+log = logging.getLogger("uvicorn.error")
 
 # Gemini's structured output. Positives and improvements come before the score on purpose:
 # the model writes its reasons first, and the score follows from them.
@@ -54,13 +62,35 @@ def is_configured() -> bool:
     return bool(settings.gemini_api_key)
 
 
-def _request(body: dict[str, Any]) -> httpx.Response:
-    url = f"{settings.gemini_api_url.rstrip('/')}/models/{settings.gemini_model}:generateContent"
+def prompt() -> str:
+    """Read on every rating, so edits to the prompt apply without restarting the backend."""
+    return PROMPT_FILE.read_text(encoding="utf-8")
+
+
+def _request(model: str, body: dict[str, Any]) -> httpx.Response:
+    url = f"{settings.gemini_api_url.rstrip('/')}/models/{model}:generateContent"
     try:
         with httpx.Client(timeout=30, transport=_transport) as client:
             return client.post(url, json=body, headers={"x-goog-api-key": settings.gemini_api_key})
     except httpx.TransportError as e:
         raise RatingUnavailable(str(e)) from e
+
+
+def _generate(body: dict[str, Any]) -> tuple[httpx.Response, str]:
+    """The main model, retried once while overloaded; then the fallback model the same way."""
+    models = [settings.gemini_model]
+    if settings.gemini_fallback_model and settings.gemini_fallback_model != settings.gemini_model:
+        models.append(settings.gemini_fallback_model)
+    for model in models:
+        resp = _request(model, body)
+        if resp.status_code in RETRY_STATUSES:
+            time.sleep(RETRY_DELAY_SECONDS)
+            resp = _request(model, body)
+        if resp.status_code not in RETRY_STATUSES:
+            return resp, model
+        next_step = "trying the fallback model" if model != models[-1] else "giving up"
+        log.warning("Gemini %s is unavailable (%s), %s", model, resp.status_code, next_step)
+    return resp, model
 
 
 def _answer_text(data: dict[str, Any]) -> str:
@@ -93,7 +123,7 @@ def rate(day: dict[str, Any]) -> dict[str, Any]:
     if not is_configured():
         raise NotConfigured("AI food rating is not configured: set GEMINI_API_KEY in backend/.env")
     body = {
-        "systemInstruction": {"parts": [{"text": PROMPT}]},
+        "systemInstruction": {"parts": [{"text": prompt()}]},
         "contents": [
             {
                 "role": "user",
@@ -102,7 +132,7 @@ def rate(day: dict[str, Any]) -> dict[str, Any]:
         ],
         "generationConfig": {"responseMimeType": "application/json", "responseSchema": RESPONSE_SCHEMA},
     }
-    resp = _request(body)
+    resp, model = _generate(body)
     if resp.status_code >= 400:
         try:
             detail = resp.json().get("error", {}).get("message") or resp.text[:300]
@@ -110,6 +140,6 @@ def rate(day: dict[str, Any]) -> dict[str, Any]:
             detail = resp.text[:300]
         raise RatingError(resp.status_code, detail)
     try:
-        return {**_clean(json.loads(_answer_text(resp.json()))), "model": settings.gemini_model}
+        return {**_clean(json.loads(_answer_text(resp.json()))), "model": model}
     except (ValueError, KeyError, TypeError) as e:
         raise RatingError(502, f"unreadable answer: {e}") from e

@@ -32,7 +32,10 @@ than yesterday are cached in `data/cache/<user>.json`, so only the first sync is
 ## AI food rating (Gemini)
 Put a key from https://aistudio.google.com/apikey into `backend/.env` as `GEMINI_API_KEY` and restart the backend.
 `GEMINI_MODEL` picks the model (default `gemini-3.8-flash`). The key stays on the backend, never in the browser.
-The rating instructions are in `app/prompts/food_rating.md`: edit them there, no code change needed.
+When Gemini is overloaded (503 "high demand") or answers 500, the backend retries once after a second, then
+tries `GEMINI_FALLBACK_MODEL` (default `gemini-3.5-flash-lite`, empty to disable) the same way.
+The rating instructions are in `app/prompts/food_rating.md`: edit them there. The file is read on every rating,
+so changes apply without restarting the backend.
 Meal names typed by users only go into the user turn as JSON, never into the instructions.
 The meals are sent to Google; on the free tier Google may use them to improve its products.
 

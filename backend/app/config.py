@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     # AI food rating. Without a key the frontend falls back to a rough estimate.
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.8-flash"
+    # Used when the main model stays overloaded ("high demand"). Empty: no fallback.
+    gemini_fallback_model: str = "gemini-3.5-flash-lite"
     gemini_api_url: str = "https://generativelanguage.googleapis.com/v1beta"
 
     @property

@@ -65,8 +65,6 @@ export class CheckInDialog {
   private mealsDate = '';
   /** The entry being edited, if any. */
   private existing?: DailyCheckIn;
-  /** Diary items the user removed: a reload from the diary must not bring them back. */
-  private dismissed = new Set<string>();
 
   readonly saved = output<SaveResult>();
 
@@ -166,7 +164,6 @@ export class CheckInDialog {
     this.step.set(need ? STEP_OF[need] : 0);
     this.form.reset();
     this.existing = existing;
-    this.dismissed = new Set();
     this.cancelRating();
     const meals = existing?.food.meals ?? [];
     this.foodEntries.set(meals);
@@ -210,7 +207,7 @@ export class CheckInDialog {
         this.mealDay.set(day);
         this.mealsStatus.set('idle');
         if (merge && day.meals.length) {
-          this.foodEntries.set(mergeDiary(this.foodEntries(), day, this.dismissed));
+          this.foodEntries.set(mergeDiary(this.foodEntries(), day));
           this.requestRating();
         }
       },
@@ -231,14 +228,8 @@ export class CheckInDialog {
     this.loadMeals(true);
   }
 
-  /**
-   * From the food list: removed diary items are remembered, so a reload won't revive them.
-   * Changes by hand aren't sent to the AI: the user asks for a rating when the list is done.
-   */
+  /** Changes by hand aren't sent to the AI: the user asks for a rating when the list is done. */
   protected onFoodEdited(next: FoodEntry[]): void {
-    for (const entry of this.foodEntries()) {
-      if (entry.fitatuId && !next.some((e) => e.id === entry.id)) this.dismissed.add(entry.fitatuId);
-    }
     this.foodEntries.set(next);
   }
 

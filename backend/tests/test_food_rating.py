@@ -52,6 +52,8 @@ def gemini(answer=ANSWER, status=200):
 def setup(monkeypatch):
     monkeypatch.setattr(settings, "gemini_api_key", "test-key")
     monkeypatch.setattr(settings, "gemini_model", "gemini-test")
+    monkeypatch.setattr(settings, "gemini_fallback_model", "gemini-lite-test")
+    monkeypatch.setattr(food_rating, "RETRY_DELAY_SECONDS", 0)
 
 
 def use(monkeypatch, handler):
@@ -81,7 +83,7 @@ def test_rating_sends_prompt_and_meals_and_cleans_the_answer(monkeypatch):
     assert request.url.path.endswith("/models/gemini-test:generateContent")
     assert request.headers["x-goog-api-key"] == "test-key"
     body = json.loads(request.content)
-    assert body["systemInstruction"]["parts"][0]["text"] == food_rating.PROMPT
+    assert body["systemInstruction"]["parts"][0]["text"] == food_rating.prompt()
     assert body["generationConfig"]["responseMimeType"] == "application/json"
     meals = body["contents"][0]["parts"][0]["text"]
     assert "Lasagne z kurczakiem" in meals and '"source": "manual"' in meals
@@ -102,6 +104,69 @@ def test_gemini_rate_limit_is_429(monkeypatch):
     handler, _ = gemini(status=429)
     use(monkeypatch, handler)
     assert client.post("/api/food/rating", json=DAY).status_code == 429
+
+
+def answers(*statuses):
+    """Gemini answering each request with the next status; 200 is a normal rating."""
+    models: list[str] = []
+    queue = list(statuses)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        models.append(request.url.path.rsplit("/", 1)[1].split(":")[0])
+        status = queue.pop(0)
+        if status != 200:
+            return httpx.Response(status, json={"error": {"message": "This model is currently experiencing high demand."}})
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(ANSWER)}]}}]})
+
+    return handler, models
+
+
+def test_overloaded_model_is_retried_once(monkeypatch):
+    handler, models = answers(503, 200)
+    use(monkeypatch, handler)
+    r = client.post("/api/food/rating", json=DAY)
+    assert r.status_code == 200
+    assert models == ["gemini-test", "gemini-test"]
+    assert r.json()["model"] == "gemini-test"
+
+
+def test_still_overloaded_falls_back_to_the_lighter_model(monkeypatch):
+    handler, models = answers(503, 500, 200)
+    use(monkeypatch, handler)
+    r = client.post("/api/food/rating", json=DAY)
+    assert r.status_code == 200
+    assert models == ["gemini-test", "gemini-test", "gemini-lite-test"]
+    assert r.json()["model"] == "gemini-lite-test"
+
+
+def test_gives_up_when_both_models_stay_overloaded(monkeypatch, caplog):
+    handler, models = answers(503, 503, 503, 503)
+    use(monkeypatch, handler)
+    r = client.post("/api/food/rating", json=DAY)
+    assert r.status_code == 502
+    assert "high demand" in r.json()["detail"]
+    assert models == ["gemini-test", "gemini-test", "gemini-lite-test", "gemini-lite-test"]
+    assert "trying the fallback model" in caplog.text and "giving up" in caplog.text
+
+
+def test_no_fallback_when_none_is_set(monkeypatch):
+    monkeypatch.setattr(settings, "gemini_fallback_model", "")
+    handler, models = answers(503, 503)
+    use(monkeypatch, handler)
+    assert client.post("/api/food/rating", json=DAY).status_code == 502
+    assert models == ["gemini-test", "gemini-test"]
+
+
+def test_prompt_edits_apply_without_a_restart(monkeypatch, tmp_path):
+    prompt_file = tmp_path / "food_rating.md"
+    monkeypatch.setattr(food_rating, "PROMPT_FILE", prompt_file)
+    handler, requests = gemini()
+    use(monkeypatch, handler)
+    for version in ("pierwsza wersja", "druga wersja"):
+        prompt_file.write_text(version, encoding="utf-8")
+        client.post("/api/food/rating", json=DAY)
+    sent = [json.loads(r.content)["systemInstruction"]["parts"][0]["text"] for r in requests]
+    assert sent == ["pierwsza wersja", "druga wersja"]
 
 
 def test_gemini_error_is_502_and_logged(monkeypatch, caplog):
