@@ -1,0 +1,20 @@
+<div aria-live="polite">
+  <!-- @for keyed by the text re-creates the bubble, so the pop-in replays on every new message -->
+  @for (text of [message()]; track text) {
+    <p class="bubble" [class.attention]="needsAttention()">{{ text }}</p>
+  }
+</div>
+
+<button
+  type="button"
+  class="pet"
+  (click)="petClick.emit()"
+  [attr.aria-label]="needsAttention() ? 'Pimpek – dodaj dzisiejszy wpis' : 'Pimpek – edytuj dzisiejszy wpis'"
+>
+  @if (needsAttention()) {
+    <span class="badge" aria-hidden="true">!</span>
+  }
+  <app-pimpek-avatar [state]="state()" [items]="items()" [celebrating]="celebrating()" />
+</button>
+
+<div class="rug" aria-hidden="true"></div>

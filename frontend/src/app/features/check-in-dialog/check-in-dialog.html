@@ -1,0 +1,149 @@
+<dialog #dialog (click)="onDialogClick($event)" aria-labelledby="check-in-title">
+  <form class="panel" [formGroup]="form" (ngSubmit)="next()">
+    <header>
+      <h2 id="check-in-title">
+        {{ isEdit() ? 'Popraw dzisiejszy wpis' : 'Jak minął dzień?' }}
+      </h2>
+      <button type="button" class="icon-btn" (click)="close()" aria-label="Zamknij">✕</button>
+    </header>
+
+    <ol class="steps" aria-label="Kroki">
+      @for (s of steps; track s.title; let i = $index) {
+        <li
+          [class.done]="i < step()"
+          [class.current]="i === step()"
+          [attr.aria-current]="i === step() ? 'step' : null"
+        >
+          <button type="button" (click)="step.set(i)" [attr.aria-label]="s.title">
+            {{ s.icon }}
+          </button>
+        </li>
+      }
+    </ol>
+
+    <section class="body">
+      <h3>{{ steps[step()].title }}</h3>
+
+      @switch (step()) {
+        @case (0) {
+          <div class="big-emoji" aria-hidden="true">{{ moodEmoji() }}</div>
+          <label class="field">
+            <span>Nastrój: <strong>{{ values().moodScore }}/10</strong> · {{ moodLabel() }}</span>
+            <input type="range" min="1" max="10" step="1" formControlName="moodScore" />
+          </label>
+        }
+        @case (1) {
+          <label class="field">
+            <span>Ile spałeś/aś? <strong>{{ values().sleepHours }} h</strong></span>
+            <input type="range" min="0" max="12" step="0.5" formControlName="sleepHours" />
+            <small>Cel: {{ goals.sleepHours }} h</small>
+          </label>
+          <div class="field">
+            <span>Czujesz się wyspany/a?</span>
+            <div class="toggle" role="radiogroup">
+              <button
+                type="button"
+                role="radio"
+                [attr.aria-checked]="values().feelingRested"
+                (click)="form.controls.feelingRested.setValue(true)"
+              >
+                😌 Tak
+              </button>
+              <button
+                type="button"
+                role="radio"
+                [attr.aria-checked]="!values().feelingRested"
+                (click)="form.controls.feelingRested.setValue(false)"
+              >
+                🥱 Nie
+              </button>
+            </div>
+          </div>
+          <label class="field">
+            <span>Notatka o śnie</span>
+            <input type="text" formControlName="sleepNote" placeholder="np. późno poszedłem spać" />
+          </label>
+        }
+        @case (2) {
+          <div class="big-emoji" aria-hidden="true">{{ foodEmoji() }}</div>
+          <label class="field">
+            <span>Jak zdrowo jadłeś/aś? <strong>{{ values().foodScore }}/100</strong></span>
+            <input type="range" min="0" max="100" step="5" formControlName="foodScore" />
+          </label>
+          <label class="field">
+            <span>Co dobrego (lub nie) wjechało?</span>
+            <input type="text" formControlName="foodNote" placeholder="np. dobry obiad, ale też czekolada" />
+          </label>
+        }
+        @case (3) {
+          <div class="field">
+            <label for="running-km">Bieganie / ruch (km)</label>
+            <div class="stepper">
+              <button type="button" class="icon-btn" (click)="adjustKm(-0.5)" aria-label="Mniej o 0,5 km">−</button>
+              <input id="running-km" type="number" min="0" max="100" step="0.1" formControlName="runningKm" />
+              <button type="button" class="icon-btn" (click)="adjustKm(0.5)" aria-label="Więcej o 0,5 km">+</button>
+            </div>
+            @if (form.controls.runningKm.invalid && form.controls.runningKm.touched) {
+              <small class="error">Podaj dystans od 0 do 100 km</small>
+            } @else {
+              <small>Cel: {{ goals.runningKm }} km</small>
+            }
+          </div>
+          <label class="field">
+            <span>Czas przed ekranem: <strong>{{ values().screenHours }} h</strong></span>
+            <input type="range" min="0" max="16" step="0.5" formControlName="screenHours" />
+            <small>Cel: max {{ goals.screenMaxHours }} h</small>
+          </label>
+        }
+        @case (4) {
+          <div class="field">
+            <span>Spotkałeś/aś się dziś z kimś?</span>
+            <div class="toggle" role="radiogroup">
+              <button
+                type="button"
+                role="radio"
+                [attr.aria-checked]="values().metWithFriends"
+                (click)="form.controls.metWithFriends.setValue(true)"
+              >
+                🫶 Tak
+              </button>
+              <button
+                type="button"
+                role="radio"
+                [attr.aria-checked]="!values().metWithFriends"
+                (click)="form.controls.metWithFriends.setValue(false)"
+              >
+                🏠 Nie
+              </button>
+            </div>
+          </div>
+          @if (values().metWithFriends) {
+            <label class="field">
+              <span>Z kim / gdzie?</span>
+              <input type="text" formControlName="socialContext" placeholder="np. planszówki ze znajomymi" />
+            </label>
+          }
+          <label class="field">
+            <span>Notatka z dnia</span>
+            <textarea rows="3" formControlName="note" placeholder="np. intensywny dzień, ale przyjemny"></textarea>
+          </label>
+        }
+      }
+    </section>
+
+    <footer>
+      <button type="button" class="btn ghost" (click)="back()" [disabled]="step() === 0">
+        Wstecz
+      </button>
+      <button type="submit" class="btn primary" [disabled]="saving()">
+        @if (saving()) {
+          Zapisuję…
+        } @else if (isLastStep()) {
+          {{ isEdit() ? 'Zapisz zmiany' : 'Nakarm Pimpka 💙' }}
+        } @else {
+          Dalej
+        }
+      </button>
+    </footer>
+  </form>
+</dialog>

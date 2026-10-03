@@ -1,0 +1,42 @@
+dialog {
+  width: min(34rem, 100vw);
+  max-width: 100vw;
+  max-height: 80dvh;
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 1.75rem 1.75rem 0 0;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 -1rem 3rem rgb(20 30 60 / 0.2);
+
+  &[open] {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  &::backdrop {
+    background: rgb(25 35 70 / 0.4);
+  }
+}
+
+.panel {
+  padding: 1rem 1.25rem 1.5rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.4rem;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+}
