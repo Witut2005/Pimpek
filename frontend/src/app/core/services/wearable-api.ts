@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
+import { FoodRating, MealDay, RatingRequest } from '../models/meals.model';
 import { SourceId, WearableDay } from '../models/metrics.model';
 
 const HISTORY_DAYS = 28;
 
-/** How the backend reaches Garmin: official OAuth via Open Wearables, or the direct login. */
-export type ConnectionVia = 'open_wearables' | 'garmin_connect';
+/** How the backend reaches a source: Garmin via Open Wearables OAuth or its direct login; Fitatu by login. */
+export type ConnectionVia = 'open_wearables' | 'garmin_connect' | 'fitatu';
 
 export interface ApiSource {
   id: SourceId;
@@ -26,7 +27,8 @@ interface ApiDay {
   complete: boolean;
 }
 
-export type GarminLoginResult =
+/** Only Garmin ever asks for MFA. */
+export type LoginResult =
   | { status: 'connected' }
   | { status: 'mfa_required'; mfa_session: string };
 
@@ -67,12 +69,25 @@ export class WearableApi {
       );
   }
 
-  garminLogin(email: string, password: string): Observable<GarminLoginResult> {
-    return this.http.post<GarminLoginResult>('/api/garmin/connect', { email, password });
+  /** E-mail and password login to Garmin or Fitatu. The backend keeps only the session tokens. */
+  login(id: SourceId, email: string, password: string): Observable<LoginResult> {
+    return this.http.post<LoginResult>(`/api/${id}/connect`, { email, password });
   }
 
-  garminMfa(mfaSession: string, code: string): Observable<GarminLoginResult> {
-    return this.http.post<GarminLoginResult>('/api/garmin/mfa', { mfa_session: mfaSession, code });
+  garminMfa(mfaSession: string, code: string): Observable<LoginResult> {
+    return this.http.post<LoginResult>('/api/garmin/mfa', { mfa_session: mfaSession, code });
+  }
+
+  /** The day's meals from the connected food diary (Fitatu). 409 when none is connected. */
+  fetchMeals(date: string): Observable<MealDay> {
+    return this.http.get<MealDay>('/api/meals', { params: { date } });
+  }
+
+  /** Gemini's rating of the day's food. 503 when the backend has no Gemini key. */
+  rateFood(request: RatingRequest): Observable<FoodRating> {
+    return this.http
+      .post<Omit<FoodRating, 'source'>>('/api/food/rating', request)
+      .pipe(map((rating) => ({ ...rating, source: 'ai' as const })));
   }
 
   /** Asks Garmin to push up to 30 days of history to Open Wearables (arrives via webhook). */

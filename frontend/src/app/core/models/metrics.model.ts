@@ -1,6 +1,6 @@
 import { IconName } from '../../shared/icon/icon';
 
-export type SourceId = 'garmin' | 'oura' | 'apple-health' | 'health-connect';
+export type SourceId = 'garmin' | 'fitatu' | 'oura' | 'apple-health' | 'health-connect';
 
 export interface SourceInfo {
   id: SourceId;
@@ -9,10 +9,14 @@ export interface SourceInfo {
   short: string;
   genitive: string;
   icon: IconName;
+  /** A wearable feeds sleep and steps; a food diary feeds the meals in the check-in. */
+  kind: 'wearable' | 'diet';
   /** Apple Health and Health Connect have no web API — they need the native app. */
   web: boolean;
   /** Not wired to the backend yet — shown, but can't be connected. */
   soon?: boolean;
+  /** Can also connect through the official OAuth via Open Wearables, not just e-mail and password. */
+  oauth?: boolean;
   reads: readonly string[];
 }
 
@@ -23,8 +27,20 @@ export const SOURCES: readonly SourceInfo[] = [
     short: 'Garmin',
     genitive: 'Garmina',
     icon: 'watch',
+    kind: 'wearable',
     web: true,
+    oauth: true,
     reads: ['sen', 'kroki', 'tętno spoczynkowe', 'bieganie'],
+  },
+  {
+    id: 'fitatu',
+    name: 'Fitatu',
+    short: 'Fitatu',
+    genitive: 'Fitatu',
+    icon: 'apple',
+    kind: 'diet',
+    web: true,
+    reads: ['posiłki', 'kalorie', 'makroskładniki'],
   },
   {
     id: 'oura',
@@ -32,6 +48,7 @@ export const SOURCES: readonly SourceInfo[] = [
     short: 'Oura',
     genitive: 'Oury',
     icon: 'ring',
+    kind: 'wearable',
     web: true,
     soon: true,
     reads: ['sen', 'kroki', 'tętno spoczynkowe'],
@@ -42,6 +59,7 @@ export const SOURCES: readonly SourceInfo[] = [
     short: 'Apple Health',
     genitive: 'Apple Health',
     icon: 'heart',
+    kind: 'wearable',
     web: false,
     reads: ['sen', 'kroki'],
   },
@@ -51,6 +69,7 @@ export const SOURCES: readonly SourceInfo[] = [
     short: 'Health Connect',
     genitive: 'Health Connect',
     icon: 'phone',
+    kind: 'wearable',
     web: false,
     reads: ['sen', 'kroki'],
   },

@@ -1,3 +1,5 @@
+import { FoodEntry, FoodRating } from './meals.model';
+
 export type AvatarState = 'happy' | 'neutral' | 'sleepy' | 'sad' | 'sick';
 
 export interface DailyCheckIn {
@@ -16,8 +18,12 @@ export interface DailyCheckIn {
     qualityNote?: string;
   };
   food: {
-    /** 0–100 */
+    /** 0–100: the rating's score, or neutral when nothing was logged. */
     qualityScore: number;
+    /** What was eaten: from the food diary and/or typed in. */
+    meals?: FoodEntry[];
+    rating?: FoodRating;
+    /** Free text from before the meal list; only older entries and the demo data have it. */
     note?: string;
   };
   metrics: {

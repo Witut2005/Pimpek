@@ -8,8 +8,9 @@ Port 8001, because Open Wearables uses 8000. The Angular dev server proxies `/ap
 (`frontend/proxy.conf.json`). Docs: http://localhost:8001/docs. Tests: `.venv/bin/pytest`.
 
 ## What the frontend uses
-- `GET /api/sources`: connected wearables, `[{id:"garmin", via:"open_wearables"|"garmin_connect", connectedAt}]`
+- `GET /api/sources`: connected sources, `[{id:"garmin"|"fitatu", via:"open_wearables"|"garmin_connect"|"fitatu", connectedAt}]`
 - `DELETE /api/sources/garmin`: disconnect, whichever way it was connected
+- `DELETE /api/sources/fitatu`: forget the Fitatu session
 - `GET /api/days?count=28&today=YYYY-MM-DD`: one row per day, newest first:
   `{date, source, sleepHours, sleepScore, steps, restingHr, runningKm, complete}`. Missing values are `null`.
   Returns 409 when nothing is connected.
@@ -17,6 +18,31 @@ Port 8001, because Open Wearables uses 8000. The Angular dev server proxies `/ap
 `/api/days` reads from Open Wearables when it has an active Garmin connection for the user,
 and from the direct Garmin login otherwise. If OW is down, it falls back to the direct login. Days older
 than yesterday are cached in `data/cache/<user>.json`, so only the first sync is slow.
+
+- `GET /api/meals?date=YYYY-MM-DD` (default today): the day's meals from Fitatu,
+  `{date, source:"fitatu", meals:[{key, name, time, kcal, items:[{id, name, brand, amount, kcal, protein, fat, carbs, fiber, sugars}]}], totals}`.
+  Only meals with items are listed. Every item counts, like in Fitatu's own day total (its `eaten` flag is
+  false for products added the usual way, so it is ignored).
+  Returns 409 when Fitatu is not connected or its session ended.
+
+- `POST /api/food/rating` `{date, meals:[{name, time?, items:[{name, amount?, source:"fitatu"|"manual", kcal?, protein?, fat?, carbs?, fiber?, sugars?}]}]}`
+  -> `{score, label, summary, positives, improvements, incomplete, model}`: Gemini's 0–100 rating of the day's food.
+  503 when `GEMINI_API_KEY` is not set (the frontend then shows its own rough estimate), 502/429 when Gemini fails.
+
+## AI food rating (Gemini)
+Put a key from https://aistudio.google.com/apikey into `backend/.env` as `GEMINI_API_KEY` and restart the backend.
+`GEMINI_MODEL` picks the model (default `gemini-3.8-flash`). The key stays on the backend, never in the browser.
+The rating instructions are in `app/prompts/food_rating.md`: edit them there, no code change needed.
+Meal names typed by users only go into the user turn as JSON, never into the instructions.
+The meals are sent to Google; on the free tier Google may use them to improve its products.
+
+## Connecting Fitatu
+`POST /api/fitatu/connect` `{email, password}` -> `{status:"connected"}`, or 401 for a wrong e-mail/password.
+
+The password is never stored, only the JWT and refresh token (`data/fitatu/<user>.json`), refreshed on expiry.
+Fitatu has no public API: this uses the private API of its mobile app (base URL and client headers in `app/config.py`,
+overridable with `FITATU_*` env vars), as documented by community clients. It may break without notice and is not
+covered by Fitatu's terms.
 
 ## Connecting Garmin
 **Direct login** (works today):

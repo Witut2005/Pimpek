@@ -106,29 +106,67 @@
         }
         @case (2) {
           <div class="big-emoji" aria-hidden="true">{{ foodEmoji() }}</div>
-          <label class="field">
-            <span class="center"
-              >Jak zdrowo jadłeś/aś? <strong>{{ foodLabel() }}</strong></span
-            >
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              formControlName="foodScore"
-              aria-label="Jak zdrowo jadłeś/aś"
-              [attr.aria-valuetext]="foodLabel()"
-              [style.--pct]="values().foodScore"
-            />
-          </label>
-          <label class="field">
-            <span>Co dobrego (lub nie) wjechało?</span>
-            <input
-              type="text"
-              formControlName="foodNote"
-              placeholder="np. dobry obiad, ale też czekolada"
-            />
-          </label>
+          @if (mealsStatus() === 'loading') {
+            <p class="meals-hint" role="status">
+              <app-icon name="refresh" class="spin" /> Zaglądam do {{ diet()?.genitive }}…
+            </p>
+          } @else if (mealsStatus() === 'error') {
+            <p class="meals-hint">
+              Nie udało się pobrać posiłków z {{ diet()?.genitive }}. Możesz wpisać je poniżej.
+            </p>
+          } @else if (mealDay(); as day) {
+            @if (!day.meals.length) {
+              <p class="meals-hint">
+                W {{ diet()?.short }} nie ma posiłków z {{ formatDayMonth(day.date) }}.
+                @if (demoShifted()) {
+                  Ten dzień jest przewinięty w trybie demo, a Fitatu zna tylko prawdziwe dni.
+                }
+              </p>
+            }
+          }
+
+          <app-food-step [entries]="foodEntries()" (entriesChange)="onFoodEdited($event)" />
+
+          @if (diet() && mealsStatus() !== 'loading') {
+            <button type="button" class="meals-reload" (click)="reloadMeals()">
+              <app-icon name="refresh" /> Pobierz jeszcze raz z {{ diet()?.genitive }}
+            </button>
+          }
+
+          <div class="rating" aria-live="polite">
+            @if (ratingStatus() === 'loading') {
+              <p class="meals-hint">
+                <app-icon name="refresh" class="spin" /> {{ petName() }} ocenia, jak zdrowo było…
+              </p>
+            } @else if (rating(); as r) {
+              <div class="rating-head">
+                <strong>{{ r.label }}</strong>
+                <span class="score">{{ r.score }}/100</span>
+              </div>
+              <p>{{ r.summary }}</p>
+              @if (r.positives.length) {
+                <ul class="points good" aria-label="Co było dobre">
+                  @for (point of r.positives; track $index) {
+                    <li>{{ point }}</li>
+                  }
+                </ul>
+              }
+              @if (r.improvements.length) {
+                <ul class="points tips" aria-label="Na jutro">
+                  @for (point of r.improvements; track $index) {
+                    <li>{{ point }}</li>
+                  }
+                </ul>
+              }
+              @if (r.source === 'ai') {
+                <small>Ocenia AI (Gemini), może się czasem pomylić.</small>
+              }
+            } @else {
+              <p class="meals-hint">
+                Wpisz, co dziś zjadłeś/aś, a {{ petName() }} oceni, jak zdrowo było.
+              </p>
+            }
+          </div>
         }
         @case (3) {
           @if (showRunning()) {

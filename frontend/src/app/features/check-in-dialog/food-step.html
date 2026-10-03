@@ -1,0 +1,121 @@
+@if (groups().length) {
+  <p class="total">
+    Razem <strong>{{ totalKcal() }} kcal</strong>
+    @if (withoutKcal()) {
+      <small>+ {{ withoutKcal() }} bez kalorii</small>
+    }
+  </p>
+}
+
+@for (group of groups(); track group.meal) {
+  <section class="meal" [attr.aria-label]="group.name">
+    <h4>
+      <span>
+        {{ group.name }}
+        @if (group.time) {
+          <small>{{ group.time }}</small>
+        }
+      </span>
+      @if (group.kcal) {
+        <small>{{ round(group.kcal) }} kcal</small>
+      }
+    </h4>
+    <ul>
+      @for (entry of group.entries; track entry.id) {
+        @if (editing() === entry.id) {
+          <li class="editing"><ng-container *ngTemplateOutlet="editor" /></li>
+        } @else {
+          <li>
+            <div class="what">
+              <span>{{ entry.name }}</span>
+              @if (entry.amount || (entry.fitatuId && !entry.edited)) {
+                <small>
+                  {{ entry.amount }}
+                  @if (entry.fitatuId && !entry.edited) {
+                    <span class="tag">Fitatu</span>
+                  }
+                </small>
+              }
+            </div>
+            @if (entry.kcal !== undefined) {
+              <span class="kcal">{{ round(entry.kcal) }} kcal</span>
+            }
+            <button type="button" class="mini" [attr.aria-label]="'Popraw: ' + entry.name" (click)="edit(entry)">
+              <app-icon name="pencil" />
+            </button>
+            <button type="button" class="mini" [attr.aria-label]="'Usuń: ' + entry.name" (click)="remove(entry)">
+              <app-icon name="trash" />
+            </button>
+          </li>
+        }
+      }
+    </ul>
+  </section>
+}
+
+@if (editing() === 'new') {
+  <ng-container *ngTemplateOutlet="editor" />
+} @else {
+  <button type="button" class="btn soft small add" (click)="add()">+ Dodaj coś zjedzonego</button>
+}
+
+<ng-template #editor>
+  <div class="editor" role="group" [attr.aria-label]="editing() === 'new' ? 'Dodaj jedzenie' : 'Popraw jedzenie'">
+    <label class="input">
+      <span>Co</span>
+      <input
+        #nameInput
+        class="text-input"
+        type="text"
+        maxlength="120"
+        placeholder="np. jajecznica z pomidorem"
+        [value]="initial().name"
+        (input)="patch('name', $event)"
+        (keydown.enter)="save($event)"
+      />
+    </label>
+    <div class="pair">
+      <label class="input">
+        <span>Ile</span>
+        <input
+          class="text-input"
+          type="text"
+          maxlength="60"
+          placeholder="np. 200 g, 1 talerz"
+          [value]="initial().amount"
+          (input)="patch('amount', $event)"
+          (keydown.enter)="save($event)"
+        />
+      </label>
+      <label class="input kcal">
+        <span>kcal</span>
+        <input
+          class="text-input"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          max="10000"
+          placeholder="?"
+          [value]="initial().kcal"
+          (input)="patch('kcal', $event)"
+          (keydown.enter)="save($event)"
+        />
+      </label>
+    </div>
+    <label class="input">
+      <span>Posiłek</span>
+      <select class="text-input" (change)="patch('meal', $event)">
+        @for (slot of slots(); track slot.key) {
+          <option [value]="slot.key" [selected]="slot.key === initial().meal">{{ slot.name }}</option>
+        }
+      </select>
+    </label>
+    <small class="hint">Kalorie możesz pominąć, AI oszacuje je z nazwy i porcji.</small>
+    <div class="actions">
+      <button type="button" class="btn ghost small" (click)="cancel()">Anuluj</button>
+      <button type="button" class="btn primary small" [disabled]="!draft().name.trim()" (click)="save()">
+        {{ editing() === 'new' ? 'Dodaj' : 'Zapisz' }}
+      </button>
+    </div>
+  </div>
+</ng-template>

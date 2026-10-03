@@ -1,3 +1,6 @@
+import logging
+from typing import Literal
+
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from garminconnect import (
@@ -8,13 +11,18 @@ from garminconnect import (
 from pydantic import BaseModel, Field
 
 from . import daily
+from . import fitatu_service as fitatu
+from . import food_rating
 from . import garmin_service as garmin
+from . import nutrition
 from . import open_wearables as ow
 from .config import settings
 from .main_deps import current_user
 from .wearables_router import router as wearables_router
 
 app = FastAPI(title="HackYeah API")
+# uvicorn's own logger, so warnings land in the same terminal with the same format.
+log = logging.getLogger("uvicorn.error")
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +51,39 @@ def _map_garmin_errors(fn, *args):
         raise HTTPException(429, "Garmin is rate limiting us, try again later")
     except GarminConnectConnectionError:
         raise HTTPException(502, "Could not reach Garmin")
+
+
+def _map_fitatu_errors(fn, *args):
+    try:
+        return fn(*args)
+    except fitatu.NotConnected as e:
+        raise HTTPException(409, str(e))
+    except fitatu.InvalidCredentials as e:
+        raise HTTPException(401, str(e))
+    except fitatu.FitatuError as e:
+        # Fitatu's API is unofficial: when it changes, its answer here is the first clue.
+        log.warning("Fitatu returned %s: %s", e.status, e.detail)
+        if e.status == 429:
+            raise HTTPException(429, "Fitatu is rate limiting us, try again later")
+        raise HTTPException(502, f"Fitatu: {e.detail}")
+    except fitatu.FitatuUnavailable as e:
+        log.warning("Could not reach Fitatu: %s", e)
+        raise HTTPException(502, "Could not reach Fitatu")
+
+
+def _map_rating_errors(fn, *args):
+    try:
+        return fn(*args)
+    except food_rating.NotConfigured as e:
+        raise HTTPException(503, str(e))
+    except food_rating.RatingError as e:
+        log.warning("Gemini returned %s: %s", e.status, e.detail)
+        if e.status == 429:
+            raise HTTPException(429, "Gemini is rate limiting us, try again later")
+        raise HTTPException(502, f"Gemini: {e.detail}")
+    except food_rating.RatingUnavailable as e:
+        log.warning("Could not reach Gemini: %s", e)
+        raise HTTPException(502, "Could not reach Gemini")
 
 app.include_router(wearables_router)
 
@@ -104,13 +145,19 @@ def activity(activity_id: str, user: str = Depends(current_user)):
 
 @app.get("/api/sources")
 def sources(user: str = Depends(current_user)):
-    """Connected wearables: [{id, via: open_wearables|garmin_connect, connectedAt}]."""
-    return daily.sources(user)
+    """Connected sources: [{id, via: open_wearables|garmin_connect|fitatu, connectedAt}]."""
+    return daily.sources(user) + nutrition.sources(user)
 
 
 @app.delete("/api/sources/garmin")
 def disconnect_source(user: str = Depends(current_user)):
     _map_garmin_errors(daily.disconnect, user)
+    return {"connected": False}
+
+
+@app.delete("/api/sources/fitatu")
+def disconnect_fitatu(user: str = Depends(current_user)):
+    fitatu.disconnect(user)
     return {"connected": False}
 
 
@@ -122,3 +169,56 @@ def days(
 ):
     """Sleep, steps, resting HR and running km per day, newest first."""
     return _map_garmin_errors(daily.days, user, count, today)
+
+
+# --- Meals (Fitatu) ---------------------------------------------------------------
+
+
+@app.post("/api/fitatu/connect")
+def fitatu_connect(body: ConnectBody, user: str = Depends(current_user)):
+    return _map_fitatu_errors(fitatu.login, user, body.email, body.password)
+
+
+@app.get("/api/meals")
+def meals(
+    date: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    user: str = Depends(current_user),
+):
+    """One day's meals with their items, and the day's kcal/macro totals."""
+    return _map_fitatu_errors(nutrition.meals, user, date)
+
+
+# --- AI food rating (Gemini) --------------------------------------------------------
+
+
+class RatedItem(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    amount: str | None = Field(None, max_length=60)
+    # "fitatu": nutrients come from its product database; "manual": typed in, Gemini estimates.
+    source: Literal["fitatu", "manual"] = "manual"
+    kcal: float | None = Field(None, ge=0, le=10_000)
+    protein: float | None = Field(None, ge=0, le=1_000)
+    fat: float | None = Field(None, ge=0, le=1_000)
+    carbs: float | None = Field(None, ge=0, le=1_000)
+    fiber: float | None = Field(None, ge=0, le=1_000)
+    sugars: float | None = Field(None, ge=0, le=1_000)
+
+
+class RatedMeal(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+    time: str | None = Field(None, max_length=8)
+    items: list[RatedItem] = Field(min_length=1, max_length=40)
+
+
+class RatingBody(BaseModel):
+    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    meals: list[RatedMeal] = Field(min_length=1, max_length=10)
+
+
+@app.post("/api/food/rating")
+def rate_food(body: RatingBody, user: str = Depends(current_user)):
+    """Gemini's 0–100 rating of the day's food, with a short summary, positives and tips.
+
+    503 when no GEMINI_API_KEY is set: the frontend then shows its own rough estimate.
+    """
+    return _map_rating_errors(food_rating.rate, body.model_dump(exclude_none=True))

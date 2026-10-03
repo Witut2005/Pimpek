@@ -1,5 +1,6 @@
 import { AvatarState, CheckInInput, DailyCheckIn } from '../models/check-in.model';
 import { Badge, PetItem } from '../models/item.model';
+import { Nutrients } from '../models/meals.model';
 import { WearableDay } from '../models/metrics.model';
 import { DEFAULT_GOALS, Goals } from '../models/settings.model';
 import { addDays, daysBetween } from '../../shared/date';
@@ -102,6 +103,25 @@ export function foodLabel(score: number): string {
   if (score < 60) return 'tak sobie';
   if (score < 80) return 'nieźle';
   return 'zdrowo i kolorowo';
+}
+
+/**
+ * A first guess for the food slider from the diary — the user still has the last word.
+ * Protein, fibre and regular meals push it up; sugar-heavy days and very low or very high
+ * intake pull it down. Lands on the slider's step of 5, between 25 and 90.
+ */
+export function foodScoreFromMeals(totals: Nutrients, mealCount: number): number {
+  if (!totals.kcal) return 50;
+  const energyShare = (grams: number) => (grams * 4) / totals.kcal;
+  const protein = energyShare(totals.protein);
+  const sugars = energyShare(totals.sugars);
+  let score = 50;
+  score += protein >= 0.2 ? 15 : protein >= 0.15 ? 8 : 0;
+  score += totals.fiber >= 25 ? 15 : totals.fiber >= 15 ? 8 : 0;
+  score -= sugars > 0.25 ? 15 : sugars > 0.15 ? 5 : 0;
+  score += mealCount >= 3 ? 10 : 0;
+  if (totals.kcal < 1200 || totals.kcal > 3200) score -= 10;
+  return Math.round(clamp(score) / 5) * 5;
 }
 
 /** Consecutive days ending today (or yesterday, so the streak isn't "lost" before today's entry). */

@@ -59,6 +59,12 @@ export class DemoControls {
     this.sync.sync();
   }
 
+  /** Undoes the fast-forward without reloading the scenario, so the demo's data stays. */
+  backToToday(): void {
+    this.clock.reset();
+    this.sync.sync();
+  }
+
   failNextSync(): void {
     this.wearableApi.failNext = true;
     this.sync.sync();

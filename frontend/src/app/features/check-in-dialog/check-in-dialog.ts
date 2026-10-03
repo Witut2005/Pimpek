@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,15 +11,20 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { map } from 'rxjs';
+import { map, Subscription } from 'rxjs';
 import { CheckInInput, DailyCheckIn } from '../../core/models/check-in.model';
-import { foodLabel, moodLabel, StatKey } from '../../core/state/pet-rules';
+import { FoodEntry, FoodRating, MealDay } from '../../core/models/meals.model';
+import { WearableApi } from '../../core/services/wearable-api';
+import { moodLabel, StatKey } from '../../core/state/pet-rules';
+import { ClockStore } from '../../core/state/clock.store';
+import { estimateFoodRating, mergeDiary, ratingRequest } from '../../core/state/food-entries';
 import { PetStore, SaveResult } from '../../core/state/pet.store';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
-import { formatHours, formatKm, formatSteps } from '../../shared/format';
+import { formatDayMonth, formatHours, formatKm, formatSteps } from '../../shared/format';
 import { Icon, IconName } from '../../shared/icon/icon';
 import { NEEDS } from '../needs/needs';
+import { FoodStep } from './food-step';
 
 const STEPS: readonly { title: string; icon: IconName }[] = [
   { title: 'Nastrój', icon: 'smile' },
@@ -36,9 +42,14 @@ const RESTED_SLEEP_SCORE = 70;
 
 const MOOD_EMOJI = ['😫', '😣', '😞', '😕', '😐', '🙂', '😊', '😄', '😁', '🤩'];
 
+/** Wait for a pause in editing before asking the AI, so each keystroke-sized change isn't a request. */
+const RATING_DEBOUNCE_MS = 800;
+/** Nothing logged: Pimpek can't tell, so the need sits in the middle instead of starving. */
+const NOTHING_LOGGED_SCORE = 50;
+
 @Component({
   selector: 'app-check-in-dialog',
-  imports: [ReactiveFormsModule, Icon],
+  imports: [ReactiveFormsModule, Icon, FoodStep],
   templateUrl: './check-in-dialog.html',
   styleUrl: './check-in-dialog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,7 +58,18 @@ export class CheckInDialog {
   private readonly store = inject(PetStore);
   private readonly sources = inject(SourcesStore);
   private readonly settings = inject(SettingsStore);
+  private readonly api = inject(WearableApi);
+  private readonly clock = inject(ClockStore);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
+  private mealsRequest?: Subscription;
+  private ratingRequest?: Subscription;
+  private ratingTimer?: ReturnType<typeof setTimeout>;
+  /** The day being filled in. */
+  private mealsDate = '';
+  /** The entry being edited, if any. */
+  private existing?: DailyCheckIn;
+  /** Diary items the user removed: a reload from the diary must not bring them back. */
+  private dismissed = new Set<string>();
 
   readonly saved = output<SaveResult>();
 
@@ -61,6 +83,18 @@ export class CheckInDialog {
     return km === undefined ? undefined : Math.round(km * 10) / 10;
   });
   protected readonly sourceName = computed(() => this.sources.primary()?.genitive ?? 'zegarka');
+  /** With a food diary, the food step starts from what was logged there. */
+  protected readonly diet = this.sources.diet;
+  protected readonly mealDay = signal<MealDay | undefined>(undefined);
+  protected readonly mealsStatus = signal<'idle' | 'loading' | 'error'>('idle');
+  /** What was eaten, as the user confirms it: diary items, edited or not, and typed-in food. */
+  protected readonly foodEntries = signal<FoodEntry[]>([]);
+  protected readonly rating = signal<FoodRating | undefined>(undefined);
+  protected readonly ratingStatus = signal<'idle' | 'loading'>('idle');
+  protected readonly petName = this.settings.petName;
+  /** A fast-forwarded demo day asks the real diary about a day that hasn't happened yet. */
+  protected readonly demoShifted = computed(() => this.clock.offsetDays() !== 0);
+  protected readonly formatDayMonth = formatDayMonth;
   protected readonly submitLabel = computed(() => {
     if (this.isEdit()) return 'Zapisz zmiany';
     return this.settings.petName() === 'Pimpek' ? 'Nakarm Pimpka' : 'Zapisz dzień';
@@ -86,8 +120,6 @@ export class CheckInDialog {
     sleepHours: 7.5,
     feelingRested: true,
     sleepNote: '',
-    foodScore: 70,
-    foodNote: '',
     runningKm: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     screenHours: 3,
     metWithFriends: false,
@@ -103,10 +135,10 @@ export class CheckInDialog {
   protected readonly moodEmoji = computed(() => MOOD_EMOJI[this.values().moodScore - 1]);
   protected readonly moodLabel = computed(() => moodLabel(this.values().moodScore));
   protected readonly foodEmoji = computed(() => {
-    const score = this.values().foodScore;
+    const score = this.rating()?.score;
+    if (score === undefined) return '🍽️';
     return score < 30 ? '🍟' : score < 60 ? '🍝' : score < 80 ? '🥪' : '🥗';
   });
-  protected readonly foodLabel = computed(() => foodLabel(this.values().foodScore));
 
   /** Filled share of a range track, 0–100, used to paint the soft progress on sliders. */
   protected fill(value: number, min: number, max: number): number {
@@ -122,14 +154,17 @@ export class CheckInDialog {
     this.focus.set(existing && need ? need : null);
     this.step.set(need ? STEP_OF[need] : 0);
     this.form.reset();
+    this.existing = existing;
+    this.dismissed = new Set();
+    this.cancelRating();
+    this.foodEntries.set(existing?.food.meals ?? []);
+    this.rating.set(existing?.food.rating);
     if (existing) {
       this.form.setValue({
         moodScore: existing.mood.score,
         sleepHours: existing.sleep.durationHours,
         feelingRested: existing.sleep.feelingRested,
         sleepNote: existing.sleep.qualityNote ?? '',
-        foodScore: existing.food.qualityScore,
-        foodNote: existing.food.note ?? '',
         runningKm: existing.metrics.runningDistanceKm,
         screenHours: existing.metrics.screenTimeHours,
         metWithFriends: existing.social.metWithFriends,
@@ -139,7 +174,87 @@ export class CheckInDialog {
     } else {
       this.prefillFromWearable();
     }
+    this.mealsDate = existing?.date ?? this.store.today();
+    // An edit keeps the list as saved; the diary only comes in when the user asks for it.
+    this.loadMeals(!existing);
     this.dialog().nativeElement.showModal();
+  }
+
+  /**
+   * Fetched on every open, since meals keep being logged all day. `merge` puts the diary's
+   * items into the list (see mergeDiary): on a new entry's open, and on "Pobierz jeszcze raz".
+   */
+  private loadMeals(merge: boolean): void {
+    this.mealsRequest?.unsubscribe();
+    this.mealDay.set(undefined);
+    if (!this.diet()) {
+      this.mealsStatus.set('idle');
+      return;
+    }
+    this.mealsStatus.set('loading');
+    this.mealsRequest = this.api.fetchMeals(this.mealsDate).subscribe({
+      next: (day) => {
+        this.mealDay.set(day);
+        this.mealsStatus.set('idle');
+        if (merge && day.meals.length) {
+          this.foodEntries.set(mergeDiary(this.foodEntries(), day, this.dismissed));
+          this.scheduleRating();
+        }
+      },
+      error: (err: unknown) => {
+        // 409: the Fitatu session ended — show the source as disconnected, ask the user instead.
+        if (err instanceof HttpErrorResponse && err.status === 409) {
+          this.sources.refresh().subscribe();
+          this.mealsStatus.set('idle');
+          return;
+        }
+        this.mealsStatus.set('error');
+      },
+    });
+  }
+
+  /** For a meal logged in the diary while the dialog is open. */
+  protected reloadMeals(): void {
+    this.loadMeals(true);
+  }
+
+  /** From the food list: removed diary items are remembered, so a reload won't revive them. */
+  protected onFoodEdited(next: FoodEntry[]): void {
+    for (const entry of this.foodEntries()) {
+      if (entry.fitatuId && !next.some((e) => e.id === entry.id)) this.dismissed.add(entry.fitatuId);
+    }
+    this.foodEntries.set(next);
+    this.scheduleRating();
+  }
+
+  /**
+   * Re-rates after every change, once editing pauses. The previous rating stays on screen
+   * until the new one arrives. Without the AI (no key, an error) the estimate stands in.
+   */
+  private scheduleRating(): void {
+    this.cancelRating();
+    const entries = this.foodEntries();
+    if (!entries.length) {
+      this.rating.set(undefined);
+      return;
+    }
+    this.ratingStatus.set('loading');
+    this.ratingTimer = setTimeout(() => {
+      const done = (rating: FoodRating) => {
+        this.rating.set(rating);
+        this.ratingStatus.set('idle');
+      };
+      this.ratingRequest = this.api.rateFood(ratingRequest(this.mealsDate, entries)).subscribe({
+        next: done,
+        error: () => done(estimateFoodRating(entries)),
+      });
+    }, RATING_DEBOUNCE_MS);
+  }
+
+  private cancelRating(): void {
+    clearTimeout(this.ratingTimer);
+    this.ratingRequest?.unsubscribe();
+    this.ratingStatus.set('idle');
   }
 
   /** Whatever the watch already knows becomes the starting value — the user confirms or corrects it. */
@@ -173,6 +288,8 @@ export class CheckInDialog {
   }
 
   close(): void {
+    this.cancelRating();
+    this.mealsRequest?.unsubscribe();
     this.dialog().nativeElement.close();
   }
 
@@ -205,6 +322,13 @@ export class CheckInDialog {
       return;
     }
     const v = this.form.getRawValue();
+    const meals = this.foodEntries();
+    // Saved before the AI answered: the estimate fits the list as it is now, the old rating doesn't.
+    const rating = !meals.length
+      ? undefined
+      : this.ratingStatus() === 'loading' || !this.rating()
+        ? estimateFoodRating(meals)
+        : this.rating();
     const input: CheckInInput = {
       date: this.store.today(),
       mood: { score: v.moodScore, label: moodLabel(v.moodScore) },
@@ -213,7 +337,12 @@ export class CheckInDialog {
         feelingRested: v.feelingRested,
         qualityNote: v.sleepNote.trim() || undefined,
       },
-      food: { qualityScore: v.foodScore, note: v.foodNote.trim() || undefined },
+      food: {
+        qualityScore: rating?.score ?? this.existing?.food.qualityScore ?? NOTHING_LOGGED_SCORE,
+        meals: meals.length ? meals : undefined,
+        rating,
+        note: this.existing?.food.note,
+      },
       metrics: {
         runningDistanceKm: v.runningKm ?? 0,
         screenTimeHours: v.screenHours,

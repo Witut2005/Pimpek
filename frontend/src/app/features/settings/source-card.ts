@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { SourceInfo } from '../../core/models/metrics.model';
-import { GarminLoginResult, WearableApi } from '../../core/services/wearable-api';
+import { LoginResult, WearableApi } from '../../core/services/wearable-api';
 import { SourcesStore } from '../../core/state/sources.store';
 import { SyncStore } from '../../core/state/sync.store';
 import { Icon } from '../../shared/icon/icon';
@@ -10,27 +11,32 @@ import { Icon } from '../../shared/icon/icon';
 type Step = 'idle' | 'consent' | 'login' | 'mfa' | 'busy' | 'redirecting';
 
 /** Turns a backend error into something Pimpek can say. */
-function explain(err: unknown): string {
+function explain(err: unknown, source: SourceInfo): string {
   const status = err instanceof HttpErrorResponse ? err.status : 0;
+  // Every backend error carries FastAPI's JSON `detail`. A 5xx without it comes from the dev
+  // proxy (backend not running, or on another port) — not from the source.
+  const fromBackend = err instanceof HttpErrorResponse && typeof err.error?.detail === 'string';
+  if (status >= 500 && !fromBackend) return 'Nie mogę połączyć się z serwerem Pimpka. Czy backend działa?';
   switch (status) {
     case 401:
-      return 'Garmin nie przyjął e-maila lub hasła. Sprawdź je i spróbuj jeszcze raz.';
+      return `${source.short} nie rozpoznaje tego e-maila lub hasła. Sprawdź je i spróbuj jeszcze raz.`;
     case 410:
-      return 'Kod wygasł. Zaloguj się jeszcze raz, Garmin wyśle nowy.';
+      return `Kod wygasł. Zaloguj się jeszcze raz, ${source.short} wyśle nowy.`;
     case 429:
-      return 'Garmin prosi o chwilę przerwy. Spróbuj za kilka minut.';
+      return `${source.short} prosi o chwilę przerwy. Spróbuj za kilka minut.`;
     case 503:
       return 'Open Wearables nie działa. Użyj logowania e-mailem powyżej.';
     case 0:
       return 'Nie mogę połączyć się z serwerem Pimpka. Czy backend działa?';
     default:
-      return 'Nie udało się połączyć z Garminem. Spróbuj ponownie za chwilę.';
+      return `Nie udało się połączyć z ${source.short}. Spróbuj ponownie za chwilę.`;
   }
 }
 
 /**
- * One data source: consent primer → Garmin login (with MFA), or the official OAuth via
- * Open Wearables; then sync and disconnect. Native-only sources explain why they're not on the web.
+ * One data source: consent primer → e-mail login (Garmin may add MFA), or for Garmin the
+ * official OAuth via Open Wearables; then sync and disconnect. Native-only sources explain
+ * why they're not on the web.
  */
 @Component({
   selector: 'app-source-card',
@@ -50,6 +56,7 @@ export class SourceCard {
 
   protected readonly connected = computed(() => this.sources.isConnected(this.source().id));
   protected readonly primary = computed(() => this.sources.primary()?.id === this.source().id);
+  protected readonly isDiet = computed(() => this.source().kind === 'diet');
   protected readonly available = computed(() => this.source().web && !this.source().soon);
   protected readonly step = signal<Step>('idle');
   protected readonly error = signal('');
@@ -73,7 +80,7 @@ export class SourceCard {
 
   protected login(): void {
     if (!this.email.trim() || !this.password) return;
-    this.run('login', this.api.garminLogin(this.email.trim(), this.password));
+    this.run('login', this.api.login(this.source().id, this.email.trim(), this.password));
   }
 
   protected submitCode(): void {
@@ -88,7 +95,7 @@ export class SourceCard {
     this.api.oauthUrl(this.source().id, this.returnTo()).subscribe({
       next: (url) => location.assign(url),
       error: (err) => {
-        this.error.set(explain(err));
+        this.error.set(explain(err, this.source()));
         this.step.set('login');
       },
     });
@@ -98,18 +105,20 @@ export class SourceCard {
     this.sources.disconnect(this.source().id).subscribe({
       next: () => {
         this.step.set('idle');
+        // Meals are fetched per check-in, so only a wearable leaves synced data behind.
+        if (this.isDiet()) return;
         if (this.sources.primary()) this.sync.sync();
         else this.sync.clear();
       },
-      error: (err) => this.error.set(explain(err)),
+      error: (err) => this.error.set(explain(err, this.source())),
     });
   }
 
-  private run(from: 'login' | 'mfa', request: ReturnType<WearableApi['garminLogin']>): void {
+  private run(from: 'login' | 'mfa', request: Observable<LoginResult>): void {
     this.error.set('');
     this.step.set('busy');
     request.subscribe({
-      next: (result: GarminLoginResult) => {
+      next: (result) => {
         if (result.status === 'mfa_required') {
           this.mfaSession = result.mfa_session;
           this.code = '';
@@ -119,11 +128,11 @@ export class SourceCard {
         this.password = '';
         this.sources.refresh().subscribe(() => {
           this.step.set('idle');
-          this.sync.sync();
+          if (!this.isDiet()) this.sync.sync();
         });
       },
       error: (err) => {
-        this.error.set(explain(err));
+        this.error.set(explain(err, this.source()));
         // An expired MFA session can't be retried with a new code — start the login over.
         this.step.set(from === 'mfa' && (err as HttpErrorResponse).status !== 410 ? 'mfa' : 'login');
       },

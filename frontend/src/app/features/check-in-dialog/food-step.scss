@@ -1,0 +1,151 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.total {
+  margin: 0;
+  font-weight: 600;
+
+  small {
+    margin-left: 0.3rem;
+    color: var(--text-muted);
+  }
+}
+
+.meal h4 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+
+  small {
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+}
+
+ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.4rem 0.5rem 1rem;
+  border-radius: 1rem;
+  background: var(--surface-alt);
+
+  &.editing {
+    display: block;
+    padding: 0;
+    background: none;
+  }
+}
+
+.what {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+
+  // Wraps rather than cuts: on a phone, "Owsianka z bo…" says too little.
+  > span {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  small {
+    color: var(--text-muted);
+  }
+}
+
+.tag {
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 0.6rem;
+  background: var(--sage-200);
+  color: var(--sage-700);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.kcal {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+// Small, but still a comfortable tap target.
+.mini {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface);
+  }
+}
+
+.add {
+  align-self: flex-start;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border-radius: 1.2rem;
+  background: var(--peach-100);
+}
+
+.input {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  &.kcal {
+    flex: 0 0 6rem;
+  }
+}
+
+.text-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.pair {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
