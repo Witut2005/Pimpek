@@ -80,6 +80,14 @@ def _blank(day: str, today: str) -> dict[str, Any]:
     }
 
 
+METRICS = ("sleepHours", "sleepScore", "steps", "restingHr", "runningKm")
+
+
+def _has_data(entry: dict[str, Any]) -> bool:
+    """A day with nothing measured must not be cached: the watch may still sync it later."""
+    return any(entry.get(k) is not None for k in METRICS)
+
+
 def _round(value: float | None, digits: int = 2) -> float | None:
     return round(value, digits) if value is not None else None
 
@@ -131,7 +139,7 @@ def _from_garmin(user_id: str, days: list[str], today: str) -> list[dict[str, An
     client = garmin.client(user_id)
     cache = _read_cache(user_id)
     settled = (date.fromisoformat(today) - timedelta(days=SETTLED_AFTER_DAYS)).isoformat()
-    missing = [d for d in days if d not in cache or d > settled]
+    missing = [d for d in days if d not in cache or d > settled or not _has_data(cache[d])]
 
     def fetch(day: str) -> dict[str, Any] | None:
         try:
@@ -147,7 +155,7 @@ def _from_garmin(user_id: str, days: list[str], today: str) -> list[dict[str, An
     for day in days:
         entry = fetched.get(day) or cache.get(day) or _blank(day, today)
         entry = {**entry, "runningKm": _round(runs.get(day))}
-        if day in fetched and fetched[day] and day <= settled:
+        if day in fetched and fetched[day] and day <= settled and _has_data(entry):
             cache[day] = entry
         result.append(entry)
     _write_cache(user_id, cache)

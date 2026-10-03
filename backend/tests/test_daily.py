@@ -57,6 +57,7 @@ def ow_not_connected(request: httpx.Request) -> httpx.Response:
 def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "user_map_file", tmp_path / "map.json")
     monkeypatch.setattr(settings, "cache_dir", tmp_path / "cache")
+    monkeypatch.setattr(settings, "token_dir", tmp_path / "tokens")
     monkeypatch.setattr(settings, "open_wearables_api_key", "key")
     monkeypatch.setattr(ow, "_transport", httpx.MockTransport(ow_not_connected))
 
@@ -132,3 +133,11 @@ def test_open_wearables_down_falls_back_to_garmin(fake_garmin, monkeypatch):
 
 def test_rejects_bad_today():
     assert client.get("/api/days", params={"today": "03-10-2026"}).status_code == 422
+
+
+def test_empty_days_are_not_cached(fake_garmin, monkeypatch):
+    """No watch means every day is empty. Those must be refetched later, not frozen as blank."""
+    monkeypatch.setattr(fake_garmin, "get_user_summary", lambda day: {"totalSteps": None, "restingHeartRate": None})
+    monkeypatch.setattr(fake_garmin, "get_sleep_data", lambda day: {"dailySleepDTO": {"sleepTimeSeconds": None}})
+    client.get("/api/days", params={"count": 5, "today": TODAY})
+    assert daily._read_cache("82b25836-a99e-4f59-8c7b-34d451ddcd90") == {}

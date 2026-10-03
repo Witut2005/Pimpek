@@ -14,7 +14,11 @@
                 Nie udało się, spróbuj ponownie
               }
               @default {
-                Zsynchronizowano {{ sync.since() }}
+                @if (sync.days().length) {
+                  Zsynchronizowano {{ sync.since() }}
+                } @else {
+                  Połączono, brak danych z zegarka. Wpiszesz dzień ręcznie.
+                }
               }
             }
           } @else {
