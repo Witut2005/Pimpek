@@ -4,10 +4,12 @@ import {
   ApplicationConfig,
   LOCALE_ID,
   provideBrowserGlobalErrorListeners,
+  isDevMode,
   provideZonelessChangeDetection
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 
 import { routes } from './app.routes';
 import { CheckInService } from './core/services/check-in.service';
@@ -24,6 +26,10 @@ export const appConfig: ApplicationConfig = {
     // /api is proxied to the FastAPI backend (proxy.conf.json), so no CORS or base URL.
     provideHttpClient(withFetch()),
     { provide: LOCALE_ID, useValue: 'pl' },
-    { provide: CheckInService, useClass: MockCheckInService }
+    { provide: CheckInService, useClass: MockCheckInService },
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    })
   ]
 };
