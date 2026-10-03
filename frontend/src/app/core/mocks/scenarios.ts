@@ -43,21 +43,29 @@ export function wearableDay(
   let sleepHours: number;
   let steps: number;
   let restingHr: number;
+  let screenHours: number;
 
   if (scenario === 'rough') {
     sleepHours = 4.9 + n('sleep') * 1.7;
     steps = 1800 + n('steps') * 4200;
     restingHr = 66 + n('hr') * 7;
+    screenHours = 5 + n('screen') * 3.5;
   } else {
     const improving = (Math.max(0, 14 - daysAgo) / 14) * 0.35;
     sleepHours = 6.5 + n('sleep') * 1.6 + improving;
     steps = 5500 + n('steps') * 6500;
     restingHr = 55 + n('hr') * 5;
+    screenHours = 1.5 + n('screen') * 4;
   }
+
+  // The phone agrees with what the seeded check-in says about that day.
+  const seeded = seedFor(scenario).find((s) => s.daysAgo === daysAgo);
+  if (seeded) screenHours = seeded.screen;
 
   if (date === anchor) {
     sleepHours = scenario === 'rough' ? 5.4 : 7.85;
     steps = scenario === 'rough' ? 2100 : 9400;
+    screenHours = scenario === 'rough' ? 6 : 2;
   }
 
   const complete = date !== today;
@@ -68,6 +76,8 @@ export function wearableDay(
     // The day isn't over: only part of the steps are in.
     steps: Math.round(complete ? steps : steps * 0.45),
     restingHr: Math.round(restingHr),
+    // Half-hour steps, like the check-in slider, so "Użyj" compares like with like.
+    screenHours: Math.round(screenHours * 2) / 2,
     complete,
   };
 }
@@ -118,9 +128,11 @@ const ROUGH: readonly SeedDay[] = [
   { daysAgo: 21, mood: 5, food: 48, screen: 6.5, km: 0 },
 ];
 
+const seedFor = (scenario: Scenario): readonly SeedDay[] =>
+  scenario === 'good' ? GOOD : scenario === 'rough' ? ROUGH : [];
+
 export function buildScenarioCheckIns(scenario: Scenario, today: string, source: SourceId): DailyCheckIn[] {
-  const seed = scenario === 'good' ? GOOD : scenario === 'rough' ? ROUGH : [];
-  return seed.map(({ daysAgo, mood, food, screen, km, social, note, foodNote }) => {
+  return seedFor(scenario).map(({ daysAgo, mood, food, screen, km, social, note, foodNote }) => {
     const date = addDays(today, -daysAgo);
     const measured = wearableDay(scenario, date, today, today, source);
     const input: CheckInInput = {

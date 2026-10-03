@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { AvatarState } from '../../core/models/check-in.model';
 import { ItemId } from '../../core/models/item.model';
 import { SkinStore } from '../../core/state/skin.store';
@@ -36,4 +36,10 @@ export class PimpekAvatar {
 
   protected readonly skin = inject(SkinStore).active;
   protected readonly burst = BURST;
+
+  /**
+   * An uploaded skin keeps its mood when something good happens: only a happy one throws a party,
+   * the others just react the way that mood would — a sleepy one stays sleepy.
+   */
+  protected readonly cheering = computed(() => this.celebrating() && (!this.skin() || this.state() === 'happy'));
 }

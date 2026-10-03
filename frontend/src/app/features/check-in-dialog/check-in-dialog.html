@@ -13,11 +13,16 @@
       <ol class="steps" aria-label="Kroki">
         @for (s of steps; track s.title; let i = $index) {
           <li
-            [class.done]="i < step()"
+            [class.done]="!isEdit() && i < step()"
+            [class.changed]="changedSteps()[i]"
             [class.current]="i === step()"
             [attr.aria-current]="i === step() ? 'step' : null"
           >
-            <button type="button" (click)="step.set(i)" [attr.aria-label]="s.title">
+            <button
+              type="button"
+              (click)="step.set(i)"
+              [attr.aria-label]="changedSteps()[i] ? s.title + ' (zmienione)' : s.title"
+            >
               <app-icon [name]="s.icon" />
             </button>
           </li>
@@ -257,6 +262,17 @@
               />
               <small>Cel: max {{ goals().screenMaxHours }} h</small>
             </label>
+            @if (measured()?.screenHours; as hours) {
+              <div class="hint">
+                <app-icon name="phone" />
+                <span
+                  >Według telefonu: <strong>{{ formatHours(hours) }}</strong></span
+                >
+                @if (values().screenHours !== hours) {
+                  <button type="button" class="link" (click)="useMeasured('screenHours')">Użyj</button>
+                }
+              </div>
+            }
           }
         }
         @case (4) {

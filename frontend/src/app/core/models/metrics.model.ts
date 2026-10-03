@@ -88,6 +88,8 @@ export interface WearableDay {
   restingHr?: number;
   /** Kilometres run that day, from the watch's recorded runs. */
   runningKm?: number;
+  /** Phone screen time (Screen Time / Digital Wellbeing). Only the demo feeds it for now. */
+  screenHours?: number;
   /** False for today: the day isn't over, steps keep growing. */
   complete: boolean;
 }

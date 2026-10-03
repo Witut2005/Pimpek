@@ -36,8 +36,12 @@ export function statsFor(entry: CheckInInput, goals: Goals = GOALS): PetStats {
     fitness: fitnessScore(entry.metrics.steps, entry.metrics.runningDistanceKm, goals),
     nutrition: clamp(entry.food.qualityScore),
     mood: clamp(entry.mood.score * 10 + (entry.social.metWithFriends ? 10 : 0)),
-    screen: clamp(100 - Math.max(0, entry.metrics.screenTimeHours - goals.screenMaxHours) * 20),
+    screen: screenScore(entry.metrics.screenTimeHours, goals),
   };
+}
+
+export function screenScore(screenHours: number, goals: Goals): number {
+  return clamp(100 - Math.max(0, screenHours - goals.screenMaxHours) * 20);
 }
 
 /**
@@ -56,10 +60,12 @@ export function withWearable<T extends CheckInInput>(entry: T, wearable: Wearabl
 export function measuredStats(
   wearable: WearableDay,
   goals: Goals,
-): Partial<Pick<PetStats, 'energy' | 'fitness'>> {
-  const fitness = fitnessScore(wearable.steps, wearable.runningKm ?? 0, goals);
-  if (wearable.sleepHours === undefined) return { fitness };
-  return { energy: energyScore(wearable.sleepHours, undefined, goals), fitness };
+): Partial<Pick<PetStats, 'energy' | 'fitness' | 'screen'>> {
+  return {
+    fitness: fitnessScore(wearable.steps, wearable.runningKm ?? 0, goals),
+    ...(wearable.sleepHours !== undefined && { energy: energyScore(wearable.sleepHours, undefined, goals) }),
+    ...(wearable.screenHours !== undefined && { screen: screenScore(wearable.screenHours, goals) }),
+  };
 }
 
 export function decayStats(stats: PetStats, days: number): PetStats {

@@ -1,5 +1,10 @@
 @if (skin(); as skin) {
-  <app-skin-player [skin]="skin" [state]="state()" [celebrating]="celebrating()" />
+  <app-skin-player
+    [skin]="skin"
+    [state]="state()"
+    [celebrating]="cheering()"
+    [reacting]="celebrating() && !cheering()"
+  />
 } @else {
   <app-pimpek-drawing
     [state]="state()"
@@ -18,7 +23,7 @@
       <span class="spark">✨</span><span class="spark">💙</span>
     }
   }
-  @if (celebrating()) {
+  @if (cheering()) {
     @for (b of burst; track $index) {
       <span class="burst" [style.--angle]="b.angle + 'deg'">{{ b.icon }}</span>
     }

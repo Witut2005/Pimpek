@@ -8,15 +8,17 @@ import { DemoControls } from '../../core/state/demo-controls';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SkinStore } from '../../core/state/skin.store';
 import { Icon } from '../../shared/icon/icon';
+import { Sheet } from '../../shared/sheet/sheet';
 import { KEYS, readJson } from '../../shared/storage';
 import { PimpekDrawing } from '../pimpek/pimpek-drawing';
 import { SkinPlayer } from '../pimpek/skin-player';
+import { SkinStudio } from '../skin-studio/skin-studio';
 import { GoalsPicker } from './goals-picker';
 import { SourceCard } from './source-card';
 
 @Component({
   selector: 'app-settings-panel',
-  imports: [Icon, GoalsPicker, SourceCard, PimpekDrawing, SkinPlayer],
+  imports: [Icon, GoalsPicker, SourceCard, PimpekDrawing, SkinPlayer, Sheet, SkinStudio],
   templateUrl: './settings-panel.html',
   styleUrl: './settings-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -85,9 +87,13 @@ export class SettingsPanel {
     this.settings.updateReminders({ [key]: (event.target as HTMLInputElement).value });
   }
 
-  /** RODO: the user can take everything we keep about them. */
+  /** RODO: the user can take everything we keep about them — except API keys, which are secrets. */
   protected exportData(): void {
-    const data = Object.fromEntries(Object.entries(KEYS).map(([name, key]) => [name, readJson(key, null)]));
+    const data = Object.fromEntries(
+      Object.entries(KEYS)
+        .filter(([, key]) => key !== KEYS.ai)
+        .map(([name, key]) => [name, readJson(key, null)]),
+    );
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     const link = Object.assign(document.createElement('a'), { href: url, download: 'pimpek-moje-dane.json' });
     link.click();

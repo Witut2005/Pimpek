@@ -9,6 +9,7 @@ export const KEYS = {
   scenario: 'pimpek.scenario',
   clock: 'pimpek.clock',
   skin: 'pimpek.skin',
+  ai: 'pimpek.ai',
 } as const;
 
 /** localStorage that never throws (private mode, blocked storage) — the demo must not crash on it. */

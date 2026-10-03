@@ -14,7 +14,10 @@ import { PetSkin } from '../../core/models/skin.model';
 
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/** Plays an uploaded skin: the clip for the current state, or its celebration while there is one. */
+/**
+ * Plays an uploaded skin: the clip for the current state, or its celebration while there is one.
+ * While reacting it stays in its mood's clip and only gives a short nudge in that mood's style.
+ */
 @Component({
   selector: 'app-skin-player',
   templateUrl: './skin-player.html',
@@ -23,6 +26,7 @@ const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').match
   host: {
     '[class]': "'is-' + state()",
     '[class.is-celebrating]': 'celebrating()',
+    '[class.is-reacting]': 'reacting()',
     '[class.is-moving]': 'skin().motion',
   },
 })
@@ -30,6 +34,7 @@ export class SkinPlayer {
   readonly skin = input.required<PetSkin>();
   readonly state = input.required<AvatarState>();
   readonly celebrating = input(false);
+  readonly reacting = input(false);
 
   protected readonly clip = computed(() => {
     const clips = this.skin().clips;

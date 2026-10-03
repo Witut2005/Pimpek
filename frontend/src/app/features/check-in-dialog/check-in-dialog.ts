@@ -37,6 +37,31 @@ const STEPS: readonly { title: string; icon: IconName }[] = [
 /** Which step answers each need — a need's sheet opens the dialog right there. */
 const STEP_OF: Record<StatKey, number> = { mood: 0, energy: 1, nutrition: 2, fitness: 3, screen: 3 };
 
+/** The form fields behind each step (food lives outside the form) — an edit marks the steps it moved. */
+const STEP_FIELDS = [
+  ['moodScore'],
+  ['sleepHours', 'feelingRested', 'sleepNote'],
+  [],
+  ['runningKm', 'screenHours'],
+  ['metWithFriends', 'socialContext', 'note'],
+] as const;
+
+/**
+ * What the food list says, in any order. Leaves out the local ids (a pull from the diary
+ * hands them out anew) and the `edited` flag, so only a real change counts.
+ */
+const foodKey = (entries: readonly FoodEntry[]): string =>
+  entries
+    .map(({ id: _id, edited: _edited, ...rest }) =>
+      JSON.stringify(
+        Object.entries(rest)
+          .filter(([, v]) => v !== undefined)
+          .sort(([a], [b]) => a.localeCompare(b)),
+      ),
+    )
+    .sort()
+    .join('\n');
+
 /** Garmin calls 70+ a "good" night — a fair default for "do you feel rested?". */
 const RESTED_SLEEP_SCORE = 70;
 
@@ -141,6 +166,20 @@ export class CheckInDialog {
     { initialValue: this.form.getRawValue() },
   );
 
+  /** The entry as it was when the edit started, to tell which steps it changed. */
+  private readonly original = signal(this.form.getRawValue());
+  private readonly originalFood = signal('');
+  /** Per step: did this edit change its answers? Always false for a new entry. */
+  protected readonly changedSteps = computed(() => {
+    if (!this.isEdit()) return STEPS.map(() => false);
+    const v = this.values();
+    const was = this.original();
+    const foodChanged = foodKey(this.foodEntries()) !== this.originalFood();
+    return STEP_FIELDS.map((fields, i) =>
+      i === STEP_OF.nutrition ? foodChanged : fields.some((f) => v[f] !== was[f]),
+    );
+  });
+
   protected readonly moodEmoji = computed(() => MOOD_EMOJI[this.values().moodScore - 1]);
   protected readonly moodLabel = computed(() => moodLabel(this.values().moodScore));
   protected readonly foodEmoji = computed(() => {
@@ -187,6 +226,8 @@ export class CheckInDialog {
         socialContext: existing.social.context ?? '',
         note: existing.note ?? '',
       });
+      this.original.set(this.form.getRawValue());
+      this.originalFood.set(foodKey(meals));
     } else {
       this.prefillFromWearable();
     }
@@ -282,14 +323,17 @@ export class CheckInDialog {
       ...(m.sleepHours !== undefined && { sleepHours: m.sleepHours }),
       ...(rested !== undefined && { feelingRested: rested }),
       ...(km !== undefined && { runningKm: km }),
+      ...(m.screenHours !== undefined && { screenHours: m.screenHours }),
     });
   }
 
   /** Puts the watch's reading back after the user moved away from it. */
-  protected useMeasured(field: 'sleepHours' | 'runningKm'): void {
+  protected useMeasured(field: 'sleepHours' | 'runningKm' | 'screenHours'): void {
     const m = this.measured();
     if (field === 'sleepHours' && m?.sleepHours !== undefined) {
       this.form.controls.sleepHours.setValue(m.sleepHours);
+    } else if (field === 'screenHours' && m?.screenHours !== undefined) {
+      this.form.controls.screenHours.setValue(m.screenHours);
     } else if (field === 'runningKm') {
       const km = this.measuredKm();
       if (km !== undefined) this.form.controls.runningKm.setValue(km);
