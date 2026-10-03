@@ -12,10 +12,10 @@
         <div class="details">
           <div class="chips">
             <span>😊 {{ e.mood.score }}/10</span>
-            <span>💤 {{ e.sleep.durationHours }} h</span>
+            <span>💤 {{ e.sleep.durationHours | number: '1.0-2' }} h</span>
             <span>🍎 {{ e.food.qualityScore }}</span>
-            <span>🏃 {{ e.metrics.runningDistanceKm }} km</span>
-            <span>📱 {{ e.metrics.screenTimeHours }} h</span>
+            <span>🏃 {{ e.metrics.runningDistanceKm | number: '1.0-2' }} km</span>
+            <span>📱 {{ e.metrics.screenTimeHours | number: '1.0-2' }} h</span>
             @if (e.social.metWithFriends) {
               <span>🫶</span>
             }
