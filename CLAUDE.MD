@@ -1,0 +1,1 @@
+Dla posiadania pełnego kontekstu przeczytaj opis projektu w pliku PROJECT.MD- znajduje się w nim problematyka oraz pomysł na projekt
