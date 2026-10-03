@@ -53,8 +53,13 @@ export class CheckInDialog {
 
   protected readonly steps = STEPS;
   protected readonly goals = this.store.goals;
-  /** With a wearable, sleep and steps are confirmations, not questions. */
+  /** Wearable data only pre-fills the form — what gets saved is what the user sets by hand. */
   protected readonly measured = this.store.todayWearable;
+  /** Rounded like the km field, so "is it still the watch's value?" compares like with like. */
+  protected readonly measuredKm = computed(() => {
+    const km = this.measured()?.runningKm;
+    return km === undefined ? undefined : Math.round(km * 10) / 10;
+  });
   protected readonly sourceName = computed(() => this.sources.primary()?.genitive ?? 'zegarka');
   protected readonly submitLabel = computed(() => {
     if (this.isEdit()) return 'Zapisz zmiany';
@@ -137,10 +142,11 @@ export class CheckInDialog {
     this.dialog().nativeElement.showModal();
   }
 
-  /** Whatever the watch already knows is answered for the user — they only confirm or tweak. */
+  /** Whatever the watch already knows becomes the starting value — the user confirms or corrects it. */
   private prefillFromWearable(): void {
     const m = this.measured();
     if (!m) return;
+    const km = this.measuredKm();
     const goal = this.goals().sleepHours;
     const rested =
       m.sleepScore !== undefined
@@ -151,8 +157,19 @@ export class CheckInDialog {
     this.form.patchValue({
       ...(m.sleepHours !== undefined && { sleepHours: m.sleepHours }),
       ...(rested !== undefined && { feelingRested: rested }),
-      ...(m.runningKm !== undefined && { runningKm: Math.round(m.runningKm * 10) / 10 }),
+      ...(km !== undefined && { runningKm: km }),
     });
+  }
+
+  /** Puts the watch's reading back after the user moved away from it. */
+  protected useMeasured(field: 'sleepHours' | 'runningKm'): void {
+    const m = this.measured();
+    if (field === 'sleepHours' && m?.sleepHours !== undefined) {
+      this.form.controls.sleepHours.setValue(m.sleepHours);
+    } else if (field === 'runningKm') {
+      const km = this.measuredKm();
+      if (km !== undefined) this.form.controls.runningKm.setValue(km);
+    }
   }
 
   close(): void {
@@ -188,20 +205,19 @@ export class CheckInDialog {
       return;
     }
     const v = this.form.getRawValue();
-    const measured = this.measured();
     const input: CheckInInput = {
       date: this.store.today(),
       mood: { score: v.moodScore, label: moodLabel(v.moodScore) },
       sleep: {
-        durationHours: measured?.sleepHours ?? v.sleepHours,
+        durationHours: v.sleepHours,
         feelingRested: v.feelingRested,
         qualityNote: v.sleepNote.trim() || undefined,
       },
       food: { qualityScore: v.foodScore, note: v.foodNote.trim() || undefined },
       metrics: {
-        runningDistanceKm: measured?.runningKm ?? v.runningKm ?? 0,
+        runningDistanceKm: v.runningKm ?? 0,
         screenTimeHours: v.screenHours,
-        steps: measured?.steps,
+        steps: this.measured()?.steps,
       },
       social: {
         metWithFriends: v.metWithFriends,

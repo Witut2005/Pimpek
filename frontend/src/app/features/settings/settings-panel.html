@@ -9,21 +9,96 @@
       (change)="rename($event)"
     />
   </label>
-  <div class="row">
-    <span>Kolor</span>
-    <div class="swatches" role="radiogroup" aria-label="Kolor Pimpka">
-      @for (c of colors; track c[0]) {
-        <button
-          type="button"
-          role="radio"
-          class="swatch"
-          [style.background]="c[1].hex"
-          [attr.aria-checked]="settings.settings().petColor === c[0]"
-          [attr.aria-label]="c[1].label"
-          (click)="settings.update({ petColor: c[0] })"
-        ></button>
-      }
+  @if (!skins.active()) {
+    <div class="row">
+      <span>Kolor</span>
+      <div class="swatches" role="radiogroup" aria-label="Kolor Pimpka">
+        @for (c of colors; track c[0]) {
+          <button
+            type="button"
+            role="radio"
+            class="swatch"
+            [style.background]="c[1].hex"
+            [attr.aria-checked]="settings.settings().petColor === c[0]"
+            [attr.aria-label]="c[1].label"
+            (click)="settings.update({ petColor: c[0] })"
+          ></button>
+        }
+      </div>
     </div>
+  }
+
+  <div
+    class="looks"
+    [class.dragging]="dragging()"
+    (dragover)="$event.preventDefault(); dragging.set(true)"
+    (dragleave)="dragging.set(false)"
+    (drop)="drop($event)"
+  >
+    <span>Wygląd</span>
+    <div class="skin-list" role="radiogroup" aria-label="Wygląd Pimpka">
+      <button
+        type="button"
+        role="radio"
+        class="skin"
+        [attr.aria-checked]="!skins.active()"
+        (click)="skins.select(null)"
+      >
+        <app-pimpek-drawing state="neutral" [color]="settings.petHex()" />
+        <strong>Klasyczny</strong>
+      </button>
+      @for (skin of skins.skins(); track skin.id) {
+        <div class="skin-slot">
+          <button
+            type="button"
+            role="radio"
+            class="skin"
+            [attr.aria-checked]="skins.activeId() === skin.id"
+            (click)="skins.select(skin.id)"
+          >
+            <app-skin-player [skin]="skin" state="neutral" />
+            <strong>{{ skin.name }}</strong>
+            <small>{{ coverage(skin) }}</small>
+          </button>
+          <button
+            type="button"
+            class="remove"
+            [attr.aria-label]="'Usuń wygląd ' + skin.name"
+            (click)="skins.remove(skin.id)"
+          >
+            <app-icon name="trash" />
+          </button>
+        </div>
+      }
+      <label class="skin upload" [class.busy]="uploading()">
+        <input type="file" accept=".zip,application/zip" (change)="pick($event)" [disabled]="uploading()" />
+        <span class="plus" aria-hidden="true">{{ uploading() ? '…' : '+' }}</span>
+        <strong>{{ uploading() ? 'Rozpakowuję' : 'Wgraj .zip' }}</strong>
+      </label>
+    </div>
+    @if (uploadError(); as message) {
+      <p class="upload-error" role="alert">{{ message }}</p>
+    }
+    <details class="pack-help">
+      <summary>Jak przygotować paczkę?</summary>
+      <p>
+        Spakuj do .zip osobną animację dla każdego nastroju Pimpka, nazwaną po angielsku:
+        <code>happy</code>, <code>neutral</code>, <code>sleepy</code>, <code>sad</code>,
+        <code>sick</code> i opcjonalnie <code>celebrate</code>.
+      </p>
+      <ul>
+        <li>plik: <code>happy.svg</code>, <code>.gif</code>, <code>.webp</code>, <code>.png</code> albo Lottie <code>happy.json</code>,</li>
+        <li>albo folder klatek: <code>happy/001.png</code>, <code>happy/002.png</code>…</li>
+      </ul>
+      <p>
+        Wystarczy sam <code>neutral</code> — brakujące nastroje go pożyczą. W <code>manifest.json</code>
+        możesz podać <code>name</code>, <code>fps</code>, <code>fallback</code>, <code>motion</code> i
+        własne ścieżki w <code>states</code>.
+      </p>
+      <a class="btn ghost small with-icon" href="skins/kropelka.zip" download>
+        <app-icon name="download" /> Przykładowa paczka
+      </a>
+    </details>
   </div>
 </section>
 

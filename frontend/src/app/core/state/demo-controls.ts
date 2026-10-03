@@ -10,6 +10,7 @@ import { SourcesStore } from './sources.store';
 import { SyncStore } from './sync.store';
 import { WalletStore } from './wallet.store';
 import { toDateKey } from '../../shared/date';
+import { skinDb } from '../../shared/skin-db';
 import { clearAll, KEYS, writeJson } from '../../shared/storage';
 
 /** The jury remote: load a story, fast-forward a day, break the sync on purpose. */
@@ -64,8 +65,9 @@ export class DemoControls {
   }
 
   /** Wipes everything and starts over at onboarding. A full reload keeps every store honest. */
-  resetAll(): void {
+  async resetAll(): Promise<void> {
     clearAll();
+    await skinDb.clear().catch(() => undefined);
     location.assign('/witaj');
   }
 }

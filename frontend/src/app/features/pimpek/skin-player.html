@@ -1,0 +1,10 @@
+<!-- keyed by the clip, so every change of mood swaps the element and replays the pop-in -->
+@for (c of [clip()]; track c) {
+  <div class="stage">
+    @if (c.kind === 'lottie') {
+      <div #lottie class="lottie"></div>
+    } @else {
+      <img [src]="c.kind === 'image' ? c.url : frame()" alt="" draggable="false" />
+    }
+  </div>
+}
