@@ -89,6 +89,12 @@
         <button type="button" class="btn demo" (click)="startDemo()">
           <app-icon name="sparkle" /> Tryb demo (gotowy tydzień danych)
         </button>
+        @if (!anyConnected()) {
+          <button type="button" class="btn ghost skip" (click)="skipWatch()">
+            Kontynuuj bez Garmina
+          </button>
+          <p class="muted hint">Wszystko opowiesz mi sam/a. Zegarek podłączysz później w ustawieniach.</p>
+        }
       </section>
     }
     @case (4) {
@@ -96,8 +102,13 @@
         <app-pimpek-avatar class="pet" state="happy" [color]="settings.petHex()" />
         <h1>Gotowe!</h1>
         <p class="muted">
-          {{ settings.petName() }} rozgląda się po swoim pokoju. Zajrzy do Twojego Garmina i od razu
-          będzie wiedział, jak spałeś/aś.
+          @if (anyConnected()) {
+            {{ settings.petName() }} rozgląda się po swoim pokoju. Zajrzy do Twojego Garmina i od
+            razu będzie wiedział, jak spałeś/aś.
+          } @else {
+            {{ settings.petName() }} rozgląda się po swoim pokoju. Wieczorem zapyta Cię, jak minął
+            dzień.
+          }
         </p>
         <button type="button" class="btn primary" (click)="finish()">Wejdź do pokoju</button>
       </section>

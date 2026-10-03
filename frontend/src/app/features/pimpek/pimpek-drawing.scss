@@ -1,0 +1,206 @@
+@use 'motion';
+
+// Pimpek keeps his blue, just a touch dustier so he sits in the warm room. Ink is a deep
+// warm brown rather than pure black.
+:host {
+  --body: var(--body-base, #5b93c0);
+  --ink: #2e2622;
+  display: block;
+  position: relative;
+}
+
+:host(.is-sad) {
+  --body: #8499ad;
+}
+
+:host(.is-sick) {
+  --body: #8fae96;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.body,
+.eyelid {
+  fill: var(--body);
+  transition: fill 0.8s ease;
+}
+
+.eye-white {
+  fill: #fffaf3;
+}
+
+.eye-shade {
+  fill: #ebe2d6;
+}
+
+.pupils,
+.brow,
+.ink {
+  fill: var(--ink);
+}
+
+.ink-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+
+.band {
+  fill: none;
+}
+
+.sunglasses {
+  fill: #3a302b;
+
+  .shine {
+    fill: none;
+    stroke: rgb(255 255 255 / 0.4);
+    stroke-width: 10;
+    stroke-linecap: round;
+  }
+}
+
+// ---- body ----
+
+@include motion.body('.body-group');
+
+// ---- face ----
+
+.eyelid {
+  transform: translateY(-200px);
+  animation: blink 4.5s infinite;
+}
+
+:host(.is-sleepy) .eyelid {
+  animation: doze 5s ease-in-out infinite;
+}
+
+:host(.is-sick) .eyelid {
+  animation: none;
+  transform: translateY(-115px);
+}
+
+.pupils {
+  animation: look 7s ease-in-out infinite;
+}
+
+:host(.is-sad) .pupils,
+:host(.is-sick) .pupils {
+  animation: none;
+  transform: translateY(16px);
+}
+
+.brow {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.5s ease;
+}
+
+:host(.is-happy) .brow {
+  transform: translateY(-14px);
+}
+
+:host(.is-sleepy) .brow {
+  transform: translateY(10px);
+}
+
+:host(.is-sad) {
+  .brow-left {
+    transform: rotate(-14deg) translateY(-6px);
+  }
+  .brow-right {
+    transform: rotate(14deg) translateY(-6px);
+  }
+}
+
+:host(.is-sick) {
+  .brow-left {
+    transform: rotate(-9deg);
+  }
+  .brow-right {
+    transform: rotate(9deg);
+  }
+}
+
+.yawn {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: yawn 5s ease-in-out infinite;
+}
+
+.drop {
+  fill: #9cc3e3;
+  animation: drip 2.4s ease-in infinite;
+}
+
+// ---- keyframes ----
+
+@keyframes blink {
+  0%, 92%, 100% {
+    transform: translateY(-200px);
+  }
+  95% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes doze {
+  0%, 100% {
+    transform: translateY(-105px);
+  }
+  50% {
+    transform: translateY(-50px);
+  }
+}
+
+@keyframes look {
+  0%, 20%, 100% {
+    transform: translate(0, 0);
+  }
+  30%, 45% {
+    transform: translate(-14px, 4px);
+  }
+  55%, 75% {
+    transform: translate(16px, 2px);
+  }
+}
+
+@keyframes yawn {
+  0%, 60%, 100% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.5, 1.8);
+  }
+}
+
+@keyframes drip {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(90px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body-group,
+  .eyelid,
+  .pupils,
+  .yawn,
+  .drop {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+  }
+}

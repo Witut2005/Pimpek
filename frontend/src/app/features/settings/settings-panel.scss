@@ -94,3 +94,155 @@
     }
   }
 }
+
+// ---- looks: built-in Pimpek and uploaded skin packs ----
+
+.looks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: -0.35rem;
+  padding: 0.35rem;
+  border: 2px dashed transparent;
+  border-radius: 1.4rem;
+  font-weight: 600;
+  transition: border-color 0.2s ease;
+
+  &.dragging {
+    border-color: var(--terracotta-400);
+  }
+}
+
+.skin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.2rem, 1fr));
+  gap: 0.6rem;
+}
+
+.skin-slot {
+  position: relative;
+  display: flex;
+}
+
+.skin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  padding: 0.6rem 0.5rem 0.55rem;
+  border: 2px solid transparent;
+  border-radius: 1.3rem 1.5rem 1.2rem 1.4rem;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-clay);
+
+  app-pimpek-drawing,
+  app-skin-player {
+    width: 4rem;
+  }
+
+  strong {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.85rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  &[aria-checked='true'] {
+    border-color: var(--terracotta-400);
+    background: var(--peach-100);
+  }
+}
+
+.remove {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: var(--shadow-clay);
+}
+
+.upload {
+  justify-content: center;
+  border-style: dashed;
+  border-color: var(--sand-300);
+  background: transparent;
+  box-shadow: none;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  &:focus-within {
+    border-color: var(--terracotta-400);
+  }
+
+  &.busy {
+    cursor: progress;
+  }
+}
+
+.plus {
+  color: var(--terracotta-600);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.upload-error {
+  margin: 0;
+  color: var(--danger-text);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.pack-help {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  summary {
+    color: var(--terracotta-600);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  p,
+  ul {
+    margin: 0.5rem 0;
+  }
+
+  ul {
+    padding-left: 1.1rem;
+  }
+
+  code {
+    padding: 0 0.25rem;
+    border-radius: 0.35rem;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8rem;
+  }
+}

@@ -391,3 +391,37 @@ footer {
     transform: rotate(360deg);
   }
 }
+
+// A wearable reading offered as a suggestion — the field above holds what gets saved.
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: -0.4rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 1rem;
+  background: var(--sage-200);
+  color: var(--sage-700);
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  span {
+    flex: 1;
+  }
+
+  strong {
+    color: inherit;
+  }
+
+  .link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+}

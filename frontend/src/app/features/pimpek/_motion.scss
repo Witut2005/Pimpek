@@ -1,0 +1,86 @@
+// Whole-body moods, shared by the built-in Pimpek and uploaded skins so both feel alive.
+// $host narrows it to hosts with that class, e.g. '.is-moving'.
+@mixin body($target, $host: '') {
+  #{if($host == '', '', ':host(#{$host}) ')}#{$target} {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: breathe 3.2s ease-in-out infinite;
+  }
+
+  :host(#{$host}.is-happy) #{$target} {
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+
+  :host(#{$host}.is-sleepy) #{$target} {
+    animation: sway 4s ease-in-out infinite;
+  }
+
+  :host(#{$host}.is-sad) #{$target} {
+    animation: droop 4.5s ease-in-out infinite;
+  }
+
+  :host(#{$host}.is-sick) #{$target} {
+    animation: shiver 2.6s linear infinite;
+  }
+
+  :host(#{$host}.is-celebrating) #{$target} {
+    animation: jump 0.55s ease-out 3;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.02, 0.98);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1.03, 0.97);
+  }
+  50% {
+    transform: translateY(-4%) scale(0.98, 1.02);
+  }
+}
+
+@keyframes sway {
+  0%, 100% {
+    transform: rotate(-2deg) scale(1, 0.98);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes droop {
+  0%, 100% {
+    transform: translateY(2%) scale(1.03, 0.95);
+  }
+  50% {
+    transform: translateY(2%) scale(1.02, 0.96);
+  }
+}
+
+@keyframes shiver {
+  0%, 70%, 100% {
+    transform: translateX(0);
+  }
+  74%, 82%, 90% {
+    transform: translateX(-1%);
+  }
+  78%, 86%, 94% {
+    transform: translateX(1%);
+  }
+}
+
+@keyframes jump {
+  0% {
+    transform: scale(1.08, 0.9);
+  }
+  45% {
+    transform: translateY(-14%) scale(0.95, 1.05);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}

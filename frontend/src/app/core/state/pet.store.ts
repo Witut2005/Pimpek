@@ -43,7 +43,7 @@ export interface SaveResult {
   leaves: number;
 }
 
-/** One calendar day as the progress views see it: manual entry and wearable merged. */
+/** One calendar day as the progress views see it: the manual entry, with the wearable filling gaps. */
 export interface DayView {
   date: string;
   entry?: DailyCheckIn;
@@ -263,9 +263,9 @@ export class PetStore {
       wearable,
       state,
       wellbeing: stats && wellbeingOf(stats),
-      sleepHours: wearable?.sleepHours ?? entry?.sleep.durationHours,
-      steps: wearable?.steps ?? entry?.metrics.steps,
-      runningKm: wearable?.runningKm ?? entry?.metrics.runningDistanceKm,
+      sleepHours: entry?.sleep.durationHours ?? wearable?.sleepHours,
+      steps: entry?.metrics.steps ?? wearable?.steps,
+      runningKm: entry?.metrics.runningDistanceKm ?? wearable?.runningKm,
       food: entry?.food.qualityScore,
       mood: entry?.mood.score,
       screen: entry?.metrics.screenTimeHours,

@@ -40,18 +40,13 @@ export function statsFor(entry: CheckInInput, goals: Goals = GOALS): PetStats {
   };
 }
 
-/** The wearable is the source of truth for what it measures; the check-in for everything else. */
+/**
+ * The check-in is the source of truth: the user typed it in, using the watch only as a hint.
+ * The wearable just fills in what the form never asks for — the step count.
+ */
 export function withWearable<T extends CheckInInput>(entry: T, wearable: WearableDay | undefined): T {
-  if (!wearable) return entry;
-  return {
-    ...entry,
-    sleep: { ...entry.sleep, durationHours: wearable.sleepHours ?? entry.sleep.durationHours },
-    metrics: {
-      ...entry.metrics,
-      steps: wearable.steps,
-      runningDistanceKm: wearable.runningKm ?? entry.metrics.runningDistanceKm,
-    },
-  };
+  if (!wearable || entry.metrics.steps !== undefined) return entry;
+  return { ...entry, metrics: { ...entry.metrics, steps: wearable.steps } };
 }
 
 /**
