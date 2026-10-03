@@ -209,3 +209,18 @@ def test_unreachable_is_502(monkeypatch):
 )
 def test_rejects_bad_input(day):
     assert client.post("/api/food/rating", json=day).status_code == 422
+
+
+def test_check_says_whether_a_typed_entry_is_food(monkeypatch):
+    handler, requests = gemini({"is_food": False, "message": "To nie wygląda na jedzenie."})
+    use(monkeypatch, handler)
+    r = client.post("/api/food/check", json={"name": "Krzesło"})
+    assert r.status_code == 200
+    assert r.json() == {"is_food": False, "message": "To nie wygląda na jedzenie."}
+    (request,) = requests
+    assert "Krzesło" in request.content.decode()
+
+
+def test_check_not_configured_is_503(monkeypatch):
+    monkeypatch.setattr(settings, "gemini_api_key", "")
+    assert client.post("/api/food/check", json={"name": "jajka"}).status_code == 503

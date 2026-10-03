@@ -38,6 +38,19 @@ RESPONSE_SCHEMA = {
     "propertyOrdering": ["positives", "improvements", "score", "label", "summary"],
 }
 
+CHECK_FILE = Path(__file__).parent / "prompts" / "food_check.md"
+
+# Whether a manually typed entry is food at all. Only a "no" reaches the user.
+CHECK_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "is_food": {"type": "BOOLEAN"},
+        "message": {"type": "STRING"},
+    },
+    "required": ["is_food", "message"],
+    "propertyOrdering": ["is_food", "message"],
+}
+
 # Tests swap this for httpx.MockTransport.
 _transport: httpx.BaseTransport | None = None
 
@@ -139,5 +152,30 @@ def rate(day: dict[str, Any]) -> dict[str, Any]:
         raise RatingError(resp.status_code, detail)
     try:
         return {**_clean(json.loads(_answer_text(resp.json()))), "model": model}
+    except (ValueError, KeyError, TypeError) as e:
+        raise RatingError(502, f"unreadable answer: {e}") from e
+
+
+def check_food(entry: dict[str, Any]) -> dict[str, Any]:
+    """`entry` is `{name, amount?}` as typed by hand. Returns `{is_food, message}`."""
+    if not is_configured():
+        raise NotConfigured("AI food check is not configured: set GEMINI_API_KEY in backend/.env")
+    body = {
+        "systemInstruction": {"parts": [{"text": CHECK_FILE.read_text(encoding="utf-8")}]},
+        "contents": [
+            {"role": "user", "parts": [{"text": "Sprawdź wpis:\n" + json.dumps(entry, ensure_ascii=False)}]}
+        ],
+        "generationConfig": {"responseMimeType": "application/json", "responseSchema": CHECK_SCHEMA},
+    }
+    resp, _ = _generate(body)
+    if resp.status_code >= 400:
+        try:
+            detail = resp.json().get("error", {}).get("message") or resp.text[:300]
+        except ValueError:
+            detail = resp.text[:300]
+        raise RatingError(resp.status_code, detail)
+    try:
+        raw = json.loads(_answer_text(resp.json()))
+        return {"is_food": bool(raw["is_food"]), "message": str(raw.get("message") or "").strip()}
     except (ValueError, KeyError, TypeError) as e:
         raise RatingError(502, f"unreadable answer: {e}") from e

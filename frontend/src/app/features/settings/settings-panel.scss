@@ -246,3 +246,17 @@
     font-size: 0.8rem;
   }
 }
+
+.number {
+  width: 6rem;
+  text-align: right;
+}
+
+.bmi {
+  margin: 0;
+  font-weight: 600;
+
+  small {
+    color: var(--text-muted);
+  }
+}

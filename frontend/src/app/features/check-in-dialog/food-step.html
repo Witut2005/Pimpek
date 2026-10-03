@@ -134,10 +134,17 @@
       </select>
     </label>
     <small class="hint">Kalorie możesz pominąć, AI oszacuje je z nazwy i porcji.</small>
+    @if (notFood(); as message) {
+      <p class="not-food" role="alert">{{ message }}</p>
+    }
     <div class="actions">
       <button type="button" class="btn ghost small" (click)="cancel()">Anuluj</button>
-      <button type="button" class="btn primary small" [disabled]="!draft().name.trim()" (click)="save()">
-        {{ editing() === 'new' ? 'Dodaj' : 'Zapisz' }}
+      <button type="button" class="btn primary small" [disabled]="!draft().name.trim() || checking()" (click)="save()">
+        @if (checking()) {
+          Pimpek sprawdza…
+        } @else {
+          {{ editing() === 'new' ? 'Dodaj' : 'Zapisz' }}
+        }
       </button>
     </div>
   </div>

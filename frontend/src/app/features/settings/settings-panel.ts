@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { SCENARIOS } from '../../core/mocks/scenarios';
 import { SOURCES } from '../../core/models/metrics.model';
-import { PET_COLORS, PetColor } from '../../core/models/settings.model';
+import { bmiCategory, Body, PET_COLORS, PetColor } from '../../core/models/settings.model';
 import { PetSkin } from '../../core/models/skin.model';
 import { SkinPackError } from '../../core/services/skin-pack';
 import { DemoControls } from '../../core/state/demo-controls';
@@ -33,6 +33,14 @@ export class SettingsPanel {
   protected readonly uploading = signal(false);
   protected readonly uploadError = signal<string | undefined>(undefined);
   protected readonly dragging = signal(false);
+
+  protected readonly bmiCategory = bmiCategory;
+
+  /** An empty or non-positive field clears the value, so the BMI waits for both numbers. */
+  protected setBody(key: keyof Body, event: Event): void {
+    const value = Number((event.target as HTMLInputElement).value.replace(',', '.'));
+    this.settings.updateBody({ [key]: value > 0 ? value : null });
+  }
 
   protected rename(event: Event): void {
     this.settings.update({ petName: (event.target as HTMLInputElement).value });

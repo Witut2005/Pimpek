@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
-import { FoodRating, MealDay, RatingRequest } from '../models/meals.model';
+import { FoodCheck, FoodRating, MealDay, RatingRequest } from '../models/meals.model';
 import { SourceId, WearableDay } from '../models/metrics.model';
 
 const HISTORY_DAYS = 28;
@@ -88,6 +88,11 @@ export class WearableApi {
     return this.http
       .post<Omit<FoodRating, 'source'>>('/api/food/rating', request)
       .pipe(map((rating) => ({ ...rating, source: 'ai' as const })));
+  }
+
+  /** Whether a food typed in by hand is food at all. Fails (errors) when the AI is off. */
+  checkFood(name: string, amount?: string): Observable<FoodCheck> {
+    return this.http.post<FoodCheck>('/api/food/check', { name, amount });
   }
 
   /** Asks Garmin to push up to 30 days of history to Open Wearables (arrives via webhook). */

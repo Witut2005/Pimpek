@@ -148,6 +148,12 @@ export class CheckInDialog {
     if (score === undefined) return '🍽️';
     return score < 30 ? '🍟' : score < 60 ? '🍝' : score < 80 ? '🥪' : '🥗';
   });
+  /** Colour of the verdict box: only a 75+ day reads as green, the rest step down to red. */
+  protected readonly foodTone = computed(() => {
+    const score = this.ratingFresh() ? this.rating()?.score : undefined;
+    if (score === undefined) return 'neutral';
+    return score >= 75 ? 'good' : score >= 50 ? 'okay' : score >= 25 ? 'poor' : 'bad';
+  });
 
   /** Filled share of a range track, 0–100, used to paint the soft progress on sliders. */
   protected fill(value: number, min: number, max: number): number {

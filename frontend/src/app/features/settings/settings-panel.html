@@ -103,6 +103,40 @@
 </section>
 
 <section class="card">
+  <h3><app-icon name="heart" /> Wzrost i waga</h3>
+  <p class="muted">Z tego liczymy BMI. Zostaje tylko na tym urządzeniu.</p>
+  <label class="row">
+    <span>Wzrost (cm)</span>
+    <input
+      class="text-input number"
+      type="number"
+      inputmode="decimal"
+      min="100"
+      max="250"
+      placeholder="np. 175"
+      [value]="settings.settings().body.heightCm ?? ''"
+      (change)="setBody('heightCm', $event)"
+    />
+  </label>
+  <label class="row">
+    <span>Waga (kg)</span>
+    <input
+      class="text-input number"
+      type="number"
+      inputmode="decimal"
+      min="30"
+      max="300"
+      placeholder="np. 70"
+      [value]="settings.settings().body.weightKg ?? ''"
+      (change)="setBody('weightKg', $event)"
+    />
+  </label>
+  @if (settings.bmi(); as value) {
+    <p class="bmi">BMI <strong>{{ value }}</strong> <small>({{ bmiCategory(value) }})</small></p>
+  }
+</section>
+
+<section class="card">
   <h3><app-icon name="flag" /> Cele</h3>
   <app-goals-picker />
 </section>

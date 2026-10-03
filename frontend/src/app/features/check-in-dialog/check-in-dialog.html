@@ -133,7 +133,7 @@
             </button>
           }
 
-          <div class="rating" aria-live="polite">
+          <div class="rating" [class]="foodTone()" aria-live="polite">
             @if (ratingStatus() === 'loading') {
               <p class="meals-hint">
                 <app-icon name="refresh" class="spin" /> {{ petName() }} ocenia, jak zdrowo było…

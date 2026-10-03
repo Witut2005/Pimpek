@@ -320,6 +320,22 @@ footer {
   .ask {
     align-self: flex-start;
   }
+
+  // Tone follows the food score: green from 75, then honey, peach and rose as it drops.
+  &.okay {
+    background: var(--honey-200);
+    color: var(--honey-700);
+  }
+
+  &.poor {
+    background: var(--peach-100);
+    color: var(--terracotta-700);
+  }
+
+  &.bad {
+    background: var(--rose-200);
+    color: var(--danger-text);
+  }
 }
 
 .rating-head {

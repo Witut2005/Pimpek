@@ -5,12 +5,14 @@ import {
   computed,
   effect,
   ElementRef,
+  inject,
   input,
   output,
   signal,
   viewChild,
 } from '@angular/core';
 import { FoodEntry, MEAL_SLOTS } from '../../core/models/meals.model';
+import { WearableApi } from '../../core/services/wearable-api';
 import { groupByMeal, mealAt, sortByMeal, sumNutrients } from '../../core/state/food-entries';
 import { Icon } from '../../shared/icon/icon';
 
@@ -54,6 +56,7 @@ function parseKcal(text: string): number | undefined {
 export class FoodStep {
   readonly entries = input.required<FoodEntry[]>();
   readonly entriesChange = output<FoodEntry[]>();
+  private readonly api = inject(WearableApi);
 
   protected readonly groups = computed(() => groupByMeal(this.entries()));
   protected readonly totalKcal = computed(() => Math.round(sumNutrients(this.entries()).kcal));
@@ -70,6 +73,11 @@ export class FoodStep {
     if (!meal || MEAL_SLOTS.some((s) => s.key === meal)) return MEAL_SLOTS;
     return [...MEAL_SLOTS, { key: meal, name: this.entries().find((e) => e.meal === meal)?.mealName ?? meal }];
   });
+
+  /** While the AI checks a hand-typed entry. */
+  protected readonly checking = signal(false);
+  /** Why the AI says the typed text isn't food: shown, and the entry isn't saved. */
+  protected readonly notFood = signal<string | null>(null);
 
   /** The entry waiting for "Usuń" in the confirmation dialog. */
   protected readonly pendingRemoval = signal<FoodEntry | null>(null);
@@ -93,22 +101,46 @@ export class FoodStep {
 
   protected patch(key: keyof Draft, event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
+    this.notFood.set(null);
     this.draft.update((d) => ({ ...d, [key]: value }));
   }
 
   protected cancel(): void {
+    this.notFood.set(null);
     this.editing.set(null);
   }
 
   protected save(event?: Event): void {
     event?.preventDefault();
+    if (this.checking()) return;
     const d = this.draft();
     const name = d.name.trim();
     if (!name) return;
+    const amount = d.amount.trim() || undefined;
+    // Food typed in by hand is checked by the AI; a name or portion that changed counts as typed.
+    const typed = this.editing() === NEW || name !== this.initial().name.trim() || amount !== (this.initial().amount.trim() || undefined);
+    if (!typed) return this.commit();
+    this.checking.set(true);
+    this.api.checkFood(name, amount).subscribe({
+      next: (check) => {
+        this.checking.set(false);
+        if (check.is_food) return this.commit();
+        this.notFood.set(check.message || 'To nie wygląda na jedzenie. Wpisz, co zjadłeś albo wypiłeś.');
+      },
+      // Without the AI (no key, an error) the entry is saved as typed rather than blocked.
+      error: () => {
+        this.checking.set(false);
+        this.commit();
+      },
+    });
+  }
+
+  private commit(): void {
+    const d = this.draft();
     const change = {
       meal: d.meal,
       mealName: this.slots().find((s) => s.key === d.meal)?.name ?? d.meal,
-      name,
+      name: d.name.trim(),
       amount: d.amount.trim() || undefined,
     };
     const id = this.editing();
@@ -117,6 +149,7 @@ export class FoodStep {
     } else {
       this.emit(this.entries().map((e) => (e.id === id ? this.changed(e, change, d.kcal) : e)));
     }
+    this.notFood.set(null);
     this.editing.set(null);
   }
 
@@ -144,6 +177,7 @@ export class FoodStep {
   }
 
   private start(id: string, draft: Draft): void {
+    this.notFood.set(null);
     this.initial.set(draft);
     this.draft.set(draft);
     this.editing.set(id);

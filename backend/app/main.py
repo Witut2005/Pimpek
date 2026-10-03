@@ -215,6 +215,17 @@ class RatingBody(BaseModel):
     meals: list[RatedMeal] = Field(min_length=1, max_length=10)
 
 
+class FoodCheckBody(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    amount: str | None = Field(None, max_length=60)
+
+
+@app.post("/api/food/check")
+def check_food(body: FoodCheckBody, user: str = Depends(current_user)):
+    """Whether a food typed in by hand is food at all. 503 when no GEMINI_API_KEY is set."""
+    return _map_rating_errors(food_rating.check_food, body.model_dump(exclude_none=True))
+
+
 @app.post("/api/food/rating")
 def rate_food(body: RatingBody, user: str = Depends(current_user)):
     """Gemini's 0–100 rating of the day's food, with a short summary, positives and tips.

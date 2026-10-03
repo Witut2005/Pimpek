@@ -144,6 +144,17 @@ li {
   font-size: 0.8rem;
 }
 
+// The AI's "that isn't food" answer: the entry stays open so the user can fix it.
+.not-food {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.9rem;
+  background: var(--rose-200);
+  color: var(--danger-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

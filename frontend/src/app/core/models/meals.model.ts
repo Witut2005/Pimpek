@@ -75,6 +75,12 @@ export interface FoodRating {
   source: 'ai' | 'estimate';
 }
 
+/** The AI's answer on a hand-typed entry: `message` is what the user reads when it isn't food. */
+export interface FoodCheck {
+  is_food: boolean;
+  message: string;
+}
+
 /** What the backend's `POST /api/food/rating` takes. */
 export interface RatingRequest {
   date: string;
