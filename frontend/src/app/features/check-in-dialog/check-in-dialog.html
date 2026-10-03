@@ -9,22 +9,24 @@
       </button>
     </header>
 
-    <ol class="steps" aria-label="Kroki">
-      @for (s of steps; track s.title; let i = $index) {
-        <li
-          [class.done]="i < step()"
-          [class.current]="i === step()"
-          [attr.aria-current]="i === step() ? 'step' : null"
-        >
-          <button type="button" (click)="step.set(i)" [attr.aria-label]="s.title">
-            <app-icon [name]="s.icon" />
-          </button>
-        </li>
-      }
-    </ol>
+    @if (!focus()) {
+      <ol class="steps" aria-label="Kroki">
+        @for (s of steps; track s.title; let i = $index) {
+          <li
+            [class.done]="i < step()"
+            [class.current]="i === step()"
+            [attr.aria-current]="i === step() ? 'step' : null"
+          >
+            <button type="button" (click)="step.set(i)" [attr.aria-label]="s.title">
+              <app-icon [name]="s.icon" />
+            </button>
+          </li>
+        }
+      </ol>
+    }
 
     <section class="body">
-      <h3>{{ steps[step()].title }}</h3>
+      <h3>{{ stepTitle() }}</h3>
 
       @switch (step()) {
         @case (0) {
@@ -130,76 +132,80 @@
           </label>
         }
         @case (3) {
-          @if (measured(); as m) {
-            <div class="measured">
-              <app-icon name="steps" />
-              <span
-                >Dziś już <strong>{{ formatSteps(m.steps) }}</strong> kroków według
-                {{ sourceName() }}</span
-              >
-              <app-icon class="ok" name="check" />
-            </div>
-          }
-          @if (measured()?.runningKm; as km) {
-            <div class="measured">
-              <app-icon name="steps" />
-              <span
-                >Bieganie: <strong>{{ formatKm(km) }}</strong> według {{ sourceName() }}</span
-              >
-              <app-icon class="ok" name="check" />
-            </div>
-          } @else {
-            <div class="field">
-              <label for="running-km">{{
-                measured() ? 'Bieganie (km, opcjonalnie)' : 'Bieganie / ruch (km)'
-              }}</label>
-              <div class="stepper">
-                <button
-                  type="button"
-                  class="icon-btn"
-                  (click)="adjustKm(-0.5)"
-                  aria-label="Mniej o 0,5 km"
+          @if (showRunning()) {
+            @if (measured(); as m) {
+              <div class="measured">
+                <app-icon name="steps" />
+                <span
+                  >Dziś już <strong>{{ formatSteps(m.steps) }}</strong> kroków według
+                  {{ sourceName() }}</span
                 >
-                  −
-                </button>
-                <input
-                  id="running-km"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  formControlName="runningKm"
-                />
-                <button
-                  type="button"
-                  class="icon-btn"
-                  (click)="adjustKm(0.5)"
-                  aria-label="Więcej o 0,5 km"
-                >
-                  +
-                </button>
+                <app-icon class="ok" name="check" />
               </div>
-              @if (form.controls.runningKm.invalid && form.controls.runningKm.touched) {
-                <small class="error">Podaj dystans od 0 do 100 km</small>
-              } @else {
-                <small>Cel: {{ goals().runningKm }} km</small>
-              }
-            </div>
+            }
+            @if (measured()?.runningKm; as km) {
+              <div class="measured">
+                <app-icon name="steps" />
+                <span
+                  >Bieganie: <strong>{{ formatKm(km) }}</strong> według {{ sourceName() }}</span
+                >
+                <app-icon class="ok" name="check" />
+              </div>
+            } @else {
+              <div class="field">
+                <label for="running-km">{{
+                  measured() ? 'Bieganie (km, opcjonalnie)' : 'Bieganie / ruch (km)'
+                }}</label>
+                <div class="stepper">
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    (click)="adjustKm(-0.5)"
+                    aria-label="Mniej o 0,5 km"
+                  >
+                    −
+                  </button>
+                  <input
+                    id="running-km"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    formControlName="runningKm"
+                  />
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    (click)="adjustKm(0.5)"
+                    aria-label="Więcej o 0,5 km"
+                  >
+                    +
+                  </button>
+                </div>
+                @if (form.controls.runningKm.invalid && form.controls.runningKm.touched) {
+                  <small class="error">Podaj dystans od 0 do 100 km</small>
+                } @else {
+                  <small>Cel: {{ goals().runningKm }} km</small>
+                }
+              </div>
+            }
           }
-          <label class="field">
-            <span
-              >Czas przed ekranem: <strong>{{ values().screenHours }} h</strong></span
-            >
-            <input
-              type="range"
-              min="0"
-              max="16"
-              step="0.5"
-              formControlName="screenHours"
-              [style.--pct]="fill(values().screenHours, 0, 16)"
-            />
-            <small>Cel: max {{ goals().screenMaxHours }} h</small>
-          </label>
+          @if (showScreen()) {
+            <label class="field">
+              <span
+                >Czas przed ekranem: <strong>{{ values().screenHours }} h</strong></span
+              >
+              <input
+                type="range"
+                min="0"
+                max="16"
+                step="0.5"
+                formControlName="screenHours"
+                [style.--pct]="fill(values().screenHours, 0, 16)"
+              />
+              <small>Cel: max {{ goals().screenMaxHours }} h</small>
+            </label>
+          }
         }
         @case (4) {
           <div class="field">
@@ -246,9 +252,13 @@
     </section>
 
     <footer>
-      <button type="button" class="btn ghost" (click)="back()" [disabled]="step() === 0">
-        Wstecz
-      </button>
+      @if (focus()) {
+        <button type="button" class="btn ghost" (click)="close()">Anuluj</button>
+      } @else {
+        <button type="button" class="btn ghost" (click)="back()" [disabled]="step() === 0">
+          Wstecz
+        </button>
+      }
       <button type="submit" class="btn primary" [disabled]="saving()">
         @if (saving()) {
           Zapisuję…

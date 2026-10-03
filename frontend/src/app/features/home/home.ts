@@ -103,6 +103,12 @@ export class Home implements OnInit {
     this.checkInDialog().open(this.store.todayEntry());
   }
 
+  /** From a need's detail sheet straight to editing just that need. */
+  protected editNeed(): void {
+    this.needSheet().close();
+    this.checkInDialog().open(this.store.todayEntry(), this.selectedNeed());
+  }
+
   protected openSettings(): void {
     this.settingsSheet().open();
   }

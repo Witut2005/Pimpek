@@ -92,7 +92,7 @@
 </app-sheet>
 
 <app-sheet #needSheet [title]="needTitle()">
-  <app-need-detail [stat]="selectedNeed()" />
+  <app-need-detail [stat]="selectedNeed()" (edit)="editNeed()" />
 </app-sheet>
 
 @if (unlockedToast(); as item) {

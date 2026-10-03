@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { PetStore } from '../../core/state/pet.store';
 import { StatKey } from '../../core/state/pet-rules';
 import { SourcesStore } from '../../core/state/sources.store';
@@ -33,6 +33,11 @@ import { levelOf, NEEDS } from './needs';
       <p class="summary">Średnio w tym tygodniu: <strong>{{ avg }}</strong></p>
     }
     <p class="tip"><app-icon name="sparkle" /> {{ meta().tip }}</p>
+
+    <button type="button" class="btn primary edit" (click)="edit.emit()">
+      <app-icon name="pencil" />
+      {{ store.todayEntry() ? 'Zmień: ' + meta().label.toLowerCase() : 'Dodaj dzisiejszy wpis' }}
+    </button>
   `,
   styles: `
     :host {
@@ -86,14 +91,21 @@ import { levelOf, NEEDS } from './needs';
         margin-top: 0.1rem;
       }
     }
+    .edit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NeedDetail {
-  private readonly store = inject(PetStore);
+  protected readonly store = inject(PetStore);
   private readonly sources = inject(SourcesStore);
 
   readonly stat = input.required<StatKey>();
+  readonly edit = output<void>();
 
   protected readonly meta = computed(() => NEEDS[this.stat()]);
   protected readonly chart = computed(() => {

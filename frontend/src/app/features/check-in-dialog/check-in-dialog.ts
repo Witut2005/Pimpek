@@ -12,12 +12,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { map } from 'rxjs';
 import { CheckInInput, DailyCheckIn } from '../../core/models/check-in.model';
-import { foodLabel, moodLabel } from '../../core/state/pet-rules';
+import { foodLabel, moodLabel, StatKey } from '../../core/state/pet-rules';
 import { PetStore, SaveResult } from '../../core/state/pet.store';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
 import { formatHours, formatKm, formatSteps } from '../../shared/format';
 import { Icon, IconName } from '../../shared/icon/icon';
+import { NEEDS } from '../needs/needs';
 
 const STEPS: readonly { title: string; icon: IconName }[] = [
   { title: 'Nastrój', icon: 'smile' },
@@ -26,6 +27,9 @@ const STEPS: readonly { title: string; icon: IconName }[] = [
   { title: 'Ruch i ekran', icon: 'steps' },
   { title: 'Ludzie', icon: 'heart' },
 ];
+
+/** Which step answers each need — a need's sheet opens the dialog right there. */
+const STEP_OF: Record<StatKey, number> = { mood: 0, energy: 1, nutrition: 2, fitness: 3, screen: 3 };
 
 /** Garmin calls 70+ a "good" night — a fair default for "do you feel rested?". */
 const RESTED_SLEEP_SCORE = 70;
@@ -61,8 +65,16 @@ export class CheckInDialog {
   protected readonly formatKm = formatKm;
   protected readonly step = signal(0);
   protected readonly isEdit = signal(false);
+  /** Set when fixing one need in an existing entry: only that question, saved in one tap. */
+  protected readonly focus = signal<StatKey | null>(null);
   protected readonly saving = this.store.saving;
-  protected readonly isLastStep = computed(() => this.step() === STEPS.length - 1);
+  protected readonly isLastStep = computed(() => !!this.focus() || this.step() === STEPS.length - 1);
+  protected readonly stepTitle = computed(() => {
+    const focus = this.focus();
+    return focus ? NEEDS[focus].label : STEPS[this.step()].title;
+  });
+  protected readonly showRunning = computed(() => this.focus() !== 'screen');
+  protected readonly showScreen = computed(() => this.focus() !== 'fitness');
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     moodScore: 7,
@@ -96,9 +108,14 @@ export class CheckInDialog {
     return ((value - min) / (max - min)) * 100;
   }
 
-  open(existing?: DailyCheckIn): void {
+  /**
+   * `need` jumps to that need's question. With an existing entry it's a one-question edit;
+   * a brand new entry still walks every step, so nothing gets saved as a made-up default.
+   */
+  open(existing?: DailyCheckIn, need?: StatKey): void {
     this.isEdit.set(!!existing);
-    this.step.set(0);
+    this.focus.set(existing && need ? need : null);
+    this.step.set(need ? STEP_OF[need] : 0);
     this.form.reset();
     if (existing) {
       this.form.setValue({
