@@ -32,7 +32,6 @@
       <app-pimpek
         [state]="store.avatarState()"
         [message]="store.bubbleMessage()"
-        [items]="store.wornItems()"
         [celebrating]="celebrating()"
         [color]="settings.petHex()"
         [needsAttention]="!store.todayEntry()"
@@ -65,9 +64,6 @@
   }
 
   <nav class="dock">
-    <button type="button" (click)="wardrobe.open()">
-      <app-icon name="hanger" /> Szafa
-    </button>
     <button type="button" class="main" (click)="openCheckIn()" [disabled]="store.loading()">
       <app-icon name="pencil" /> {{ store.todayEntry() ? 'Edytuj wpis' : 'Dodaj wpis' }}
     </button>
@@ -78,10 +74,6 @@
 </main>
 
 <app-check-in-dialog (saved)="onSaved($event)" />
-
-<app-sheet #wardrobe title="Szafa">
-  <app-wardrobe />
-</app-sheet>
 
 <app-sheet #progress title="Postępy">
   <app-progress />
@@ -94,17 +86,6 @@
 <app-sheet #needSheet [title]="needTitle()">
   <app-need-detail [stat]="selectedNeed()" (edit)="editNeed()" />
 </app-sheet>
-
-@if (unlockedToast(); as item) {
-  <div class="toast" role="status">
-    <span class="toast-icon" aria-hidden="true">{{ item.icon }}</span>
-    <div>
-      <strong>Nowy przedmiot!</strong>
-      <div>{{ item.name }}</div>
-    </div>
-    <button type="button" class="btn primary" (click)="wearUnlocked(item)">Załóż</button>
-  </div>
-}
 
 @if (askReminders()) {
   <div class="ask" role="dialog" aria-labelledby="ask-title">

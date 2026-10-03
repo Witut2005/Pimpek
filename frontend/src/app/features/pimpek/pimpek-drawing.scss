@@ -51,21 +51,6 @@ svg {
   stroke-linecap: round;
 }
 
-.band {
-  fill: none;
-}
-
-.sunglasses {
-  fill: #3a302b;
-
-  .shine {
-    fill: none;
-    stroke: rgb(255 255 255 / 0.4);
-    stroke-width: 10;
-    stroke-linecap: round;
-  }
-}
-
 // ---- body ----
 
 @include motion.body('.body-group');

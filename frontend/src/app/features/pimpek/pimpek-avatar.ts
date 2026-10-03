@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { AvatarState } from '../../core/models/check-in.model';
-import { ItemId } from '../../core/models/item.model';
 import { SkinStore } from '../../core/state/skin.store';
 import { PimpekDrawing } from './pimpek-drawing';
 import { SkinPlayer } from './skin-player';
@@ -27,8 +26,6 @@ const BURST = ['💙', '⭐', '✨', '💚', '⭐', '💙', '✨', '💛'].map((
 export class PimpekAvatar {
   readonly state = input.required<AvatarState>();
   readonly celebrating = input(false);
-  /** Only the built-in drawing knows where to put clothes; uploaded skins ignore them. */
-  readonly items = input<readonly ItemId[]>([]);
   /** Body colour picked in settings; sad and sick states still tint over it. */
   readonly color = input<string>();
   /** Thumbnails skip the floating sparkles and Zzz — at that size they're just noise. */

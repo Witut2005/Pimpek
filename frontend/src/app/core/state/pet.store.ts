@@ -1,20 +1,15 @@
-import { computed, effect, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { finalize, map, Observable, tap } from 'rxjs';
 import { AvatarState, CheckInInput, DailyCheckIn } from '../models/check-in.model';
-import { BadgeProgress, EquippedItems, ItemId, PetItemProgress } from '../models/item.model';
 import { WearableDay } from '../models/metrics.model';
 import { CheckInService } from '../services/check-in.service';
 import { wearableGreeting } from '../services/companion-reaction';
 import { ClockStore } from './clock.store';
 import {
-  BADGES,
-  badgeEarned,
   currentStreak,
   decayStats,
   fitnessScore,
   idleAvatarState,
-  itemProgress,
-  ITEMS,
   leavesFor,
   measuredStats,
   PetStats,
@@ -31,7 +26,6 @@ import { StravaStore } from './strava.store';
 import { SyncStore } from './sync.store';
 import { WalletStore } from './wallet.store';
 import { addDays, daysBetween } from '../../shared/date';
-import { KEYS, readJson, writeJson } from '../../shared/storage';
 
 const EMPTY_STATS: PetStats = { energy: 0, fitness: 0, nutrition: 0, mood: 0, screen: 0 };
 const HISTORY_DAYS = 28;
@@ -40,7 +34,6 @@ const SLEEPY_ENERGY = 55;
 
 export interface SaveResult {
   checkIn: DailyCheckIn;
-  newlyUnlocked: PetItemProgress[];
   /** Leaves earned — only the first save of a day pays out. */
   leaves: number;
 }
@@ -76,7 +69,6 @@ export class PetStore {
   readonly checkIns = signal<DailyCheckIn[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
-  readonly equipped = signal<EquippedItems>(readJson(KEYS.equipped, {}));
 
   private readonly checkInsByDate = computed(() => new Map(this.checkIns().map((c) => [c.date, c])));
   private readonly wearableByDate = computed(() => new Map(this.sync.days().map((d) => [d.date, d])));
@@ -173,35 +165,6 @@ export class PetStore {
     currentStreak(new Set(this.checkIns().map((c) => c.date)), this.today()),
   );
 
-  readonly items = computed<PetItemProgress[]>(() => {
-    const owned = this.wallet.owned();
-    return ITEMS.map((item) => {
-      if (item.kind === 'shop') {
-        const has = owned.has(item.id);
-        return { ...item, progress: has ? 1 : 0, unlocked: has };
-      }
-      const progress = itemProgress(item, this.checkIns(), this.goals()) + this.stravaExtra(item.id);
-      return { ...item, progress, unlocked: progress >= item.target };
-    });
-  });
-
-  /** Only items that are still unlocked — protects against stale equipment. */
-  readonly wornItems = computed<ItemId[]>(() => {
-    const unlocked = new Set(this.items().filter((i) => i.unlocked).map((i) => i.id));
-    return Object.values(this.equipped()).filter((id) => unlocked.has(id));
-  });
-
-  readonly badges = computed<BadgeProgress[]>(() => {
-    const ctx = {
-      checkIns: this.checkIns(),
-      wearable: this.sync.days(),
-      connected: !!this.sources.primary(),
-      goals: this.goals(),
-      trainingsImported: this.strava.activities().length,
-    };
-    return BADGES.map((badge) => ({ ...badge, earned: badgeEarned(badge.id, ctx) }));
-  });
-
   readonly quest = computed(() => questFor(this.stats(), this.knownStats()));
 
   /** Last 28 days, oldest first, ending today. */
@@ -210,10 +173,6 @@ export class PetStore {
       this.dayView(addDays(this.today(), i - (HISTORY_DAYS - 1))),
     ),
   );
-
-  constructor() {
-    effect(() => writeJson(KEYS.equipped, this.equipped()));
-  }
 
   load(): void {
     this.loading.set(true);
@@ -224,7 +183,6 @@ export class PetStore {
   }
 
   save(input: CheckInInput): Observable<SaveResult> {
-    const unlockedBefore = new Set(this.items().filter((i) => i.unlocked).map((i) => i.id));
     const firstToday = !this.checkInsByDate().has(input.date);
     this.saving.set(true);
     return this.api.saveCheckIn(input).pipe(
@@ -238,47 +196,10 @@ export class PetStore {
       map((checkIn) => {
         const leaves = firstToday ? leavesFor(checkIn, this.goals()) : 0;
         if (leaves) this.wallet.earn(leaves);
-        return {
-          checkIn,
-          leaves,
-          newlyUnlocked: this.items().filter((i) => i.unlocked && !unlockedBefore.has(i.id)),
-        };
+        return { checkIn, leaves };
       }),
       finalize(() => this.saving.set(false)),
     );
-  }
-
-  toggleItem(id: ItemId): void {
-    const item = this.items().find((i) => i.id === id);
-    if (!item?.unlocked) return;
-    this.equipped.update((eq) => ({ ...eq, [item.slot]: eq[item.slot] === id ? undefined : id }));
-  }
-
-  /** Buys a shop item and puts it on straight away. */
-  buy(id: ItemId): boolean {
-    const item = this.items().find((i) => i.id === id);
-    if (!item || !this.wallet.buy(item)) return false;
-    this.equipped.update((eq) => ({ ...eq, [item.slot]: id }));
-    return true;
-  }
-
-  resetEquipped(): void {
-    this.equipped.set({});
-  }
-
-  /**
-   * Strava runs on days whose check-in didn't count them, so the imported history helps the
-   * headband without counting the same run twice.
-   */
-  private stravaExtra(id: ItemId): number {
-    if (id !== 'headband') return 0;
-    let km = 0;
-    for (const [date, runKm] of this.strava.runKmByDate()) {
-      if (date > this.today()) continue;
-      const logged = this.checkInsByDate().get(date)?.metrics.runningDistanceKm ?? 0;
-      km += Math.max(0, runKm - logged);
-    }
-    return km;
   }
 
   private dayView(date: string): DayView {

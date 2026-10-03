@@ -47,8 +47,7 @@ export class DemoControls {
         : [{ id: 'garmin', via: 'demo', connectedAt: new Date().toISOString() }],
     );
     writeJson(KEYS.checkIns, buildScenarioCheckIns(scenario, today, 'garmin'));
-    this.wallet.replace({ balance: WALLET_SEED[scenario], owned: [] });
-    this.pet.resetEquipped();
+    this.wallet.replace({ balance: WALLET_SEED[scenario] });
     this.sync.clear();
     this.pet.load();
     this.sync.sync();

@@ -1,12 +1,11 @@
-import { AvatarState, CheckInInput, DailyCheckIn } from '../models/check-in.model';
-import { Badge, PetItem } from '../models/item.model';
+import { AvatarState, CheckInInput } from '../models/check-in.model';
 import { Nutrients } from '../models/meals.model';
 import { WearableDay } from '../models/metrics.model';
 import { DEFAULT_GOALS, Goals } from '../models/settings.model';
-import { addDays, daysBetween } from '../../shared/date';
+import { addDays } from '../../shared/date';
 import { IconName } from '../../shared/icon/icon';
 
-/** Defaults for places that have no user settings at hand (seed data, item texts). */
+/** Defaults for places that have no user settings at hand (seed data). */
 export const GOALS = DEFAULT_GOALS;
 
 /** Stat points lost per day without a check-in — the Pou-style "hunger". */
@@ -139,102 +138,6 @@ export function currentStreak(dates: ReadonlySet<string>, today: string): number
     day = addDays(day, -1);
   }
   return streak;
-}
-
-export function longestStreak(dates: ReadonlySet<string>): number {
-  const sorted = [...dates].sort();
-  let best = 0;
-  let run = 0;
-  sorted.forEach((date, i) => {
-    run = i > 0 && daysBetween(sorted[i - 1], date) === 1 ? run + 1 : 1;
-    best = Math.max(best, run);
-  });
-  return best;
-}
-
-// ---- wardrobe: rewards for habits, extras from the shop ----
-
-export const ITEMS: readonly PetItem[] = [
-  { id: 'headband', name: 'Opaska sportowa', icon: '🎽', slot: 'head', kind: 'reward', requirement: 'Przebiegnij łącznie 10 km', target: 10 },
-  { id: 'party-hat', name: 'Imprezowa czapeczka', icon: '🎉', slot: 'head', kind: 'reward', requirement: 'Spotkaj się ze znajomymi 3 razy', target: 3 },
-  { id: 'nightcap', name: 'Szlafmyca', icon: '🌙', slot: 'head', kind: 'reward', requirement: 'Wyśpij się 3 noce (cel snu)', target: 3 },
-  { id: 'chef-hat', name: 'Czapka kucharza', icon: '🧑‍🍳', slot: 'head', kind: 'reward', requirement: 'Jedz zdrowo (80+) przez 3 dni', target: 3 },
-  { id: 'crown', name: 'Korona', icon: '👑', slot: 'head', kind: 'reward', requirement: 'Dodawaj wpisy 5 dni z rzędu', target: 5 },
-  { id: 'sunglasses', name: 'Okulary', icon: '😎', slot: 'face', kind: 'reward', requirement: 'Max 2 h ekranu przez 3 dni', target: 3 },
-  { id: 'bow-tie', name: 'Muszka', icon: '🎀', slot: 'neck', kind: 'shop', requirement: 'Ze sklepiku', target: 1, price: 20 },
-  { id: 'flower', name: 'Kwiatek', icon: '🌼', slot: 'head', kind: 'shop', requirement: 'Ze sklepiku', target: 1, price: 25 },
-  { id: 'scarf', name: 'Szalik', icon: '🧣', slot: 'neck', kind: 'shop', requirement: 'Ze sklepiku', target: 1, price: 30 },
-  { id: 'round-glasses', name: 'Okularki', icon: '👓', slot: 'face', kind: 'shop', requirement: 'Ze sklepiku', target: 1, price: 35 },
-];
-
-export function itemProgress(item: PetItem, checkIns: readonly DailyCheckIn[], goals: Goals = GOALS): number {
-  const count = (predicate: (c: DailyCheckIn) => boolean) => checkIns.filter(predicate).length;
-  switch (item.id) {
-    case 'headband':
-      return checkIns.reduce((sum, c) => sum + c.metrics.runningDistanceKm, 0);
-    case 'party-hat':
-      return count((c) => c.social.metWithFriends);
-    case 'nightcap':
-      return count((c) => c.sleep.durationHours >= goals.sleepHours);
-    case 'chef-hat':
-      return count((c) => c.food.qualityScore >= 80);
-    case 'crown':
-      return longestStreak(new Set(checkIns.map((c) => c.date)));
-    case 'sunglasses':
-      return count((c) => c.metrics.screenTimeHours <= 2);
-    default:
-      return 0;
-  }
-}
-
-// ---- stickers: achievements that only decorate the album ----
-
-export const BADGES: readonly Badge[] = [
-  { id: 'first-entry', name: 'Pierwszy wpis', icon: '🌱', description: 'Opowiedz Pimpkowi o swoim dniu' },
-  { id: 'connected', name: 'Na łączach', icon: '⌚', description: 'Połącz zegarek lub pierścień' },
-  { id: 'week', name: 'Tydzień razem', icon: '🗓️', description: '7 dni z wpisem z rzędu' },
-  { id: 'sleepyhead', name: 'Śpioszek', icon: '😴', description: '5 nocy z celem snu' },
-  { id: 'walker', name: 'Wędrowiec', icon: '🥾', description: 'Dzień z 10 000 kroków' },
-  { id: 'social', name: 'Dusza towarzystwa', icon: '🫶', description: '5 spotkań z ludźmi' },
-  { id: 'detox', name: 'Cyfrowy detoks', icon: '📵', description: '3 dni z max 2 h ekranu' },
-  { id: 'greens', name: 'Zielony talerz', icon: '🥗', description: '5 dni zdrowego jedzenia' },
-  { id: 'chronicle', name: 'Kronikarz', icon: '📜', description: 'Zaimportuj historię treningów' },
-];
-
-export interface BadgeContext {
-  checkIns: readonly DailyCheckIn[];
-  wearable: readonly WearableDay[];
-  connected: boolean;
-  goals: Goals;
-  /** Workouts imported from a training log (Strava). */
-  trainingsImported?: number;
-}
-
-export function badgeEarned(id: string, ctx: BadgeContext): boolean {
-  const { checkIns, wearable, goals } = ctx;
-  const count = (predicate: (c: DailyCheckIn) => boolean) => checkIns.filter(predicate).length;
-  switch (id) {
-    case 'first-entry':
-      return checkIns.length > 0;
-    case 'connected':
-      return ctx.connected;
-    case 'chronicle':
-      return (ctx.trainingsImported ?? 0) > 0;
-    case 'week':
-      return longestStreak(new Set(checkIns.map((c) => c.date))) >= 7;
-    case 'sleepyhead':
-      return wearable.filter((w) => (w.sleepHours ?? 0) >= goals.sleepHours).length >= 5;
-    case 'walker':
-      return wearable.some((w) => w.steps >= 10_000);
-    case 'social':
-      return count((c) => c.social.metWithFriends) >= 5;
-    case 'detox':
-      return count((c) => c.metrics.screenTimeHours <= 2) >= 3;
-    case 'greens':
-      return count((c) => c.food.qualityScore >= 80) >= 5;
-    default:
-      return false;
-  }
 }
 
 // ---- daily quest & leaves (the soft currency) ----

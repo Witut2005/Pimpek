@@ -10,10 +10,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
-import { PetItemProgress } from '../../core/models/item.model';
 import { STRAVA_NEVER_READ, STRAVA_SCOPES } from '../../core/models/strava.model';
 import { ImportPhase, ImportProgress, MockStravaService } from '../../core/services/strava.service';
-import { PetStore } from '../../core/state/pet.store';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
 import { pace, StravaStore } from '../../core/state/strava.store';
@@ -49,7 +47,6 @@ const PHASES: readonly { id: ImportPhase; label: string }[] = [
 export class StravaConnect {
   private readonly api = inject(MockStravaService);
   private readonly sources = inject(SourcesStore);
-  protected readonly pet = inject(PetStore);
   private readonly wallet = inject(WalletStore);
   protected readonly strava = inject(StravaStore);
   protected readonly settings = inject(SettingsStore);
@@ -71,7 +68,6 @@ export class StravaConnect {
   protected readonly progress = signal<ImportProgress | undefined>(undefined);
   protected readonly firstName = signal('');
   protected readonly bonus = signal(0);
-  protected readonly unlocked = signal<PetItemProgress[]>([]);
 
   protected email = '';
   protected password = '';
@@ -103,7 +99,6 @@ export class StravaConnect {
     this.step.set('consent');
     this.progress.set(undefined);
     this.bonus.set(0);
-    this.unlocked.set([]);
     this.email = '';
     this.password = '';
     this.dialog().nativeElement.showModal();
@@ -143,7 +138,6 @@ export class StravaConnect {
 
   protected startImport(): void {
     this.step.set('importing');
-    const before = new Set(this.pet.items().filter((i) => i.unlocked).map((i) => i.id));
     this.request = this.api.importHistory(this.email, this.months()).subscribe({
       next: (event) => {
         if ('progress' in event) {
@@ -156,7 +150,6 @@ export class StravaConnect {
           this.wallet.earn(WELCOME_BONUS);
           this.bonus.set(WELCOME_BONUS);
         }
-        this.unlocked.set(this.pet.items().filter((i) => i.unlocked && !before.has(i.id)));
         this.step.set('summary');
       },
       error: () => this.step.set('error'),

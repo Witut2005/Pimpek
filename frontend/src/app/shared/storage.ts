@@ -5,7 +5,6 @@ export const KEYS = {
   sources: 'pimpek.sources',
   wearable: 'pimpek.wearable',
   wallet: 'pimpek.wallet',
-  equipped: 'pimpek.equipped',
   scenario: 'pimpek.scenario',
   clock: 'pimpek.clock',
   skin: 'pimpek.skin',

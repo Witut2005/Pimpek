@@ -3,7 +3,9 @@ import { AiError, AiProviderId, AiRequest } from '../../models/ai.model';
 
 /** Rate limits and an overloaded model usually pass after a moment. */
 const RETRY_STATUSES = new Set([429, 500, 502, 503, 529]);
-const RETRY_DELAYS_MS = [2000, 6000];
+/** An overloaded model (503/529) can take a while to recover, so back off for ~30 s in total. */
+const RETRY_DELAYS_MS = [2000, 5000, 10000, 15000];
+const OVERLOADED_STATUSES = new Set([503, 529]);
 
 /** The HTTP call a provider needs; the base class sends it. */
 export interface ProviderCall {
@@ -100,6 +102,11 @@ export abstract class AiProvider<TResponse = unknown> {
     }
     if (response.status === 429) {
       return new AiError(`Limit zapytań do ${this.vendor} się wyczerpał. Odczekaj chwilę albo sprawdź swój plan.`);
+    }
+    if (OVERLOADED_STATUSES.has(response.status)) {
+      return new AiError(
+        `${this.label} jest teraz przeciążony (${response.status}). Spróbuj za chwilę albo wybierz inny model.`,
+      );
     }
     return new AiError(`${this.label} zgłosił błąd (${response.status})${detail ? `: ${detail}` : '.'}`);
   }

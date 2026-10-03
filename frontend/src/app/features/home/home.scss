@@ -299,9 +299,8 @@
   }
 }
 
-// ---- toast & the gentle reminder question ----
+// ---- the gentle reminder question ----
 
-.toast,
 .ask {
   position: fixed;
   left: 50%;
@@ -312,21 +311,6 @@
     var(--shadow-clay),
     0 1.2rem 2.4rem -1rem rgb(120 80 50 / 0.4);
   transform: translateX(-50%);
-}
-
-.toast {
-  top: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  width: max-content;
-  padding: 0.8rem 0.8rem 0.8rem 1.1rem;
-  border-radius: 1.75rem;
-  animation: drop-in 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
-}
-
-.toast-icon {
-  font-size: 2.2rem;
 }
 
 .ask {
@@ -355,12 +339,6 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
-}
-
-@keyframes drop-in {
-  from {
-    transform: translate(-50%, -150%);
-  }
 }
 
 @keyframes rise-in {

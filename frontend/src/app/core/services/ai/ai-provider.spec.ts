@@ -57,8 +57,8 @@ describe('AI providers', () => {
       return 0;
     }) as typeof setTimeout);
     fetchSpy.and.callFake(async () => json(503, { error: { message: 'overloaded' } }));
-    await expectAsync(new ClaudeProvider().complete(REQUEST)).toBeRejectedWithError(AiError, /503/);
-    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    await expectAsync(new ClaudeProvider().complete(REQUEST)).toBeRejectedWithError(AiError, /przeciążony \(503\)/);
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
   });
 
   it('does not retry a wrong key', async () => {

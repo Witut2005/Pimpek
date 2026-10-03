@@ -188,7 +188,6 @@
               class="pet"
               state="happy"
               [celebrating]="true"
-              [items]="pet.wornItems()"
               [color]="settings.petHex()"
             />
             <p class="bubble">
@@ -258,10 +257,6 @@
             <ul>
               @if (bonus()) {
                 <li><app-icon name="leaf" /> +{{ bonus() }} listków za przyniesioną historię</li>
-              }
-              <li>📜 Naklejka „Kronikarz”</li>
-              @for (item of unlocked(); track item.id) {
-                <li>{{ item.icon }} Odblokowano: {{ item.name }}</li>
               }
               <li><app-icon name="pulse" /> Biegi ze Stravy liczą się teraz do kondycji Pimpka</li>
             </ul>
