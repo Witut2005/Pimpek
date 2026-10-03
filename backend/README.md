@@ -26,6 +26,9 @@ than yesterday are cached in `data/cache/<user>.json`, so only the first sync is
 The password is never stored, only Garmin session tokens (`data/tokens/<user>/`).
 This uses the unofficial `garminconnect` library, which is not covered by Garmin's official API terms.
 
+Open Wearables lives in `open-wearables/` as a git submodule: clone with `git clone --recursive`,
+or run `git submodule update --init` in an existing checkout. Its `backend/config/.env` is not in git.
+
 **Official OAuth via Open Wearables**: `POST /api/wearables/connect/garmin` `{redirect_uri}` -> `{authorization_url}`.
 This needs real `GARMIN_CLIENT_ID`/`GARMIN_CLIENT_SECRET` in `open-wearables/backend/config/.env`
 (Garmin Connect Developer Program), plus OW reachable from the internet (e.g. `ngrok http 8000`) with
