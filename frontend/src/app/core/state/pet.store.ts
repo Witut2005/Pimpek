@@ -103,9 +103,7 @@ export class PetStore {
   readonly knownStats = computed<ReadonlySet<StatKey>>(() => {
     if (this.latestEntry()) return new Set(STAT_KEYS);
     const measured = this.todayWearable();
-    if (measured) {
-      return new Set<StatKey>(measured.sleepHours === undefined ? ['fitness'] : ['energy', 'fitness']);
-    }
+    if (measured) return new Set(Object.keys(measuredStats(measured, this.goals())) as StatKey[]);
     return new Set();
   });
 
@@ -268,7 +266,7 @@ export class PetStore {
       runningKm: entry?.metrics.runningDistanceKm ?? wearable?.runningKm,
       food: entry?.food.qualityScore,
       mood: entry?.mood.score,
-      screen: entry?.metrics.screenTimeHours,
+      screen: entry?.metrics.screenTimeHours ?? wearable?.screenHours,
     };
   }
 }
