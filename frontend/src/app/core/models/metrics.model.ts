@@ -11,6 +11,8 @@ export interface SourceInfo {
   icon: IconName;
   /** Apple Health and Health Connect have no web API — they need the native app. */
   web: boolean;
+  /** Not wired to the backend yet — shown, but can't be connected. */
+  soon?: boolean;
   reads: readonly string[];
 }
 
@@ -22,7 +24,7 @@ export const SOURCES: readonly SourceInfo[] = [
     genitive: 'Garmina',
     icon: 'watch',
     web: true,
-    reads: ['sen', 'kroki', 'tętno spoczynkowe'],
+    reads: ['sen', 'kroki', 'tętno spoczynkowe', 'bieganie'],
   },
   {
     id: 'oura',
@@ -31,6 +33,7 @@ export const SOURCES: readonly SourceInfo[] = [
     genitive: 'Oury',
     icon: 'ring',
     web: true,
+    soon: true,
     reads: ['sen', 'kroki', 'tętno spoczynkowe'],
   },
   {
@@ -58,9 +61,14 @@ export interface WearableDay {
   /** Local calendar day, `YYYY-MM-DD`. Sleep belongs to the day you woke up. */
   date: string;
   source: SourceId;
-  sleepHours: number;
+  /** Absent when the watch wasn't worn overnight — never treat that as zero sleep. */
+  sleepHours?: number;
+  /** Garmin's 0–100 sleep score, when the watch provides one. */
+  sleepScore?: number;
   steps: number;
-  restingHr: number;
+  restingHr?: number;
+  /** Kilometres run that day, from the watch's recorded runs. */
+  runningKm?: number;
   /** False for today: the day isn't over, steps keep growing. */
   complete: boolean;
 }

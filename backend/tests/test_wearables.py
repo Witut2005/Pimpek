@@ -67,3 +67,9 @@ def test_unreachable_is_503(monkeypatch):
         raise httpx.ConnectError("down")
     monkeypatch.setattr(ow, "_transport", httpx.MockTransport(boom))
     assert client.get("/api/wearables/workouts").status_code == 503
+
+
+def test_dates_default_to_last_30_days():
+    client.get("/api/wearables/workouts")
+    wk = [c for c in calls if c.url.path.endswith("/workouts")][0]
+    assert "start_date" in wk.url.params and "end_date" in wk.url.params

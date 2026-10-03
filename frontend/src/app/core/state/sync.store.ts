@@ -1,6 +1,8 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { WearableDay } from '../models/metrics.model';
+import { WearableApi } from '../services/wearable-api';
 import { MockWearableService } from '../services/wearable.service';
 import { ClockStore } from './clock.store';
 import { SourcesStore } from './sources.store';
@@ -15,6 +17,8 @@ interface WearableCache {
 }
 
 const STALE_AFTER_MS = 3 * 60 * 60 * 1000;
+/** While the app is open (or comes back to the foreground), pull new watch data this often. */
+const AUTO_SYNC_MS = 30 * 60 * 1000;
 
 /**
  * Stale-while-revalidate for wearable data: the room renders from the cache instantly,
@@ -22,7 +26,8 @@ const STALE_AFTER_MS = 3 * 60 * 60 * 1000;
  */
 @Injectable({ providedIn: 'root' })
 export class SyncStore {
-  private readonly api = inject(MockWearableService);
+  private readonly api = inject(WearableApi);
+  private readonly mock = inject(MockWearableService);
   private readonly sources = inject(SourcesStore);
   private readonly clock = inject(ClockStore);
 
@@ -56,7 +61,19 @@ export class SyncStore {
       this.sync();
     });
     addEventListener('offline', () => this.online.set(false));
-    setInterval(() => this.now.set(Date.now()), 30_000);
+    setInterval(() => {
+      this.now.set(Date.now());
+      this.autoSync();
+    }, 30_000);
+    document.addEventListener('visibilitychange', () => this.autoSync());
+  }
+
+  /** Background refresh — the user never has to press anything to see last night's sleep. */
+  private autoSync(): void {
+    // After an error we wait for the user (or the network coming back) instead of hammering Garmin.
+    if (document.hidden || this.phase() !== 'idle' || this.sources.isDemo()) return;
+    const at = this.syncedAt();
+    if (!at || Date.now() - new Date(at).getTime() > AUTO_SYNC_MS) this.sync();
   }
 
   sync(): void {
@@ -64,13 +81,24 @@ export class SyncStore {
     if (!source || !this.online()) return;
     this.request?.unsubscribe();
     this.phase.set('syncing');
-    this.request = this.api.fetchDays(source.id, this.clock.today()).subscribe({
+    const today = this.clock.today();
+    const days$ = this.sources.isDemo()
+      ? this.mock.fetchDays(source.id, today)
+      : this.api.fetchDays(today);
+    this.request = days$.subscribe({
       next: (days) => {
         this.cache.set({ days, syncedAt: new Date().toISOString() });
         this.now.set(Date.now());
         this.phase.set('idle');
       },
-      error: () => this.phase.set('error'),
+      error: (err: unknown) => {
+        // 409: the backend no longer has a connection (e.g. Garmin session expired).
+        if (err instanceof HttpErrorResponse && err.status === 409) {
+          this.sources.refresh().subscribe(() => this.clear());
+          return;
+        }
+        this.phase.set('error');
+      },
     });
   }
 

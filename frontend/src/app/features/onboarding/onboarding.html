@@ -13,7 +13,12 @@
     @case (0) {
       <section class="panel center">
         @if (hatch() === 'hatched') {
-          <app-pimpek-avatar class="pet" state="happy" [celebrating]="true" [color]="settings.petHex()" />
+          <app-pimpek-avatar
+            class="pet"
+            state="happy"
+            [celebrating]="true"
+            [color]="settings.petHex()"
+          />
           <h1>Cześć! Jak mam się nazywać?</h1>
           <input
             class="text-input name"
@@ -22,7 +27,9 @@
             [value]="settings.settings().petName"
             (input)="rename($event)"
           />
-          <p class="muted">Będę reagować na to, jak śpisz, jesz i się ruszasz. Zero oceniania, obiecuję.</p>
+          <p class="muted">
+            Będę reagować na to, jak śpisz, jesz i się ruszasz. Zero oceniania, obiecuję.
+          </p>
           <button type="button" class="btn primary" (click)="next()">Miło mi!</button>
         } @else {
           <button
@@ -40,10 +47,17 @@
     @case (1) {
       <section class="panel">
         <h1>Nad czym chcesz popracować?</h1>
-        <p class="muted">Wybierz do trzech rzeczy. Na nich {{ settings.petName() }} skupi się najbardziej.</p>
+        <p class="muted">
+          Wybierz do trzech rzeczy. Na nich {{ settings.petName() }} skupi się najbardziej.
+        </p>
         <div class="focus">
           @for (f of focusOptions; track f.id) {
-            <button type="button" class="chip" [attr.aria-pressed]="isFocused(f.id)" (click)="toggleFocus(f.id)">
+            <button
+              type="button"
+              class="chip"
+              [attr.aria-pressed]="isFocused(f.id)"
+              (click)="toggleFocus(f.id)"
+            >
               <app-icon [name]="f.icon" /> {{ f.label }}
             </button>
           }
@@ -53,7 +67,9 @@
     @case (2) {
       <section class="panel">
         <h1>Jakie cele są dla Ciebie realne?</h1>
-        <p class="muted">Lepiej mały cel, który się udaje, niż duży, który zniechęca. Zmienisz je w każdej chwili.</p>
+        <p class="muted">
+          Lepiej mały cel, który się udaje, niż duży, który zniechęca. Zmienisz je w każdej chwili.
+        </p>
         <app-goals-picker />
       </section>
     }
@@ -61,7 +77,10 @@
       <section class="panel">
         <app-pimpek-avatar class="pet small" state="neutral" [color]="settings.petHex()" />
         <h1>Skąd mam wiedzieć, jak się czujesz?</h1>
-        <p class="muted">Połącz zegarek, a sen i kroki pojawią się same. Resztę opowiesz mi wieczorem.</p>
+        <p class="muted">
+          Połącz konto Garmin, a sen, kroki i bieganie pojawią się same, bez wpisywania. Resztę
+          opowiesz mi wieczorem.
+        </p>
         <div class="sources">
           @for (source of allSources; track source.id) {
             <app-source-card [source]="source" returnTo="/witaj?krok=3" />
@@ -77,12 +96,8 @@
         <app-pimpek-avatar class="pet" state="happy" [color]="settings.petHex()" />
         <h1>Gotowe!</h1>
         <p class="muted">
-          {{ settings.petName() }} rozgląda się po swoim pokoju.
-          @if (anyConnected()) {
-            Za chwilę zajrzy do zegarka.
-          } @else {
-            Wieczorem opowiedz mu, jak minął dzień.
-          }
+          {{ settings.petName() }} rozgląda się po swoim pokoju. Zajrzy do Twojego Garmina i od razu
+          będzie wiedział, jak spałeś/aś.
         </p>
         <button type="button" class="btn primary" (click)="finish()">Wejdź do pokoju</button>
       </section>
@@ -92,9 +107,9 @@
   @if (step() > 0 && step() < 4) {
     <footer>
       <button type="button" class="btn ghost" (click)="back()">Wstecz</button>
-      <button type="button" class="btn primary" (click)="next()">
-        @if (step() === 3 && !anyConnected()) {
-          Bez zegarka, wpiszę ręcznie
+      <button type="button" class="btn primary" [disabled]="needsWatch()" (click)="next()">
+        @if (needsWatch()) {
+          Najpierw połącz Garmina
         } @else {
           Dalej
         }

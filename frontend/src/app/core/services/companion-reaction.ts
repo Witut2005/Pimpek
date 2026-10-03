@@ -2,7 +2,7 @@ import { AvatarState, CheckInInput, DailyCheckIn } from '../models/check-in.mode
 import { WearableDay } from '../models/metrics.model';
 import { Goals } from '../models/settings.model';
 import { avatarStateFor, GOALS, statsFor } from '../state/pet-rules';
-import { formatHours, formatSteps } from '../../shared/format';
+import { formatHours, formatKm, formatSteps } from '../../shared/format';
 
 const INTROS: Record<AvatarState, string> = {
   happy: 'Czuję się świetnie! 🥳',
@@ -49,14 +49,18 @@ export function buildCompanionReaction(
 /** What Pimpek says right after fresh wearable data arrives, before today's check-in. */
 export function wearableGreeting(day: WearableDay, sourceName: string, goals: Goals, longAway: boolean): string {
   const parts: string[] = [];
-  if (day.sleepHours < goals.sleepHours - 1) {
-    parts.push(`${sourceName} pokazuje tylko ${formatHours(day.sleepHours)} snu… ziew 😴`);
-  } else if (day.sleepHours >= goals.sleepHours) {
-    parts.push(`${formatHours(day.sleepHours)} snu, czuję się wyspany! 💤`);
+  const sleep = day.sleepHours;
+  if (sleep === undefined) {
+    parts.push(`${sourceName} nie widział dziś Twojego snu. Spałeś/aś bez zegarka?`);
+  } else if (sleep < goals.sleepHours - 1) {
+    parts.push(`${sourceName} pokazuje tylko ${formatHours(sleep)} snu… ziew 😴`);
+  } else if (sleep >= goals.sleepHours) {
+    parts.push(`${formatHours(sleep)} snu, czuję się wyspany! 💤`);
   } else {
-    parts.push(`${formatHours(day.sleepHours)} snu, prawie jak trzeba.`);
+    parts.push(`${formatHours(sleep)} snu, prawie jak trzeba.`);
   }
-  if (day.steps >= goals.steps) parts.push(`I już ${formatSteps(day.steps)} kroków!`);
+  if (day.runningKm) parts.push(`Widzę ${formatKm(day.runningKm)} biegu, brawo! 🏃`);
+  else if (day.steps >= goals.steps) parts.push(`I już ${formatSteps(day.steps)} kroków!`);
   parts.push(longAway ? 'Długo Cię nie było, tęskniłem 💭' : 'Opowiesz, jak minął dzień?');
   return parts.join(' ');
 }

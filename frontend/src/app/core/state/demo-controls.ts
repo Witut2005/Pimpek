@@ -41,7 +41,9 @@ export class DemoControls {
       reminders: { ...DEFAULT_SETTINGS.reminders, asked: scenario !== 'new' },
     });
     this.sources.replace(
-      scenario === 'new' ? [] : [{ id: 'garmin', connectedAt: new Date().toISOString() }],
+      scenario === 'new'
+        ? []
+        : [{ id: 'garmin', via: 'demo', connectedAt: new Date().toISOString() }],
     );
     writeJson(KEYS.checkIns, buildScenarioCheckIns(scenario, today, 'garmin'));
     this.wallet.replace({ balance: WALLET_SEED[scenario], owned: [] });

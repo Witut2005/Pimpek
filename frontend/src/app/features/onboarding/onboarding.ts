@@ -22,7 +22,7 @@ const FOCUS: readonly { id: string; icon: IconName; label: string }[] = [
   { id: 'mood', icon: 'heart', label: 'Więcej ludzi' },
 ];
 
-/** One question per screen, Pimpek as the guide. Skippable, with a demo shortcut for the jury. */
+/** One question per screen, Pimpek as the guide. Connecting Garmin is required; demo mode skips it. */
 @Component({
   selector: 'app-onboarding',
   imports: [PimpekAvatar, Icon, GoalsPicker, SourceCard],
@@ -46,6 +46,8 @@ export class Onboarding implements OnInit {
   protected readonly focusOptions = FOCUS;
   protected readonly allSources = SOURCES;
   protected readonly anyConnected = computed(() => !!this.sources.primary());
+  /** The watch step can't be skipped: Garmin data is what spares the user typing. */
+  protected readonly needsWatch = computed(() => this.step() === 3 && !this.anyConnected());
 
   ngOnInit(): void {
     const step = Number(this.krok());
@@ -76,6 +78,7 @@ export class Onboarding implements OnInit {
   }
 
   protected next(): void {
+    if (this.needsWatch()) return;
     this.step.update((s) => Math.min(STEP_COUNT - 1, s + 1));
   }
 

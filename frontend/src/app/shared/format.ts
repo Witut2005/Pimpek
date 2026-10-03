@@ -14,6 +14,13 @@ export function formatSteps(steps: number): string {
   return STEPS.format(Math.round(steps));
 }
 
+const KM = new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 1 });
+
+/** 5.23 → "5,2 km" */
+export function formatKm(km: number): string {
+  return `${KM.format(km)} km`;
+}
+
 /** `YYYY-MM-DD` → "pn", "wt", … */
 export function weekdayShort(dateKey: string): string {
   const [y, m, d] = dateKey.split('-').map(Number);

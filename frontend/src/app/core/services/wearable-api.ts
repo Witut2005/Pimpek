@@ -1,0 +1,94 @@
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { map, Observable } from 'rxjs';
+import { SourceId, WearableDay } from '../models/metrics.model';
+
+const HISTORY_DAYS = 28;
+
+/** How the backend reaches Garmin: official OAuth via Open Wearables, or the direct login. */
+export type ConnectionVia = 'open_wearables' | 'garmin_connect';
+
+export interface ApiSource {
+  id: SourceId;
+  via: ConnectionVia;
+  connectedAt: string | null;
+  name?: string | null;
+}
+
+interface ApiDay {
+  date: string;
+  source: SourceId;
+  sleepHours: number | null;
+  sleepScore: number | null;
+  steps: number | null;
+  restingHr: number | null;
+  runningKm: number | null;
+  complete: boolean;
+}
+
+export type GarminLoginResult =
+  | { status: 'connected' }
+  | { status: 'mfa_required'; mfa_session: string };
+
+const orUndefined = <T>(value: T | null): T | undefined => value ?? undefined;
+
+/** The FastAPI backend (`/api`, proxied in dev). Identity is the backend's default user for now. */
+@Injectable({ providedIn: 'root' })
+export class WearableApi {
+  private readonly http = inject(HttpClient);
+
+  sources(): Observable<ApiSource[]> {
+    return this.http.get<ApiSource[]>('/api/sources');
+  }
+
+  disconnect(id: SourceId): Observable<unknown> {
+    return this.http.delete(`/api/sources/${id}`);
+  }
+
+  /** Newest first. Days the watch knows nothing about are left out. */
+  fetchDays(today: string): Observable<WearableDay[]> {
+    return this.http
+      .get<{ days: ApiDay[] }>('/api/days', { params: { count: HISTORY_DAYS, today } })
+      .pipe(
+        map(({ days }) =>
+          days
+            .filter((d) => d.sleepHours !== null || d.steps !== null)
+            .map((d) => ({
+              date: d.date,
+              source: d.source,
+              sleepHours: orUndefined(d.sleepHours),
+              sleepScore: orUndefined(d.sleepScore),
+              steps: d.steps ?? 0,
+              restingHr: orUndefined(d.restingHr),
+              runningKm: orUndefined(d.runningKm),
+              complete: d.complete,
+            })),
+        ),
+      );
+  }
+
+  garminLogin(email: string, password: string): Observable<GarminLoginResult> {
+    return this.http.post<GarminLoginResult>('/api/garmin/connect', { email, password });
+  }
+
+  garminMfa(mfaSession: string, code: string): Observable<GarminLoginResult> {
+    return this.http.post<GarminLoginResult>('/api/garmin/mfa', { mfa_session: mfaSession, code });
+  }
+
+  /** Asks Garmin to push up to 30 days of history to Open Wearables (arrives via webhook). */
+  garminBackfill(): Observable<unknown> {
+    return this.http.post('/api/wearables/garmin/backfill', {});
+  }
+
+  /** Official Garmin OAuth through Open Wearables. Resolves to the provider's login page. */
+  oauthUrl(id: SourceId, returnTo: string): Observable<string> {
+    const redirect = new URL('/onboarding/done', location.origin);
+    redirect.searchParams.set('source', id);
+    redirect.searchParams.set('returnTo', returnTo);
+    return this.http
+      .post<{ authorization_url: string }>(`/api/wearables/connect/${id}`, {
+        redirect_uri: redirect.toString(),
+      })
+      .pipe(map((r) => r.authorization_url));
+  }
+}

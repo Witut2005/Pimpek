@@ -44,17 +44,26 @@ export function withWearable<T extends CheckInInput>(entry: T, wearable: Wearabl
   if (!wearable) return entry;
   return {
     ...entry,
-    sleep: { ...entry.sleep, durationHours: wearable.sleepHours },
-    metrics: { ...entry.metrics, steps: wearable.steps },
+    sleep: { ...entry.sleep, durationHours: wearable.sleepHours ?? entry.sleep.durationHours },
+    metrics: {
+      ...entry.metrics,
+      steps: wearable.steps,
+      runningDistanceKm: wearable.runningKm ?? entry.metrics.runningDistanceKm,
+    },
   };
 }
 
-/** The part of the stats a wearable alone can tell, before any check-in for the day. */
-export function measuredStats(wearable: WearableDay, goals: Goals): Pick<PetStats, 'energy' | 'fitness'> {
-  return {
-    energy: energyScore(wearable.sleepHours, undefined, goals),
-    fitness: fitnessScore(wearable.steps, 0, goals),
-  };
+/**
+ * The part of the stats a wearable alone can tell, before any check-in for the day.
+ * No sleep recorded (watch off overnight) means no energy reading — not zero energy.
+ */
+export function measuredStats(
+  wearable: WearableDay,
+  goals: Goals,
+): Partial<Pick<PetStats, 'energy' | 'fitness'>> {
+  const fitness = fitnessScore(wearable.steps, wearable.runningKm ?? 0, goals);
+  if (wearable.sleepHours === undefined) return { fitness };
+  return { energy: energyScore(wearable.sleepHours, undefined, goals), fitness };
 }
 
 export function decayStats(stats: PetStats, days: number): PetStats {
@@ -188,7 +197,7 @@ export function badgeEarned(id: string, ctx: BadgeContext): boolean {
     case 'week':
       return longestStreak(new Set(checkIns.map((c) => c.date))) >= 7;
     case 'sleepyhead':
-      return wearable.filter((w) => w.sleepHours >= goals.sleepHours).length >= 5;
+      return wearable.filter((w) => (w.sleepHours ?? 0) >= goals.sleepHours).length >= 5;
     case 'walker':
       return wearable.some((w) => w.steps >= 10_000);
     case 'social':

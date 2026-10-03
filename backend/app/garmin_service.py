@@ -131,6 +131,11 @@ def _client(user_id: str) -> Garmin:
     return garmin
 
 
+def client(user_id: str) -> Garmin:
+    """A logged-in client, for callers that make several requests in a row."""
+    return _client(user_id)
+
+
 def list_activities(user_id: str, start: int, limit: int) -> Any:
     return _client(user_id).get_activities(start, limit)
 

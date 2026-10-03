@@ -37,7 +37,7 @@ export function wearableDay(
   today: string,
   anchor: string,
   source: SourceId,
-): WearableDay {
+): WearableDay & { sleepHours: number } {
   const n = (salt: string) => noise(`${scenario}:${date}:${salt}`);
   const daysAgo = daysBetween(date, today);
   let sleepHours: number;

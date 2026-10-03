@@ -93,6 +93,31 @@
   }
 }
 
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--terracotta-700);
+}
+
+.code {
+  font-size: 1.2rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.error {
+  color: var(--danger-text);
+  font-weight: 700;
+}
+
+.busy app-icon,
+.spin {
+  animation: spin 1.4s linear infinite;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

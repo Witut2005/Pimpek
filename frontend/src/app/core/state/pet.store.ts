@@ -102,7 +102,10 @@ export class PetStore {
   /** Needs we actually know something about — the rest show as "waiting". */
   readonly knownStats = computed<ReadonlySet<StatKey>>(() => {
     if (this.latestEntry()) return new Set(STAT_KEYS);
-    if (this.todayWearable()) return new Set<StatKey>(['energy', 'fitness']);
+    const measured = this.todayWearable();
+    if (measured) {
+      return new Set<StatKey>(measured.sleepHours === undefined ? ['fitness'] : ['energy', 'fitness']);
+    }
     return new Set();
   });
 
@@ -112,7 +115,8 @@ export class PetStore {
     const entry = this.todayEntry();
     if (entry) return entry.companionReaction.avatarState;
     const measured = this.todayWearable();
-    if (measured && measuredStats(measured, this.goals()).energy < SLEEPY_ENERGY) return 'sleepy';
+    const energy = measured && measuredStats(measured, this.goals()).energy;
+    if (energy !== undefined && energy < SLEEPY_ENERGY) return 'sleepy';
     // A brand-new user (or one still loading) has nothing to be neglected about yet.
     if (!this.latestEntry()) return 'neutral';
     return idleAvatarState(this.stats(), this.daysSinceLastEntry());
@@ -252,7 +256,7 @@ export class PetStore {
       : wearable && measuredStats(wearable, goals);
     const state: AvatarState | undefined =
       entry?.companionReaction.avatarState ??
-      (stats && (stats.energy < SLEEPY_ENERGY ? 'sleepy' : 'neutral'));
+      (stats && ((stats.energy ?? 100) < SLEEPY_ENERGY ? 'sleepy' : 'neutral'));
     return {
       date,
       entry,
@@ -261,7 +265,7 @@ export class PetStore {
       wellbeing: stats && wellbeingOf(stats),
       sleepHours: wearable?.sleepHours ?? entry?.sleep.durationHours,
       steps: wearable?.steps ?? entry?.metrics.steps,
-      runningKm: entry?.metrics.runningDistanceKm,
+      runningKm: wearable?.runningKm ?? entry?.metrics.runningDistanceKm,
       food: entry?.food.qualityScore,
       mood: entry?.mood.score,
       screen: entry?.metrics.screenTimeHours,

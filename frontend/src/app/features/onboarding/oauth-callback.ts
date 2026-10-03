@@ -1,16 +1,26 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { SOURCES } from '../../core/models/metrics.model';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
 import { SyncStore } from '../../core/state/sync.store';
+import { WearableApi } from '../../core/services/wearable-api';
 import { PimpekAvatar } from '../pimpek/pimpek-avatar';
 
 const AUTO_RETURN_MS = 1800;
 
 /**
- * Where the provider's OAuth sends the user back (/onboarding/done). In the mock it simply
- * links the source, pulls the first data and returns to where the user came from.
+ * Where Open Wearables' OAuth sends the user back (/onboarding/done). Confirms the link with
+ * the backend, asks Garmin for history, pulls the first data and returns to where the user was.
  */
 @Component({
   selector: 'app-oauth-callback',
@@ -37,7 +47,7 @@ const AUTO_RETURN_MS = 1800;
         @default {
           <h1>Nie udało się połączyć</h1>
           <p class="muted">Spróbuj jeszcze raz za chwilę. Twoje dane są bezpieczne.</p>
-          <button type="button" class="btn primary" (click)="sync.sync()">Spróbuj ponownie</button>
+          <button type="button" class="btn primary" (click)="retry()">Spróbuj ponownie</button>
           <button type="button" class="btn ghost" (click)="goBack()">Wróć</button>
         }
       }
@@ -93,13 +103,18 @@ export class OAuthCallback implements OnInit {
   protected readonly sync = inject(SyncStore);
   private readonly sources = inject(SourcesStore);
   private readonly router = inject(Router);
+  private readonly api = inject(WearableApi);
+  private readonly checking = signal(true);
 
   readonly source = input<string>();
   readonly returnTo = input<string>();
 
   protected readonly info = computed(() => SOURCES.find((s) => s.id === this.source() && s.web));
   protected readonly phase = computed(() => {
-    if (!this.info()) return 'error';
+    const info = this.info();
+    if (!info) return 'error';
+    if (this.checking()) return 'syncing';
+    if (!this.sources.isConnected(info.id)) return 'error';
     switch (this.sync.status()) {
       case 'syncing':
         return 'syncing';
@@ -121,8 +136,22 @@ export class OAuthCallback implements OnInit {
   ngOnInit(): void {
     const info = this.info();
     if (!info) return;
-    this.sources.connect(info.id);
-    this.sync.sync();
+    this.retry();
+  }
+
+  protected retry(): void {
+    const info = this.info();
+    if (!info) return;
+    this.checking.set(true);
+    this.sources.refresh().subscribe(() => {
+      this.checking.set(false);
+      if (!this.sources.isConnected(info.id)) return;
+      // Garmin only pushes data: ask for the last 30 days, then read what's already there.
+      if (info.id === 'garmin' && this.sources.via(info.id) === 'open_wearables') {
+        this.api.garminBackfill().subscribe({ error: () => undefined });
+      }
+      this.sync.sync();
+    });
   }
 
   protected goBack(): void {

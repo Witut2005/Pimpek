@@ -6,6 +6,7 @@ the API key never reaches the browser.
 """
 import json
 import threading
+from datetime import date, timedelta
 from typing import Any
 from urllib.parse import urlparse
 
@@ -69,10 +70,7 @@ def ow_user_id(app_user_id: str) -> str:
         created = _request(
             "POST",
             "/users",
-            json={
-                "external_user_id": app_user_id,
-                "email": f"{app_user_id}@users.invalid",
-            },
+            json={"external_user_id": app_user_id},
         )
         mapping[app_user_id] = created["id"]
         settings.user_map_file.parent.mkdir(parents=True, exist_ok=True)
@@ -103,11 +101,19 @@ def connections(app_user_id: str) -> Any:
     return _request("GET", f"/users/{ow_user_id(app_user_id)}/connections")
 
 
+def _date_range(start_date: str | None, end_date: str | None) -> dict[str, str]:
+    """Open Wearables requires both dates; default to the last 30 days (end is inclusive-ish)."""
+    return {
+        "start_date": start_date or (date.today() - timedelta(days=30)).isoformat(),
+        "end_date": end_date or (date.today() + timedelta(days=1)).isoformat(),
+    }
+
+
 def workouts(app_user_id: str, start_date: str | None, end_date: str | None) -> Any:
     return _request(
         "GET",
         f"/users/{ow_user_id(app_user_id)}/events/workouts",
-        params={k: v for k, v in {"start_date": start_date, "end_date": end_date}.items() if v},
+        params=_date_range(start_date, end_date),
     )
 
 
@@ -115,7 +121,7 @@ def sleep(app_user_id: str, start_date: str | None, end_date: str | None) -> Any
     return _request(
         "GET",
         f"/users/{ow_user_id(app_user_id)}/events/sleep",
-        params={k: v for k, v in {"start_date": start_date, "end_date": end_date}.items() if v},
+        params=_date_range(start_date, end_date),
     )
 
 
@@ -128,6 +134,54 @@ def timeseries(
     if end_time:
         params.append(("end_time", end_time))
     return _request("GET", f"/users/{ow_user_id(app_user_id)}/timeseries", params=params)
+
+
+def is_configured() -> bool:
+    return bool(settings.open_wearables_api_key)
+
+
+def active_connection(app_user_id: str, provider: str) -> dict[str, Any] | None:
+    """The user's active connection to `provider`, or None."""
+    for conn in connections(app_user_id) or []:
+        if conn.get("provider") == provider and conn.get("status") == "active":
+            return conn
+    return None
+
+
+def disconnect(app_user_id: str, provider: str) -> None:
+    _request("DELETE", f"/users/{ow_user_id(app_user_id)}/connections/{provider}")
+
+
+def _page(path: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+    return (_request("GET", path, params={**params, "limit": 100}) or {}).get("data", [])
+
+
+def activity_summaries(app_user_id: str, start_date: str, end_date: str) -> list[dict[str, Any]]:
+    return _page(
+        f"/users/{ow_user_id(app_user_id)}/summaries/activity",
+        {"start_date": start_date, "end_date": end_date},
+    )
+
+
+def sleep_summaries(app_user_id: str, start_date: str, end_date: str) -> list[dict[str, Any]]:
+    return _page(
+        f"/users/{ow_user_id(app_user_id)}/summaries/sleep",
+        {"start_date": start_date, "end_date": end_date},
+    )
+
+
+def workout_events(app_user_id: str, start_date: str, end_date: str) -> list[dict[str, Any]]:
+    return _page(
+        f"/users/{ow_user_id(app_user_id)}/events/workouts",
+        {"start_date": start_date, "end_date": end_date},
+    )
+
+
+def resting_hr_samples(app_user_id: str, start_date: str, end_date: str) -> list[dict[str, Any]]:
+    return _page(
+        f"/users/{ow_user_id(app_user_id)}/timeseries",
+        {"types": "resting_heart_rate", "start_time": start_date, "end_time": end_date},
+    )
 
 
 def garmin_backfill(app_user_id: str) -> Any:

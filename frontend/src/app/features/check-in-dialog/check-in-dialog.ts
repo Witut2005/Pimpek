@@ -16,7 +16,7 @@ import { foodLabel, moodLabel } from '../../core/state/pet-rules';
 import { PetStore, SaveResult } from '../../core/state/pet.store';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
-import { formatHours, formatSteps } from '../../shared/format';
+import { formatHours, formatKm, formatSteps } from '../../shared/format';
 import { Icon, IconName } from '../../shared/icon/icon';
 
 const STEPS: readonly { title: string; icon: IconName }[] = [
@@ -26,6 +26,9 @@ const STEPS: readonly { title: string; icon: IconName }[] = [
   { title: 'Ruch i ekran', icon: 'steps' },
   { title: 'Ludzie', icon: 'heart' },
 ];
+
+/** Garmin calls 70+ a "good" night — a fair default for "do you feel rested?". */
+const RESTED_SLEEP_SCORE = 70;
 
 const MOOD_EMOJI = ['😫', '😣', '😞', '😕', '😐', '🙂', '😊', '😄', '😁', '🤩'];
 
@@ -55,6 +58,7 @@ export class CheckInDialog {
   });
   protected readonly formatHours = formatHours;
   protected readonly formatSteps = formatSteps;
+  protected readonly formatKm = formatKm;
   protected readonly step = signal(0);
   protected readonly isEdit = signal(false);
   protected readonly saving = this.store.saving;
@@ -110,8 +114,28 @@ export class CheckInDialog {
         socialContext: existing.social.context ?? '',
         note: existing.note ?? '',
       });
+    } else {
+      this.prefillFromWearable();
     }
     this.dialog().nativeElement.showModal();
+  }
+
+  /** Whatever the watch already knows is answered for the user — they only confirm or tweak. */
+  private prefillFromWearable(): void {
+    const m = this.measured();
+    if (!m) return;
+    const goal = this.goals().sleepHours;
+    const rested =
+      m.sleepScore !== undefined
+        ? m.sleepScore >= RESTED_SLEEP_SCORE
+        : m.sleepHours !== undefined
+          ? m.sleepHours >= goal - 0.5
+          : undefined;
+    this.form.patchValue({
+      ...(m.sleepHours !== undefined && { sleepHours: m.sleepHours }),
+      ...(rested !== undefined && { feelingRested: rested }),
+      ...(m.runningKm !== undefined && { runningKm: Math.round(m.runningKm * 10) / 10 }),
+    });
   }
 
   close(): void {
@@ -158,7 +182,7 @@ export class CheckInDialog {
       },
       food: { qualityScore: v.foodScore, note: v.foodNote.trim() || undefined },
       metrics: {
-        runningDistanceKm: v.runningKm ?? 0,
+        runningDistanceKm: measured?.runningKm ?? v.runningKm ?? 0,
         screenTimeHours: v.screenHours,
         steps: measured?.steps,
       },

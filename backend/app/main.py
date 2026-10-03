@@ -7,7 +7,9 @@ from garminconnect import (
 )
 from pydantic import BaseModel, Field
 
+from . import daily
 from . import garmin_service as garmin
+from . import open_wearables as ow
 from .config import settings
 from .main_deps import current_user
 from .wearables_router import router as wearables_router
@@ -29,6 +31,12 @@ def _map_garmin_errors(fn, *args):
         raise HTTPException(409, str(e))
     except garmin.MfaSessionNotFound as e:
         raise HTTPException(410, str(e))
+    except daily.NoSource as e:
+        raise HTTPException(409, str(e))
+    except ow.OpenWearablesError as e:
+        raise HTTPException(404 if e.status == 404 else 502, f"Open Wearables: {e.detail}")
+    except ow.OpenWearablesUnavailable:
+        raise HTTPException(503, "Open Wearables is not reachable")
     except GarminConnectAuthenticationError:
         raise HTTPException(401, "Garmin rejected the credentials or the session expired")
     except GarminConnectTooManyRequestsError:
@@ -89,3 +97,28 @@ def activity(activity_id: str, user: str = Depends(current_user)):
     if not activity_id.isdigit():
         raise HTTPException(400, "activity id must be numeric")
     return _map_garmin_errors(garmin.get_activity, user, activity_id)
+
+
+# --- Unified wearable data for the frontend -------------------------------------
+
+
+@app.get("/api/sources")
+def sources(user: str = Depends(current_user)):
+    """Connected wearables: [{id, via: open_wearables|garmin_connect, connectedAt}]."""
+    return daily.sources(user)
+
+
+@app.delete("/api/sources/garmin")
+def disconnect_source(user: str = Depends(current_user)):
+    _map_garmin_errors(daily.disconnect, user)
+    return {"connected": False}
+
+
+@app.get("/api/days")
+def days(
+    count: int = Query(28, ge=1, le=60),
+    today: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    user: str = Depends(current_user),
+):
+    """Sleep, steps, resting HR and running km per day, newest first."""
+    return _map_garmin_errors(daily.days, user, count, today)

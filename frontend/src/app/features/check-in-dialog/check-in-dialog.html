@@ -30,7 +30,9 @@
         @case (0) {
           <div class="big-emoji" aria-hidden="true">{{ moodEmoji() }}</div>
           <label class="field">
-            <span class="center">Dziś jest <strong>{{ moodLabel() }}</strong></span>
+            <span class="center"
+              >Dziś jest <strong>{{ moodLabel() }}</strong></span
+            >
             <input
               type="range"
               min="1"
@@ -44,15 +46,21 @@
           </label>
         }
         @case (1) {
-          @if (measured(); as m) {
+          @if (measured()?.sleepHours !== undefined) {
+            @let m = measured()!;
             <div class="measured">
               <app-icon name="moon" />
-              <span>Według {{ sourceName() }} spałeś/aś <strong>{{ formatHours(m.sleepHours) }}</strong></span>
+              <span
+                >Według {{ sourceName() }} spałeś/aś
+                <strong>{{ formatHours(m.sleepHours!) }}</strong></span
+              >
               <app-icon class="ok" name="check" />
             </div>
           } @else {
             <label class="field">
-              <span>Ile spałeś/aś? <strong>{{ formatHours(values().sleepHours) }}</strong></span>
+              <span
+                >Ile spałeś/aś? <strong>{{ formatHours(values().sleepHours) }}</strong></span
+              >
               <input
                 type="range"
                 min="0"
@@ -65,7 +73,12 @@
             </label>
           }
           <div class="field">
-            <span>Czujesz się wyspany/a?</span>
+            <span>
+              Czujesz się wyspany/a?
+              @if (measured()?.sleepScore; as score) {
+                <small>(ocena snu: {{ score }}/100)</small>
+              }
+            </span>
             <div class="toggle" role="radiogroup">
               <button
                 type="button"
@@ -93,7 +106,9 @@
         @case (2) {
           <div class="big-emoji" aria-hidden="true">{{ foodEmoji() }}</div>
           <label class="field">
-            <span class="center">Jak zdrowo jadłeś/aś? <strong>{{ foodLabel() }}</strong></span>
+            <span class="center"
+              >Jak zdrowo jadłeś/aś? <strong>{{ foodLabel() }}</strong></span
+            >
             <input
               type="range"
               min="0"
@@ -107,32 +122,74 @@
           </label>
           <label class="field">
             <span>Co dobrego (lub nie) wjechało?</span>
-            <input type="text" formControlName="foodNote" placeholder="np. dobry obiad, ale też czekolada" />
+            <input
+              type="text"
+              formControlName="foodNote"
+              placeholder="np. dobry obiad, ale też czekolada"
+            />
           </label>
         }
         @case (3) {
           @if (measured(); as m) {
             <div class="measured">
               <app-icon name="steps" />
-              <span>Dziś już <strong>{{ formatSteps(m.steps) }}</strong> kroków według {{ sourceName() }}</span>
+              <span
+                >Dziś już <strong>{{ formatSteps(m.steps) }}</strong> kroków według
+                {{ sourceName() }}</span
+              >
               <app-icon class="ok" name="check" />
             </div>
           }
-          <div class="field">
-            <label for="running-km">{{ measured() ? 'Bieganie (km, opcjonalnie)' : 'Bieganie / ruch (km)' }}</label>
-            <div class="stepper">
-              <button type="button" class="icon-btn" (click)="adjustKm(-0.5)" aria-label="Mniej o 0,5 km">−</button>
-              <input id="running-km" type="number" min="0" max="100" step="0.1" formControlName="runningKm" />
-              <button type="button" class="icon-btn" (click)="adjustKm(0.5)" aria-label="Więcej o 0,5 km">+</button>
+          @if (measured()?.runningKm; as km) {
+            <div class="measured">
+              <app-icon name="steps" />
+              <span
+                >Bieganie: <strong>{{ formatKm(km) }}</strong> według {{ sourceName() }}</span
+              >
+              <app-icon class="ok" name="check" />
             </div>
-            @if (form.controls.runningKm.invalid && form.controls.runningKm.touched) {
-              <small class="error">Podaj dystans od 0 do 100 km</small>
-            } @else {
-              <small>Cel: {{ goals().runningKm }} km</small>
-            }
-          </div>
+          } @else {
+            <div class="field">
+              <label for="running-km">{{
+                measured() ? 'Bieganie (km, opcjonalnie)' : 'Bieganie / ruch (km)'
+              }}</label>
+              <div class="stepper">
+                <button
+                  type="button"
+                  class="icon-btn"
+                  (click)="adjustKm(-0.5)"
+                  aria-label="Mniej o 0,5 km"
+                >
+                  −
+                </button>
+                <input
+                  id="running-km"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  formControlName="runningKm"
+                />
+                <button
+                  type="button"
+                  class="icon-btn"
+                  (click)="adjustKm(0.5)"
+                  aria-label="Więcej o 0,5 km"
+                >
+                  +
+                </button>
+              </div>
+              @if (form.controls.runningKm.invalid && form.controls.runningKm.touched) {
+                <small class="error">Podaj dystans od 0 do 100 km</small>
+              } @else {
+                <small>Cel: {{ goals().runningKm }} km</small>
+              }
+            </div>
+          }
           <label class="field">
-            <span>Czas przed ekranem: <strong>{{ values().screenHours }} h</strong></span>
+            <span
+              >Czas przed ekranem: <strong>{{ values().screenHours }} h</strong></span
+            >
             <input
               type="range"
               min="0"
@@ -169,12 +226,20 @@
           @if (values().metWithFriends) {
             <label class="field">
               <span>Z kim / gdzie?</span>
-              <input type="text" formControlName="socialContext" placeholder="np. planszówki ze znajomymi" />
+              <input
+                type="text"
+                formControlName="socialContext"
+                placeholder="np. planszówki ze znajomymi"
+              />
             </label>
           }
           <label class="field">
             <span>Notatka z dnia</span>
-            <textarea rows="3" formControlName="note" placeholder="np. intensywny dzień, ale przyjemny"></textarea>
+            <textarea
+              rows="3"
+              formControlName="note"
+              placeholder="np. intensywny dzień, ale przyjemny"
+            ></textarea>
           </label>
         }
       }
