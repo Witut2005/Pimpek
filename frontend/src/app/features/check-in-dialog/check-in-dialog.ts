@@ -42,8 +42,6 @@ const RESTED_SLEEP_SCORE = 70;
 
 const MOOD_EMOJI = ['😫', '😣', '😞', '😕', '😐', '🙂', '😊', '😄', '😁', '🤩'];
 
-/** Wait for a pause in editing before asking the AI, so each keystroke-sized change isn't a request. */
-const RATING_DEBOUNCE_MS = 800;
 /** Nothing logged: Pimpek can't tell, so the need sits in the middle instead of starving. */
 const NOTHING_LOGGED_SCORE = 50;
 
@@ -63,13 +61,10 @@ export class CheckInDialog {
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
   private mealsRequest?: Subscription;
   private ratingRequest?: Subscription;
-  private ratingTimer?: ReturnType<typeof setTimeout>;
   /** The day being filled in. */
   private mealsDate = '';
   /** The entry being edited, if any. */
   private existing?: DailyCheckIn;
-  /** Diary items the user removed: a reload from the diary must not bring them back. */
-  private dismissed = new Set<string>();
 
   readonly saved = output<SaveResult>();
 
@@ -90,7 +85,21 @@ export class CheckInDialog {
   /** What was eaten, as the user confirms it: diary items, edited or not, and typed-in food. */
   protected readonly foodEntries = signal<FoodEntry[]>([]);
   protected readonly rating = signal<FoodRating | undefined>(undefined);
+  /** The list `rating` was given for. Lists are replaced, never mutated, so identity tells. */
+  private readonly ratedFor = signal<FoodEntry[] | undefined>(undefined);
+  /** False once the list changed by hand: the rating then describes a different day. */
+  protected readonly ratingFresh = computed(() => !!this.rating() && this.ratedFor() === this.foodEntries());
   protected readonly ratingStatus = signal<'idle' | 'loading'>('idle');
+  /** Typed-in food is rated on request; so is a retry after the AI was unavailable. */
+  protected readonly canAskForRating = computed(
+    () =>
+      this.foodEntries().length > 0 &&
+      this.ratingStatus() === 'idle' &&
+      (!this.ratingFresh() || this.rating()?.source === 'estimate'),
+  );
+  protected readonly askLabel = computed(() =>
+    this.settings.petName() === 'Pimpek' ? 'Poproś Pimpka o ocenę' : 'Poproś o ocenę',
+  );
   protected readonly petName = this.settings.petName;
   /** A fast-forwarded demo day asks the real diary about a day that hasn't happened yet. */
   protected readonly demoShifted = computed(() => this.clock.offsetDays() !== 0);
@@ -135,7 +144,7 @@ export class CheckInDialog {
   protected readonly moodEmoji = computed(() => MOOD_EMOJI[this.values().moodScore - 1]);
   protected readonly moodLabel = computed(() => moodLabel(this.values().moodScore));
   protected readonly foodEmoji = computed(() => {
-    const score = this.rating()?.score;
+    const score = this.ratingFresh() ? this.rating()?.score : undefined;
     if (score === undefined) return '🍽️';
     return score < 30 ? '🍟' : score < 60 ? '🍝' : score < 80 ? '🥪' : '🥗';
   });
@@ -155,10 +164,11 @@ export class CheckInDialog {
     this.step.set(need ? STEP_OF[need] : 0);
     this.form.reset();
     this.existing = existing;
-    this.dismissed = new Set();
     this.cancelRating();
-    this.foodEntries.set(existing?.food.meals ?? []);
+    const meals = existing?.food.meals ?? [];
+    this.foodEntries.set(meals);
     this.rating.set(existing?.food.rating);
+    this.ratedFor.set(existing?.food.rating ? meals : undefined);
     if (existing) {
       this.form.setValue({
         moodScore: existing.mood.score,
@@ -175,8 +185,9 @@ export class CheckInDialog {
       this.prefillFromWearable();
     }
     this.mealsDate = existing?.date ?? this.store.today();
-    // An edit keeps the list as saved; the diary only comes in when the user asks for it.
-    this.loadMeals(!existing);
+    // Every open pulls the diary again and rates it again, an edit included: meals keep being
+    // logged all day. Hand edits survive the merge. Fixing another need leaves the food alone.
+    this.loadMeals(!need || need === 'nutrition');
     this.dialog().nativeElement.showModal();
   }
 
@@ -196,9 +207,10 @@ export class CheckInDialog {
       next: (day) => {
         this.mealDay.set(day);
         this.mealsStatus.set('idle');
-        if (merge && day.meals.length) {
-          this.foodEntries.set(mergeDiary(this.foodEntries(), day, this.dismissed));
-          this.scheduleRating();
+        // Also when the diary is now empty: what was removed there must leave the list too.
+        if (merge) {
+          this.foodEntries.set(mergeDiary(this.foodEntries(), day));
+          this.requestRating();
         }
       },
       error: (err: unknown) => {
@@ -218,41 +230,32 @@ export class CheckInDialog {
     this.loadMeals(true);
   }
 
-  /** From the food list: removed diary items are remembered, so a reload won't revive them. */
+  /** Changes by hand aren't sent to the AI: the user asks for a rating when the list is done. */
   protected onFoodEdited(next: FoodEntry[]): void {
-    for (const entry of this.foodEntries()) {
-      if (entry.fitatuId && !next.some((e) => e.id === entry.id)) this.dismissed.add(entry.fitatuId);
-    }
     this.foodEntries.set(next);
-    this.scheduleRating();
   }
 
   /**
-   * Re-rates after every change, once editing pauses. The previous rating stays on screen
-   * until the new one arrives. Without the AI (no key, an error) the estimate stands in.
+   * Rates the list as it is now: right after a pull from the diary, and on "Poproś Pimpka
+   * o ocenę". Without the AI (no key, an error) the estimate stands in.
    */
-  private scheduleRating(): void {
+  protected requestRating(): void {
     this.cancelRating();
     const entries = this.foodEntries();
-    if (!entries.length) {
-      this.rating.set(undefined);
-      return;
-    }
+    if (!entries.length) return;
     this.ratingStatus.set('loading');
-    this.ratingTimer = setTimeout(() => {
-      const done = (rating: FoodRating) => {
-        this.rating.set(rating);
-        this.ratingStatus.set('idle');
-      };
-      this.ratingRequest = this.api.rateFood(ratingRequest(this.mealsDate, entries)).subscribe({
-        next: done,
-        error: () => done(estimateFoodRating(entries)),
-      });
-    }, RATING_DEBOUNCE_MS);
+    const done = (rating: FoodRating) => {
+      this.rating.set(rating);
+      this.ratedFor.set(entries);
+      this.ratingStatus.set('idle');
+    };
+    this.ratingRequest = this.api.rateFood(ratingRequest(this.mealsDate, entries)).subscribe({
+      next: done,
+      error: () => done(estimateFoodRating(entries)),
+    });
   }
 
   private cancelRating(): void {
-    clearTimeout(this.ratingTimer);
     this.ratingRequest?.unsubscribe();
     this.ratingStatus.set('idle');
   }
@@ -323,12 +326,9 @@ export class CheckInDialog {
     }
     const v = this.form.getRawValue();
     const meals = this.foodEntries();
-    // Saved before the AI answered: the estimate fits the list as it is now, the old rating doesn't.
-    const rating = !meals.length
-      ? undefined
-      : this.ratingStatus() === 'loading' || !this.rating()
-        ? estimateFoodRating(meals)
-        : this.rating();
+    // Not rated since the last change by hand (or the AI hasn't answered yet): the estimate
+    // fits the list as it is now, an older rating doesn't.
+    const rating = !meals.length ? undefined : this.ratingFresh() ? this.rating() : estimateFoodRating(meals);
     const input: CheckInInput = {
       date: this.store.today(),
       mood: { score: v.moodScore, label: moodLabel(v.moodScore) },

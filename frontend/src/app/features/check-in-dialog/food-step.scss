@@ -149,3 +149,37 @@ li {
   justify-content: flex-end;
   gap: 0.5rem;
 }
+
+// Small and centred, so it reads as a question about the row, not a new screen.
+.confirm {
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1.5rem 3rem -1rem rgb(90 60 40 / 0.35);
+
+  &::backdrop {
+    background: var(--backdrop);
+  }
+}
+
+.confirm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 1.4rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    overflow-wrap: anywhere;
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+}

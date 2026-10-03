@@ -72,8 +72,6 @@ export interface FoodRating {
   summary: string;
   positives: string[];
   improvements: string[];
-  /** The AI thinks not everything eaten was logged. */
-  incomplete: boolean;
   source: 'ai' | 'estimate';
 }
 

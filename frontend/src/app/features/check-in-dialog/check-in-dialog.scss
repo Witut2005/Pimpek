@@ -316,6 +316,10 @@ footer {
   .meals-hint {
     color: inherit;
   }
+
+  .ask {
+    align-self: flex-start;
+  }
 }
 
 .rating-head {
@@ -324,6 +328,11 @@ footer {
   align-items: baseline;
   gap: 0.75rem;
   font-size: 1.05rem;
+
+  // The AI writes "Całkiem nieźle", the estimate "całkiem nieźle": both show capitalised.
+  strong::first-letter {
+    text-transform: uppercase;
+  }
 
   .score {
     font-weight: 800;

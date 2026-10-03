@@ -71,7 +71,11 @@ export class FoodStep {
     return [...MEAL_SLOTS, { key: meal, name: this.entries().find((e) => e.meal === meal)?.mealName ?? meal }];
   });
 
+  /** The entry waiting for "Usuń" in the confirmation dialog. */
+  protected readonly pendingRemoval = signal<FoodEntry | null>(null);
+
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
+  private readonly confirmDialog = viewChild.required<ElementRef<HTMLDialogElement>>('confirm');
 
   protected readonly round = Math.round;
 
@@ -116,9 +120,27 @@ export class FoodStep {
     this.editing.set(null);
   }
 
-  protected remove(entry: FoodEntry): void {
+  /** A modal on top of the check-in's own: Esc and a tap outside both mean "keep it". */
+  protected askToRemove(entry: FoodEntry): void {
+    this.pendingRemoval.set(entry);
+    this.confirmDialog().nativeElement.showModal();
+  }
+
+  protected confirmRemoval(): void {
+    const entry = this.pendingRemoval();
+    this.closeConfirm();
+    if (!entry) return;
     if (this.editing() === entry.id) this.editing.set(null);
     this.emit(this.entries().filter((e) => e.id !== entry.id));
+  }
+
+  protected closeConfirm(): void {
+    this.confirmDialog().nativeElement.close();
+  }
+
+  protected onConfirmClick(event: MouseEvent): void {
+    // Only a click on the backdrop targets the <dialog> itself.
+    if (event.target === this.confirmDialog().nativeElement) this.closeConfirm();
   }
 
   private start(id: string, draft: Draft): void {

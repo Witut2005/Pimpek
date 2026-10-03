@@ -43,7 +43,7 @@
             <button type="button" class="mini" [attr.aria-label]="'Popraw: ' + entry.name" (click)="edit(entry)">
               <app-icon name="pencil" />
             </button>
-            <button type="button" class="mini" [attr.aria-label]="'Usuń: ' + entry.name" (click)="remove(entry)">
+            <button type="button" class="mini" [attr.aria-label]="'Usuń: ' + entry.name" (click)="askToRemove(entry)">
               <app-icon name="trash" />
             </button>
           </li>
@@ -58,6 +58,29 @@
 } @else {
   <button type="button" class="btn soft small add" (click)="add()">+ Dodaj coś zjedzonego</button>
 }
+
+<dialog
+  #confirm
+  class="confirm"
+  aria-labelledby="remove-food-title"
+  (click)="onConfirmClick($event)"
+  (close)="pendingRemoval.set(null)"
+>
+  @if (pendingRemoval(); as entry) {
+    <div class="confirm-panel">
+      <h3 id="remove-food-title">Usunąć „{{ entry.name }}”?</h3>
+      @if (entry.fitatuId) {
+        <p>
+          Zniknie tylko z tego wpisu. W Fitatu zostanie i wróci po „Pobierz jeszcze raz z Fitatu”.
+        </p>
+      }
+      <div class="actions">
+        <button type="button" class="btn ghost small" (click)="closeConfirm()">Zostaw</button>
+        <button type="button" class="btn primary small" (click)="confirmRemoval()">Usuń</button>
+      </div>
+    </div>
+  }
+</dialog>
 
 <ng-template #editor>
   <div class="editor" role="group" [attr.aria-label]="editing() === 'new' ? 'Dodaj jedzenie' : 'Popraw jedzenie'">

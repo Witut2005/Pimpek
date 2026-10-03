@@ -138,7 +138,11 @@
               <p class="meals-hint">
                 <app-icon name="refresh" class="spin" /> {{ petName() }} ocenia, jak zdrowo było…
               </p>
-            } @else if (rating(); as r) {
+            } @else if (!foodEntries().length) {
+              <p class="meals-hint">
+                Wpisz, co dziś zjadłeś/aś, a {{ petName() }} oceni, jak zdrowo było.
+              </p>
+            } @else if (ratingFresh() && rating(); as r) {
               <div class="rating-head">
                 <strong>{{ r.label }}</strong>
                 <span class="score">{{ r.score }}/100</span>
@@ -163,8 +167,20 @@
               }
             } @else {
               <p class="meals-hint">
-                Wpisz, co dziś zjadłeś/aś, a {{ petName() }} oceni, jak zdrowo było.
+                {{
+                  rating()
+                    ? 'Lista zmieniła się od ostatniej oceny.'
+                    : 'Wszystko wpisane? ' + petName() + ' oceni, jak zdrowo było.'
+                }}
               </p>
+            }
+            @if (canAskForRating()) {
+              <button type="button" class="btn primary small ask" (click)="requestRating()">
+                {{ askLabel() }}
+              </button>
+              @if (!ratingFresh()) {
+                <small>Bez tego zapiszę ocenę przybliżoną z kalorii i makroskładników.</small>
+              }
             }
           </div>
         }
