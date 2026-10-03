@@ -23,13 +23,19 @@
             }
           } @else if (isDiet()) {
             Połączono, posiłki trafią do wieczornego wpisu
+          } @else if (isMock()) {
+            @if (mockSyncing()) {
+              Synchronizuję…
+            } @else {
+              {{ stravaLine() }}
+            }
           } @else {
             Połączono, zapasowe źródło
           }
         </small>
       } @else if (!source().web) {
         <small>Tylko w aplikacji mobilnej</small>
-      } @else if (source().soon) {
+      } @else if (!available()) {
         <small>Już niedługo</small>
       } @else {
         <small>Czyta: {{ source().reads.join(', ') }}</small>
@@ -44,6 +50,16 @@
           aria-label="Synchronizuj teraz"
           [class.spinning]="sync.status() === 'syncing'"
           (click)="sync.sync()"
+        >
+          <app-icon name="refresh" />
+        </button>
+      } @else if (isMock()) {
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label="Synchronizuj treningi teraz"
+          [class.spinning]="mockSyncing()"
+          (click)="syncMock()"
         >
           <app-icon name="refresh" />
         </button>
@@ -63,11 +79,17 @@
           Pimpek będzie {{ isDiet() ? 'przy wieczornym wpisie' : 'co rano' }} sam sprawdzał w
           {{ source().short }}: {{ source().reads.join(', ') }}. Nie czytamy lokalizacji ani
           wiadomości, a połączenie zerwiesz w każdej chwili.
+          @if (source().oauthOnly) {
+            Zalogujesz się na stronie {{ source().genitive }}, więc Twoje hasło zostaje tylko tam.
+          }
         </p>
+        @if (error()) {
+          <small class="error" role="alert">{{ error() }}</small>
+        }
         <div class="actions">
           <button type="button" class="btn ghost small" (click)="cancel()">Anuluj</button>
-          <button type="button" class="btn primary small" (click)="step.set('login')">
-            Zgoda, dalej
+          <button type="button" class="btn primary small" (click)="consentGiven()">
+            {{ source().oauthOnly ? 'Zgoda, przejdź do ' + source().genitive : 'Zgoda, dalej' }}
           </button>
         </div>
       </div>
@@ -109,7 +131,7 @@
             Połącz z {{ source().short }}
           </button>
         </div>
-        @if (source().oauth) {
+        @if (source().oauth && oauthReady()) {
           <button type="button" class="link" (click)="oauth()">
             Albo zaloguj się na stronie {{ source().genitive }} (Open Wearables)
           </button>
@@ -163,5 +185,12 @@
       <small class="error" role="alert">{{ error() }}</small>
     }
     <button type="button" class="link" (click)="disconnect()">Odłącz</button>
+  }
+
+  @if (isMock()) {
+    <!-- Loaded once the app is idle, so the full-screen flow doesn't weigh on the first paint. -->
+    @defer (on idle) {
+      <app-strava-connect #stravaFlow />
+    }
   }
 </div>

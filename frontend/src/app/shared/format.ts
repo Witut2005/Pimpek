@@ -29,6 +29,21 @@ export function formatDayMonth(dateKey: string): string {
   return DAY_MONTH.format(new Date(y, m - 1, d));
 }
 
+/** 52 → "52 min", 125 → "2 h 05 min" */
+export function formatDuration(minutes: number): string {
+  const total = Math.round(minutes);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (!h) return `${m} min`;
+  return m ? `${h} h ${String(m).padStart(2, '0')} min` : `${h} h`;
+}
+
+/** Minutes per km → "5:32 /km" */
+export function formatPace(minPerKm: number): string {
+  const seconds = Math.round(minPerKm * 60);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')} /km`;
+}
+
 /** `YYYY-MM-DD` → "pn", "wt", … */
 export function weekdayShort(dateKey: string): string {
   const [y, m, d] = dateKey.split('-').map(Number);

@@ -142,3 +142,56 @@ def test_empty_days_are_not_cached(fake_garmin, monkeypatch):
     monkeypatch.setattr(fake_garmin, "get_sleep_data", lambda day: {"dailySleepDTO": {"sleepTimeSeconds": None}})
     client.get("/api/days", params={"count": 5, "today": TODAY})
     assert daily._read_cache("82b25836-a99e-4f59-8c7b-34d451ddcd90") == {}
+
+
+def ow_polar_and_garmin(calls: list[httpx.Request]):
+    """OW with Polar linked first and Garmin later; records every request."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        path = request.url.path
+        if path == "/api/v1/users":
+            return httpx.Response(201, json={"id": "ow-1"})
+        if path.endswith("/connections") and request.method == "GET":
+            return httpx.Response(
+                200,
+                json=[
+                    {"provider": "garmin", "status": "active", "created_at": "2026-10-02T10:00:00"},
+                    {"provider": "polar", "status": "active", "created_at": "2026-09-01T10:00:00"},
+                    {"provider": "strava", "status": "active", "created_at": "2026-08-01T10:00:00"},
+                ],
+            )
+        if request.method in ("POST", "DELETE"):
+            return httpx.Response(200, json={})
+        if path.endswith("/summaries/activity"):
+            return httpx.Response(200, json={"data": [{"date": TODAY, "steps": 7000}]})
+        return httpx.Response(200, json={"data": []})
+
+    return handler
+
+
+def test_any_ow_wearable_is_a_source_and_the_first_one_leads(monkeypatch):
+    calls: list[httpx.Request] = []
+    monkeypatch.setattr(ow, "_transport", httpx.MockTransport(ow_polar_and_garmin(calls)))
+    monkeypatch.setattr(daily, "_last_ow_sync", {})
+    listed = client.get("/api/sources").json()
+    # Strava is a training log, not a wearable: it never feeds the day.
+    assert [(s["id"], s["via"]) for s in listed] == [("polar", "open_wearables"), ("garmin", "open_wearables")]
+
+    body = client.get(f"/api/days?count=1&today={TODAY}").json()
+    assert body["source"] == "polar" and body["days"][0]["steps"] == 7000
+    syncs = [c for c in calls if c.method == "POST" and c.url.path.endswith("/sync")]
+    assert len(syncs) == 1 and "/providers/polar/" in syncs[0].url.path
+
+    # A second read within the window doesn't poll Polar again.
+    client.get(f"/api/days?count=1&today={TODAY}")
+    assert len([c for c in calls if c.method == "POST" and c.url.path.endswith("/sync")]) == 1
+
+
+def test_disconnect_any_ow_wearable(monkeypatch):
+    calls: list[httpx.Request] = []
+    monkeypatch.setattr(ow, "_transport", httpx.MockTransport(ow_polar_and_garmin(calls)))
+    assert client.delete("/api/sources/polar").status_code == 200
+    deletes = [c for c in calls if c.method == "DELETE"]
+    assert len(deletes) == 1 and deletes[0].url.path.endswith("/connections/polar")
+    assert client.delete("/api/sources/nokia3310").status_code == 404

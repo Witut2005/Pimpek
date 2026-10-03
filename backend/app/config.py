@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     mfa_ttl_seconds: int = 600
     open_wearables_url: str = "http://localhost:8000"
     open_wearables_api_key: str = ""
+    # Providers whose OAuth app credentials are filled in open-wearables/backend/config/.env.
+    # Only these are offered for "connect" (OW can't tell us which have real keys).
+    open_wearables_providers: str = ""
     user_map_file: Path = Path("data/ow_users.json")
     cache_dir: Path = Path("data/cache")
     fitatu_token_dir: Path = Path("data/fitatu")
@@ -28,6 +31,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def open_wearables_provider_list(self) -> list[str]:
+        return [p.strip() for p in self.open_wearables_providers.split(",") if p.strip()]
 
 
 settings = Settings()

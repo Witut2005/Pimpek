@@ -239,7 +239,7 @@
               <div class="hint">
                 <app-icon name="steps" />
                 <span
-                  >Według {{ sourceName() }}: <strong>{{ formatKm(km) }}</strong></span
+                  >Według {{ kmSourceName() }}: <strong>{{ formatKm(km) }}</strong></span
                 >
                 @if (values().runningKm !== km) {
                   <button type="button" class="link" (click)="useMeasured('runningKm')">Użyj</button>

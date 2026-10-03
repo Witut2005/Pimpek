@@ -99,9 +99,11 @@ export class CheckInDialog {
   protected readonly measured = this.store.todayWearable;
   /** Rounded like the km field, so "is it still the watch's value?" compares like with like. */
   protected readonly measuredKm = computed(() => {
-    const km = this.measured()?.runningKm;
+    // The watch's runs first; without them, runs imported from Strava.
+    const km = this.store.todayRunKm();
     return km === undefined ? undefined : Math.round(km * 10) / 10;
   });
+  protected readonly kmSourceName = computed(() => this.store.todayRunSourceName() ?? this.sourceName());
   protected readonly sourceName = computed(() => this.sources.primary()?.genitive ?? 'zegarka');
   /** With a food diary, the food step starts from what was logged there. */
   protected readonly diet = this.sources.diet;
@@ -310,8 +312,12 @@ export class CheckInDialog {
   /** Whatever the watch already knows becomes the starting value — the user confirms or corrects it. */
   private prefillFromWearable(): void {
     const m = this.measured();
-    if (!m) return;
     const km = this.measuredKm();
+    if (!m) {
+      // No watch, but maybe a run on Strava.
+      if (km !== undefined) this.form.patchValue({ runningKm: km });
+      return;
+    }
     const goal = this.goals().sleepHours;
     const rested =
       m.sleepScore !== undefined

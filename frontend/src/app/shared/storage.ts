@@ -10,6 +10,7 @@ export const KEYS = {
   clock: 'pimpek.clock',
   skin: 'pimpek.skin',
   ai: 'pimpek.ai',
+  strava: 'pimpek.strava',
 } as const;
 
 /** localStorage that never throws (private mode, blocked storage) — the demo must not crash on it. */

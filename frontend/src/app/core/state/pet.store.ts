@@ -11,6 +11,7 @@ import {
   badgeEarned,
   currentStreak,
   decayStats,
+  fitnessScore,
   idleAvatarState,
   itemProgress,
   ITEMS,
@@ -26,6 +27,7 @@ import {
 } from './pet-rules';
 import { SettingsStore } from './settings.store';
 import { SourcesStore } from './sources.store';
+import { StravaStore } from './strava.store';
 import { SyncStore } from './sync.store';
 import { WalletStore } from './wallet.store';
 import { addDays, daysBetween } from '../../shared/date';
@@ -66,6 +68,7 @@ export class PetStore {
   private readonly sync = inject(SyncStore);
   private readonly sources = inject(SourcesStore);
   private readonly wallet = inject(WalletStore);
+  private readonly strava = inject(StravaStore);
 
   readonly today = this.clock.today;
   readonly goals = this.settings.goals;
@@ -80,8 +83,19 @@ export class PetStore {
 
   readonly todayEntry = computed(() => this.checkInsByDate().get(this.today()));
   readonly todayWearable = computed(() => this.wearableByDate().get(this.today()));
+  /** Today's running: the watch's own count first, else the runs imported from Strava. */
+  readonly todayRunKm = computed(
+    () => this.todayWearable()?.runningKm ?? this.strava.runKmByDate().get(this.today()),
+  );
+  /** Who measured today's running, in the genitive: "Według Garmina / Stravy". */
+  readonly todayRunSourceName = computed(() => {
+    if (this.todayWearable()?.runningKm !== undefined) return this.sources.primary()?.genitive ?? 'zegarka';
+    return this.todayRunKm() !== undefined ? 'Stravy' : undefined;
+  });
   readonly latestEntry = computed(() => this.checkIns().find((c) => c.date <= this.today()));
-  readonly hasAnyData = computed(() => !!this.latestEntry() || !!this.todayWearable());
+  readonly hasAnyData = computed(
+    () => !!this.latestEntry() || !!this.todayWearable() || this.strava.runKmByDate().has(this.today()),
+  );
 
   readonly daysSinceLastEntry = computed(() => {
     const latest = this.latestEntry();
@@ -96,6 +110,11 @@ export class PetStore {
     // Fresh wearable data beats yesterday's decayed numbers for what it can measure.
     const measured = this.todayWearable();
     if (measured && !this.todayEntry()) stats = { ...stats, ...measuredStats(measured, goals) };
+    // A run logged on Strava this morning lifts fitness before the evening check-in.
+    const runKm = this.strava.runKmByDate().get(this.today());
+    if (runKm && !this.todayEntry()) {
+      stats = { ...stats, fitness: Math.max(stats.fitness, fitnessScore(undefined, runKm, goals)) };
+    }
     return stats;
   });
 
@@ -103,8 +122,9 @@ export class PetStore {
   readonly knownStats = computed<ReadonlySet<StatKey>>(() => {
     if (this.latestEntry()) return new Set(STAT_KEYS);
     const measured = this.todayWearable();
-    if (measured) return new Set(Object.keys(measuredStats(measured, this.goals())) as StatKey[]);
-    return new Set();
+    const known = new Set<StatKey>(measured ? (Object.keys(measuredStats(measured, this.goals())) as StatKey[]) : []);
+    if (this.strava.runKmByDate().has(this.today())) known.add('fitness');
+    return known;
   });
 
   readonly wellbeing = computed(() => wellbeingOf(this.stats()));
@@ -160,7 +180,7 @@ export class PetStore {
         const has = owned.has(item.id);
         return { ...item, progress: has ? 1 : 0, unlocked: has };
       }
-      const progress = itemProgress(item, this.checkIns(), this.goals());
+      const progress = itemProgress(item, this.checkIns(), this.goals()) + this.stravaExtra(item.id);
       return { ...item, progress, unlocked: progress >= item.target };
     });
   });
@@ -177,6 +197,7 @@ export class PetStore {
       wearable: this.sync.days(),
       connected: !!this.sources.primary(),
       goals: this.goals(),
+      trainingsImported: this.strava.activities().length,
     };
     return BADGES.map((badge) => ({ ...badge, earned: badgeEarned(badge.id, ctx) }));
   });
@@ -245,6 +266,21 @@ export class PetStore {
     this.equipped.set({});
   }
 
+  /**
+   * Strava runs on days whose check-in didn't count them, so the imported history helps the
+   * headband without counting the same run twice.
+   */
+  private stravaExtra(id: ItemId): number {
+    if (id !== 'headband') return 0;
+    let km = 0;
+    for (const [date, runKm] of this.strava.runKmByDate()) {
+      if (date > this.today()) continue;
+      const logged = this.checkInsByDate().get(date)?.metrics.runningDistanceKm ?? 0;
+      km += Math.max(0, runKm - logged);
+    }
+    return km;
+  }
+
   private dayView(date: string): DayView {
     const entry = this.checkInsByDate().get(date);
     const wearable = this.wearableByDate().get(date);
@@ -263,7 +299,7 @@ export class PetStore {
       wellbeing: stats && wellbeingOf(stats),
       sleepHours: entry?.sleep.durationHours ?? wearable?.sleepHours,
       steps: entry?.metrics.steps ?? wearable?.steps,
-      runningKm: entry?.metrics.runningDistanceKm ?? wearable?.runningKm,
+      runningKm: entry?.metrics.runningDistanceKm ?? wearable?.runningKm ?? this.strava.runKmByDate().get(date),
       food: entry?.food.qualityScore,
       mood: entry?.mood.score,
       screen: entry?.metrics.screenTimeHours ?? wearable?.screenHours,

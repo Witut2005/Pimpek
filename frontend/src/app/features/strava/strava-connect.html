@@ -1,0 +1,290 @@
+<dialog #dialog (click)="onDialogClick($event)" aria-labelledby="strava-title">
+  <div class="panel">
+    <header>
+      <span class="logo"><app-icon name="pulse" /></span>
+      <h2 id="strava-title">Strava</h2>
+      <button type="button" class="icon-btn" (click)="close()" aria-label="Zamknij">
+        <app-icon name="close" />
+      </button>
+    </header>
+
+    @switch (step()) {
+      @case ('consent') {
+        <section class="step">
+          <div class="intro">
+            <app-pimpek-avatar class="pet" state="happy" [color]="settings.petHex()" [quiet]="true" />
+            <p class="bubble">
+              Połączmy Stravę! Zaimportuję Twoje treningi z przeszłości, żeby od razu wiedzieć,
+              jak się ruszasz.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3><app-icon name="check" /> Co przeczytam</h3>
+            <ul class="list">
+              @for (s of scopes; track s.scope) {
+                <li>{{ s.label }}</li>
+              }
+            </ul>
+          </div>
+
+          <div class="card quiet">
+            <h3><app-icon name="shield" /> Czego nie ruszam</h3>
+            <p class="muted">{{ neverRead.join(', ') }}.</p>
+          </div>
+
+          <fieldset class="period">
+            <legend>Jak daleko wstecz importować?</legend>
+            <div class="chips">
+              @for (m of periods; track m) {
+                <button type="button" class="chip" [attr.aria-pressed]="months() === m" (click)="months.set(m)">
+                  {{ m }} mies.
+                </button>
+              }
+            </div>
+          </fieldset>
+
+          <footer>
+            <button type="button" class="btn ghost" (click)="close()">Anuluj</button>
+            <button type="button" class="btn primary" (click)="step.set('login')">
+              Przejdź do logowania
+            </button>
+          </footer>
+        </section>
+      }
+
+      @case ('login') {
+        <form class="step" (ngSubmit)="authorize()">
+          <!-- Stands in for Strava's own OAuth page; nothing typed here leaves the browser. -->
+          <div class="placeholder">
+            <div class="bar">
+              <app-icon name="shield" />
+              <span>strona logowania Strava</span>
+              <span class="tag">placeholder</span>
+            </div>
+            <div class="login">
+              <p class="note">
+                Makieta. W prawdziwej wersji przeniesiemy Cię na stronę Stravy (OAuth 2.0), a Pimpek
+                nigdy nie zobaczy Twojego hasła. Dane z tego formularza nie są nigdzie wysyłane.
+              </p>
+              <label class="field">
+                <span>E-mail</span>
+                <input
+                  class="text-input"
+                  type="email"
+                  name="email"
+                  autocomplete="off"
+                  placeholder="ty@example.com"
+                  [(ngModel)]="email"
+                />
+              </label>
+              <label class="field">
+                <span>Hasło</span>
+                <input
+                  class="text-input"
+                  type="password"
+                  name="password"
+                  autocomplete="off"
+                  placeholder="••••••••"
+                  [(ngModel)]="password"
+                />
+              </label>
+              <button type="button" class="link" (click)="useDemoAccount()">Użyj konta demo</button>
+
+              <div class="scopes">
+                <strong>Pimpek prosi o dostęp do:</strong>
+                @for (s of scopes; track s.scope) {
+                  <label class="row">
+                    <span>{{ s.label }}</span>
+                    @if (s.required) {
+                      <input type="checkbox" class="switch" checked disabled [attr.aria-label]="s.label" />
+                    } @else {
+                      <input
+                        type="checkbox"
+                        class="switch"
+                        [checked]="withHr()"
+                        (change)="withHr.set(!withHr())"
+                        [attr.aria-label]="s.label"
+                      />
+                    }
+                  </label>
+                }
+              </div>
+            </div>
+          </div>
+
+          <footer>
+            <button type="button" class="btn ghost" (click)="step.set('consent')">Wstecz</button>
+            <button type="submit" class="btn primary" [disabled]="!loginValid()">Zaloguj i zezwól</button>
+          </footer>
+        </form>
+      }
+
+      @case ('authorizing') {
+        <section class="step center" role="status">
+          <app-pimpek-avatar class="pet" state="neutral" [color]="settings.petHex()" [quiet]="true" />
+          <h3>Strava sprawdza Twoje konto…</h3>
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        </section>
+      }
+
+      @case ('importing') {
+        <section class="step" role="status" aria-live="polite">
+          <div class="intro">
+            <app-pimpek-avatar class="pet" state="happy" [color]="settings.petHex()" [quiet]="true" />
+            <p class="bubble">
+              Cześć{{ firstName() ? ', ' + firstName() : '' }}! Przeglądam Twoje treningi z ostatnich
+              {{ months() }} miesięcy…
+            </p>
+          </div>
+
+          <div class="counter">
+            <div>
+              <strong>{{ progress()?.activities ?? 0 }}</strong>
+              <small>treningów</small>
+            </div>
+            <div>
+              <strong>{{ format.int(progress()?.km ?? 0) }}</strong>
+              <small>km</small>
+            </div>
+          </div>
+
+          <div class="bar-track" aria-hidden="true">
+            <span class="bar-fill" [style.width.%]="percent()"></span>
+          </div>
+
+          <ol class="phases">
+            @for (p of phases; track p.id; let i = $index) {
+              <li [class]="phaseState(i)">
+                <span class="mark">
+                  @switch (phaseState(i)) {
+                    @case ('done') {
+                      <app-icon name="check" />
+                    }
+                    @case ('current') {
+                      <app-icon name="refresh" class="spin" />
+                    }
+                    @default {
+                      <i></i>
+                    }
+                  }
+                </span>
+                <span>
+                  {{ p.label }}
+                  @if (p.id === 'activities' && phaseState(i) !== 'todo' && progress(); as pr) {
+                    <small>strona {{ pr.page }} z {{ pr.pages }}</small>
+                  }
+                </span>
+              </li>
+            }
+          </ol>
+        </section>
+      }
+
+      @case ('summary') {
+        <section class="step">
+          <div class="intro">
+            <app-pimpek-avatar
+              class="pet"
+              state="happy"
+              [celebrating]="true"
+              [items]="pet.wornItems()"
+              [color]="settings.petHex()"
+            />
+            <p class="bubble">
+              Wow{{ firstName() ? ', ' + firstName() : '' }}! {{ format.int(strava.totals().km) }} km w ciągu
+              ostatnich {{ months() }} miesięcy. Jestem z Ciebie dumny! 🏅
+            </p>
+          </div>
+
+          <div class="tiles">
+            <div class="tile">
+              <strong>{{ strava.totals().count }}</strong>
+              <small>treningów</small>
+            </div>
+            <div class="tile">
+              <strong>{{ format.int(strava.totals().km) }}</strong>
+              <small>km</small>
+            </div>
+            <div class="tile">
+              <strong>{{ format.int(strava.totals().hours) }}</strong>
+              <small>godzin ruchu</small>
+            </div>
+            <div class="tile">
+              <strong>{{ format.int(strava.totals().elevation) }}</strong>
+              <small>m w górę</small>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3><app-icon name="chart" /> Co trenujesz</h3>
+            <ul class="sports">
+              @for (s of strava.bySport(); track s.sport) {
+                <li>
+                  <span class="emoji" aria-hidden="true">{{ s.emoji }}</span>
+                  <span class="label">{{ s.label }}</span>
+                  <span class="share">
+                    <span [style.width.%]="(s.minutes / strava.bySport()[0].minutes) * 100"></span>
+                  </span>
+                  <small>{{ s.count }}×</small>
+                </li>
+              }
+            </ul>
+            @if (strava.bestMonth(); as best) {
+              <p class="muted">Najwięcej ruchu: {{ best.label }} ({{ format.duration(best.hours * 60) }}).</p>
+            }
+          </div>
+
+          <div class="card">
+            <h3><app-icon name="trophy" /> Rekordy</h3>
+            <ul class="records">
+              @if (strava.records().longestRun; as r) {
+                <li><span>Najdłuższy bieg</span><strong>{{ format.km(r.distanceKm) }}</strong><small>{{ format.day(r.date) }}</small></li>
+              }
+              @if (strava.records().fastestRun; as r) {
+                <li><span>Najszybsze tempo (5 km+)</span><strong>{{ format.pace(pace(r)) }}</strong><small>{{ format.day(r.date) }}</small></li>
+              }
+              @if (strava.records().longestRide; as r) {
+                <li><span>Najdłuższa jazda</span><strong>{{ format.km(r.distanceKm) }}</strong><small>{{ format.day(r.date) }}</small></li>
+              }
+              @if (strava.records().biggestClimb; as r) {
+                <li><span>Największa wspinaczka</span><strong>{{ format.int(r.elevationM) }} m</strong><small>{{ r.name }}</small></li>
+              }
+            </ul>
+          </div>
+
+          <div class="card rewards">
+            <h3><app-icon name="sparkle" /> Na start</h3>
+            <ul>
+              @if (bonus()) {
+                <li><app-icon name="leaf" /> +{{ bonus() }} listków za przyniesioną historię</li>
+              }
+              <li>📜 Naklejka „Kronikarz”</li>
+              @for (item of unlocked(); track item.id) {
+                <li>{{ item.icon }} Odblokowano: {{ item.name }}</li>
+              }
+              <li><app-icon name="pulse" /> Biegi ze Stravy liczą się teraz do kondycji Pimpka</li>
+            </ul>
+          </div>
+
+          <footer>
+            <button type="button" class="btn primary wide" (click)="close()">Wracam do Pimpka</button>
+          </footer>
+          <p class="muted center-text">Treningi znajdziesz w Postępach.</p>
+        </section>
+      }
+
+      @case ('error') {
+        <section class="step center">
+          <app-pimpek-avatar class="pet" state="sad" [color]="settings.petHex()" [quiet]="true" />
+          <h3>Strava nie odpowiada</h3>
+          <p class="muted">Nic się nie zapisało. Spróbuj jeszcze raz za chwilę.</p>
+          <footer>
+            <button type="button" class="btn ghost" (click)="close()">Zamknij</button>
+            <button type="button" class="btn primary" (click)="startImport()">Spróbuj ponownie</button>
+          </footer>
+        </section>
+      }
+    }
+  </div>
+</dialog>

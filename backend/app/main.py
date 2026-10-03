@@ -161,6 +161,26 @@ def disconnect_fitatu(user: str = Depends(current_user)):
     return {"connected": False}
 
 
+@app.get("/api/sources/available")
+def available_sources():
+    """Wearables that can be connected through Open Wearables OAuth right now (credentials set)."""
+    return {"oauth": daily.connectable()}
+
+
+@app.delete("/api/sources/{provider}")
+def disconnect_ow_source(provider: str, user: str = Depends(current_user)):
+    """Any other wearable linked through Open Wearables (Polar, Fitbit, Oura, …)."""
+    if provider not in daily.OW_WEARABLES:
+        raise HTTPException(404, "Unknown source")
+    try:
+        daily.disconnect(user, provider)
+    except ow.OpenWearablesUnavailable:
+        raise HTTPException(503, "Open Wearables is not reachable")
+    except ow.OpenWearablesError as e:
+        raise HTTPException(502, f"Open Wearables: {e.detail}")
+    return {"connected": False}
+
+
 @app.get("/api/days")
 def days(
     count: int = Query(28, ge=1, le=60),

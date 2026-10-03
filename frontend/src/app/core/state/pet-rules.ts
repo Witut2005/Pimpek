@@ -198,6 +198,7 @@ export const BADGES: readonly Badge[] = [
   { id: 'social', name: 'Dusza towarzystwa', icon: '🫶', description: '5 spotkań z ludźmi' },
   { id: 'detox', name: 'Cyfrowy detoks', icon: '📵', description: '3 dni z max 2 h ekranu' },
   { id: 'greens', name: 'Zielony talerz', icon: '🥗', description: '5 dni zdrowego jedzenia' },
+  { id: 'chronicle', name: 'Kronikarz', icon: '📜', description: 'Zaimportuj historię treningów' },
 ];
 
 export interface BadgeContext {
@@ -205,6 +206,8 @@ export interface BadgeContext {
   wearable: readonly WearableDay[];
   connected: boolean;
   goals: Goals;
+  /** Workouts imported from a training log (Strava). */
+  trainingsImported?: number;
 }
 
 export function badgeEarned(id: string, ctx: BadgeContext): boolean {
@@ -215,6 +218,8 @@ export function badgeEarned(id: string, ctx: BadgeContext): boolean {
       return checkIns.length > 0;
     case 'connected':
       return ctx.connected;
+    case 'chronicle':
+      return (ctx.trainingsImported ?? 0) > 0;
     case 'week':
       return longestStreak(new Set(checkIns.map((c) => c.date))) >= 7;
     case 'sleepyhead':

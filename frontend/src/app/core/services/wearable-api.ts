@@ -100,6 +100,16 @@ export class WearableApi {
     return this.http.post('/api/wearables/garmin/backfill', {});
   }
 
+  /** Watches that can be connected through Open Wearables right now (their OAuth keys are set). */
+  availableOauth(): Observable<SourceId[]> {
+    return this.http.get<{ oauth: SourceId[] }>('/api/sources/available').pipe(map((r) => r.oauth));
+  }
+
+  /** Pull providers (Polar, Fitbit, Oura…): ask Open Wearables to fetch fresh data now. */
+  owSync(id: SourceId): Observable<unknown> {
+    return this.http.post(`/api/wearables/${id}/sync`, {});
+  }
+
   /** Official Garmin OAuth through Open Wearables. Resolves to the provider's login page. */
   oauthUrl(id: SourceId, returnTo: string): Observable<string> {
     const redirect = new URL('/onboarding/done', location.origin);

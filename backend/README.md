@@ -63,4 +63,19 @@ This needs real `GARMIN_CLIENT_ID`/`GARMIN_CLIENT_SECRET` in `open-wearables/bac
 (Garmin Connect Developer Program), plus OW reachable from the internet (e.g. `ngrok http 8000`) with
 `https://<public-url>/api/v1/garmin/webhooks/push` registered in the Garmin portal. Garmin only pushes data.
 
+## Other watches (Polar, Fitbit, Oura, Whoop, Withings, …)
+Every Open Wearables provider with a cloud API works the same way, and `/api/days` reads OW's normalised
+summaries, so no mapping code is needed per brand. To enable one:
+1. Create an OAuth app in the provider's developer portal (self-service for Polar AccessLink, Fitbit, Oura,
+   Whoop, Withings, Strava; Suunto and Ultrahuman need partner approval). Redirect URL:
+   `http://localhost:8000/api/v1/oauth/<provider>/callback`.
+2. Put its client id/secret into `open-wearables/backend/config/.env` (`POLAR_CLIENT_ID`, …) and restart OW.
+3. Add the provider to `OPEN_WEARABLES_PROVIDERS` in `backend/.env` and restart the backend.
+
+- `GET /api/sources/available` -> `{oauth: [...]}`: providers that can be connected now; the frontend offers
+  "Połącz" only for these. `POST /api/wearables/connect/{provider}` answers 409 for the rest.
+- With several watches linked, the first one linked leads (its id is the day's `source`).
+- Pull providers (all but Garmin) are polled by OW; `/api/days` also asks OW for a poll at most every 15 min.
+- `DELETE /api/sources/{provider}` unlinks any of them.
+
 Identity is the `X-User-Id` header (defaults to the hardcoded UUID `82b25836-a99e-4f59-8c7b-34d451ddcd90`), which is a placeholder for real auth.

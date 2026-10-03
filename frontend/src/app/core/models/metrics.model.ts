@@ -1,6 +1,16 @@
 import { IconName } from '../../shared/icon/icon';
 
-export type SourceId = 'garmin' | 'fitatu' | 'oura' | 'apple-health' | 'health-connect';
+export type SourceId =
+  | 'garmin'
+  | 'fitatu'
+  | 'strava'
+  | 'polar'
+  | 'fitbit'
+  | 'oura'
+  | 'whoop'
+  | 'withings'
+  | 'apple-health'
+  | 'health-connect';
 
 export interface SourceInfo {
   id: SourceId;
@@ -9,14 +19,24 @@ export interface SourceInfo {
   short: string;
   genitive: string;
   icon: IconName;
-  /** A wearable feeds sleep and steps; a food diary feeds the meals in the check-in. */
-  kind: 'wearable' | 'diet';
+  /**
+   * A wearable feeds sleep and steps; a food diary feeds the meals in the check-in;
+   * a training log feeds workouts (runs count towards Pimpek's fitness).
+   */
+  kind: 'wearable' | 'diet' | 'training';
+  /** Connected entirely in the browser with mock data — no backend endpoint yet. */
+  mock?: boolean;
   /** Apple Health and Health Connect have no web API — they need the native app. */
   web: boolean;
   /** Not wired to the backend yet — shown, but can't be connected. */
   soon?: boolean;
   /** Can also connect through the official OAuth via Open Wearables, not just e-mail and password. */
   oauth?: boolean;
+  /**
+   * Connects only through Open Wearables OAuth (no e-mail login). Offered once the backend says
+   * its credentials are set (GET /api/sources/available), shown as "wkrótce" until then.
+   */
+  oauthOnly?: boolean;
   reads: readonly string[];
 }
 
@@ -43,6 +63,39 @@ export const SOURCES: readonly SourceInfo[] = [
     reads: ['posiłki', 'kalorie', 'makroskładniki'],
   },
   {
+    id: 'strava',
+    name: 'Strava',
+    short: 'Strava',
+    genitive: 'Stravy',
+    icon: 'pulse',
+    kind: 'training',
+    web: true,
+    mock: true,
+    reads: ['treningi', 'dystans', 'czas', 'przewyższenie', 'tętno'],
+  },
+  {
+    id: 'polar',
+    name: 'Polar Flow',
+    short: 'Polar',
+    genitive: 'Polara',
+    icon: 'watch',
+    kind: 'wearable',
+    web: true,
+    oauthOnly: true,
+    reads: ['sen', 'kroki', 'tętno spoczynkowe', 'treningi'],
+  },
+  {
+    id: 'fitbit',
+    name: 'Fitbit',
+    short: 'Fitbit',
+    genitive: 'Fitbita',
+    icon: 'watch',
+    kind: 'wearable',
+    web: true,
+    oauthOnly: true,
+    reads: ['sen', 'kroki', 'tętno spoczynkowe', 'treningi'],
+  },
+  {
     id: 'oura',
     name: 'Oura Ring',
     short: 'Oura',
@@ -50,7 +103,29 @@ export const SOURCES: readonly SourceInfo[] = [
     icon: 'ring',
     kind: 'wearable',
     web: true,
-    soon: true,
+    oauthOnly: true,
+    reads: ['sen', 'kroki', 'tętno spoczynkowe'],
+  },
+  {
+    id: 'whoop',
+    name: 'Whoop',
+    short: 'Whoop',
+    genitive: 'Whoopa',
+    icon: 'pulse',
+    kind: 'wearable',
+    web: true,
+    oauthOnly: true,
+    reads: ['sen', 'regeneracja', 'tętno spoczynkowe', 'treningi'],
+  },
+  {
+    id: 'withings',
+    name: 'Withings',
+    short: 'Withings',
+    genitive: 'Withings',
+    icon: 'heart',
+    kind: 'wearable',
+    web: true,
+    oauthOnly: true,
     reads: ['sen', 'kroki', 'tętno spoczynkowe'],
   },
   {

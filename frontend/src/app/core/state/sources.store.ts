@@ -7,9 +7,14 @@ import { KEYS, readJson, writeJson } from '../../shared/storage';
 export interface Connection {
   id: SourceId;
   connectedAt: string;
-  /** `demo` connections live only in the browser and are fed by the mock scenarios. */
-  via: ConnectionVia | 'demo';
+  /**
+   * `demo` connections live only in the browser and are fed by the mock scenarios;
+   * `mock` ones are sources without a backend yet (Strava), kept in the browser too.
+   */
+  via: ConnectionVia | 'demo' | 'mock';
 }
+
+const isLocal = (c: Connection) => c.via === 'demo' || c.via === 'mock';
 
 /**
  * Which wearables and food diaries are linked. The backend (GET /api/sources) is the source
@@ -22,6 +27,8 @@ export class SourcesStore {
   readonly connections = signal<Connection[]>(readJson(KEYS.sources, []));
   /** False until the backend has answered once — avoids flashing "not connected". */
   readonly checked = signal(false);
+  /** Watches whose Open Wearables OAuth keys are set on the backend — only these offer "Połącz". */
+  readonly oauthReady = signal<ReadonlySet<SourceId>>(new Set());
 
   /** The first linked wearable feeds Pimpek; extra ones are listed but not merged yet. */
   readonly primary = computed(() => this.firstOf('wearable'));
@@ -51,15 +58,20 @@ export class SourcesStore {
 
   /**
    * Re-reads the backend. Emits the new list; on network failure keeps what we had.
-   * Demo connections stay, so a real Fitatu can sit next to the demo's fake Garmin.
+   * Demo and mock connections stay, so a real Fitatu can sit next to the demo's fake Garmin
+   * and the browser-only Strava.
    */
   refresh(): Observable<Connection[]> {
-    const demo = this.connections().filter((c) => c.via === 'demo');
+    this.api
+      .availableOauth()
+      .pipe(catchError(() => of<SourceId[]>([])))
+      .subscribe((list) => this.oauthReady.set(new Set(list)));
+    const local = this.connections().filter(isLocal);
     return this.api.sources().pipe(
       map((list) => [
-        ...demo,
+        ...local,
         ...list
-          .filter((s) => !demo.some((d) => d.id === s.id))
+          .filter((s) => !local.some((d) => d.id === s.id))
           .map((s) => ({ id: s.id, via: s.via, connectedAt: s.connectedAt ?? new Date().toISOString() })),
       ]),
       tap((list) => this.connections.set(list)),
@@ -70,18 +82,29 @@ export class SourcesStore {
 
   disconnect(id: SourceId): Observable<unknown> {
     const drop = () => this.connections.update((list) => list.filter((c) => c.id !== id));
-    if (this.via(id) === 'demo') {
+    const via = this.via(id);
+    if (via === 'demo' || via === 'mock') {
       drop();
       return of(null);
     }
     return this.api.disconnect(id).pipe(tap(drop));
   }
 
-  /** Demo mode only: real connections come from the backend. A real food diary stays linked. */
+  /** Links a source that has no backend yet (Strava mock); lives only in this browser. */
+  connectLocal(id: SourceId): void {
+    if (this.isConnected(id)) return;
+    this.connections.update((list) => [...list, { id, via: 'mock', connectedAt: new Date().toISOString() }]);
+  }
+
+  /** Demo mode only: real connections come from the backend. A real food diary and mock sources stay linked. */
   replace(list: Connection[]): void {
     this.connections.update((current) => [
       ...list,
-      ...current.filter((c) => c.via !== 'demo' && SOURCES.find((s) => s.id === c.id)?.kind === 'diet'),
+      ...current.filter(
+        (c) =>
+          c.via === 'mock' ||
+          (c.via !== 'demo' && SOURCES.find((s) => s.id === c.id)?.kind === 'diet'),
+      ),
     ]);
   }
 }

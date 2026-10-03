@@ -29,6 +29,7 @@ def setup(tmp_path, monkeypatch):
     calls.clear()
     monkeypatch.setattr(settings, "user_map_file", tmp_path / "map.json")
     monkeypatch.setattr(settings, "open_wearables_api_key", "secret-key")
+    monkeypatch.setattr(settings, "open_wearables_providers", "garmin")
     monkeypatch.setattr(ow, "_transport", httpx.MockTransport(fake_ow))
 
 
@@ -73,3 +74,15 @@ def test_dates_default_to_last_30_days():
     client.get("/api/wearables/workouts")
     wk = [c for c in calls if c.url.path.endswith("/workouts")][0]
     assert "start_date" in wk.url.params and "end_date" in wk.url.params
+
+
+def test_connect_refused_without_credentials():
+    body = {"redirect_uri": "http://localhost:4200/onboarding/done"}
+    r = client.post("/api/wearables/connect/polar", json=body)
+    assert r.status_code == 409
+    assert not any(c.url.path.endswith("/authorize") for c in calls)
+
+
+def test_available_lists_only_configured(monkeypatch):
+    monkeypatch.setattr(settings, "open_wearables_providers", "garmin, polar ,bogus")
+    assert client.get("/api/sources/available").json() == {"oauth": ["garmin", "polar"]}

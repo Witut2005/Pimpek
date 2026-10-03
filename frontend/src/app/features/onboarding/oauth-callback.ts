@@ -149,6 +149,9 @@ export class OAuthCallback implements OnInit {
       // Garmin only pushes data: ask for the last 30 days, then read what's already there.
       if (info.id === 'garmin' && this.sources.via(info.id) === 'open_wearables') {
         this.api.garminBackfill().subscribe({ error: () => undefined });
+      } else if (this.sources.via(info.id) === 'open_wearables') {
+        // Polar, Fitbit, Oura…: Open Wearables polls them, so ask for the first poll right away.
+        this.api.owSync(info.id).subscribe({ error: () => undefined });
       }
       this.sync.sync();
     });

@@ -4,11 +4,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from . import open_wearables as ow
+from .config import settings
 from .main_deps import current_user
 
 router = APIRouter(prefix="/api/wearables", tags=["wearables"])
 
-Provider = Literal["garmin", "polar", "suunto", "apple", "whoop"]
+# Every Open Wearables provider with a cloud API (Apple/Samsung/Health Connect need the mobile SDK).
+Provider = Literal[
+    "garmin", "polar", "suunto", "whoop", "oura", "fitbit", "withings", "strava", "google_health", "ultrahuman"
+]
+# Pull-based providers: OW polls them, so "sync now" means asking for a poll. Garmin only pushes.
+PullProvider = Literal[
+    "polar", "suunto", "whoop", "oura", "fitbit", "withings", "strava", "google_health", "ultrahuman"
+]
 
 
 def _call(fn, *args):
@@ -35,6 +43,9 @@ def connect(provider: Provider, body: ConnectBody, user: str = Depends(current_u
     """Step 3 'Connect'. Returns {authorization_url, state}; the frontend redirects there."""
     if not ow.redirect_allowed(body.redirect_uri):
         raise HTTPException(400, "redirect_uri origin is not allowed")
+    # Without real client credentials the provider's login page would just reject the user.
+    if provider not in settings.open_wearables_provider_list:
+        raise HTTPException(409, f"{provider} has no OAuth credentials configured in Open Wearables")
     return _call(ow.authorize_url, user, provider, body.redirect_uri)
 
 
@@ -50,7 +61,7 @@ def garmin_backfill(user: str = Depends(current_user)):
 
 
 @router.post("/{provider}/sync")
-def sync(provider: Literal["polar", "suunto", "whoop"], user: str = Depends(current_user)):
+def sync(provider: PullProvider, user: str = Depends(current_user)):
     """Pull-style sync. Garmin has no polling, it is webhook-only."""
     return _call(ow.sync, user, provider)
 

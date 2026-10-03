@@ -1,8 +1,10 @@
-"""One normalised day of wearable data, whichever way Garmin is connected.
+"""One normalised day of wearable data, whichever watch it comes from.
 
-Open Wearables wins when it has an active Garmin connection (official OAuth, webhook
-data). Otherwise we fall back to the direct Garmin Connect login. The frontend only
-ever sees `/api/days`, so switching paths needs no frontend change.
+Open Wearables wins when the user has any active wearable connection there (Garmin,
+Polar, Fitbit, Oura, Whoop, Withings… via official OAuth): it already normalises every
+provider into the same summaries. Otherwise we fall back to the direct Garmin Connect
+login. The frontend only ever sees `/api/days`, so a new watch needs no frontend change
+beyond its source card.
 
 A day is keyed by local calendar date; sleep belongs to the day you woke up.
 """
@@ -19,10 +21,18 @@ from . import open_wearables as ow
 from .config import settings
 
 PROVIDER = "garmin"
+# Open Wearables providers that measure sleep and/or steps — the ones that can feed Pimpek's day.
+# Pull-based ones are polled by OW; Garmin is webhook-only.
+OW_WEARABLES = ("garmin", "polar", "fitbit", "oura", "whoop", "withings", "suunto", "google_health", "ultrahuman")
+OW_PULL = set(OW_WEARABLES) - {"garmin"}
+# Ask OW to poll a pull provider at most this often when the app reads the days.
+OW_SYNC_EVERY_S = 15 * 60
 RUN_TYPES = {"running", "trail_running", "treadmill_running", "track_running", "indoor_running", "street_running", "virtual_run", "ultra_run"}
 # Days older than this are final and safe to cache: the watch has synced, sleep is scored.
 SETTLED_AFTER_DAYS = 2
 GARMIN_WORKERS = 4
+
+_last_ow_sync: dict[tuple[str, str], float] = {}
 
 
 class NoSource(LookupError):
@@ -33,44 +43,78 @@ def _iso(ts: float | None) -> str | None:
     return datetime.fromtimestamp(ts).isoformat() if ts else None
 
 
-def _ow_connection(user_id: str) -> dict[str, Any] | None:
-    """Active OW Garmin connection, or None if OW is off, down or not linked."""
+def _ow_connections(user_id: str) -> list[dict[str, Any]]:
+    """Active OW wearable connections, oldest first; empty if OW is off, down or nothing is linked."""
     if not ow.is_configured():
-        return None
+        return []
     try:
-        return ow.active_connection(user_id, PROVIDER)
+        active = [
+            c
+            for c in ow.connections(user_id) or []
+            if c.get("provider") in OW_WEARABLES and c.get("status") == "active"
+        ]
     except (ow.OpenWearablesError, ow.OpenWearablesUnavailable):
-        return None
+        return []
+    return sorted(active, key=lambda c: c.get("created_at") or "")
+
+
+def _ow_connection(user_id: str) -> dict[str, Any] | None:
+    """The wearable whose data leads (the first one linked), or None."""
+    conns = _ow_connections(user_id)
+    return conns[0] if conns else None
+
+
+def connectable() -> list[str]:
+    """OW providers the team has real OAuth credentials for (OPEN_WEARABLES_PROVIDERS)."""
+    if not ow.is_configured():
+        return []
+    return [p for p in settings.open_wearables_provider_list if p in OW_WEARABLES or p == "strava"]
 
 
 def sources(user_id: str) -> list[dict[str, Any]]:
-    conn = _ow_connection(user_id)
-    if conn:
-        return [{"id": PROVIDER, "via": "open_wearables", "connectedAt": conn.get("created_at")}]
+    result = [
+        {"id": c["provider"], "via": "open_wearables", "connectedAt": c.get("created_at")}
+        for c in _ow_connections(user_id)
+    ]
     status = garmin.status(user_id)
-    if status.get("connected"):
-        return [
+    if status.get("connected") and not any(r["id"] == PROVIDER for r in result):
+        result.append(
             {
                 "id": PROVIDER,
                 "via": "garmin_connect",
                 "connectedAt": _iso(status.get("connected_at")),
                 "name": status.get("full_name") or status.get("display_name"),
             }
-        ]
-    return []
+        )
+    return result
 
 
-def disconnect(user_id: str) -> None:
-    if _ow_connection(user_id):
-        ow.disconnect(user_id, PROVIDER)
-    garmin.disconnect(user_id)
+def disconnect(user_id: str, provider: str = PROVIDER) -> None:
+    if any(c["provider"] == provider for c in _ow_connections(user_id)):
+        ow.disconnect(user_id, provider)
+    if provider == PROVIDER:
+        garmin.disconnect(user_id)
     _cache_path(user_id).unlink(missing_ok=True)
 
 
-def _blank(day: str, today: str) -> dict[str, Any]:
+def _nudge_ow_sync(user_id: str, provider: str) -> None:
+    """Pull providers only refresh when OW polls them; ask for a poll now and then. Never fails the read."""
+    if provider not in OW_PULL:
+        return
+    key = (user_id, provider)
+    if time.time() - _last_ow_sync.get(key, 0) < OW_SYNC_EVERY_S:
+        return
+    _last_ow_sync[key] = time.time()
+    try:
+        ow.sync(user_id, provider)
+    except (ow.OpenWearablesError, ow.OpenWearablesUnavailable):
+        pass
+
+
+def _blank(day: str, today: str, source: str = PROVIDER) -> dict[str, Any]:
     return {
         "date": day,
-        "source": PROVIDER,
+        "source": source,
         "sleepHours": None,
         "sleepScore": None,
         "steps": None,
@@ -165,9 +209,9 @@ def _from_garmin(user_id: str, days: list[str], today: str) -> list[dict[str, An
 # --- Open Wearables -------------------------------------------------------------
 
 
-def _from_ow(user_id: str, days: list[str], today: str) -> list[dict[str, Any]]:
+def _from_ow(user_id: str, days: list[str], today: str, source: str = PROVIDER) -> list[dict[str, Any]]:
     start, end = days[-1], (date.fromisoformat(days[0]) + timedelta(days=1)).isoformat()
-    by_day = {d: _blank(d, today) for d in days}
+    by_day = {d: _blank(d, today, source) for d in days}
 
     for row in ow.activity_summaries(user_id, start, end):
         if (day := str(row.get("date"))) in by_day:
@@ -194,14 +238,17 @@ def days(user_id: str, count: int, today: str | None = None) -> dict[str, Any]:
     end = date.fromisoformat(today)
     keys = [(end - timedelta(days=i)).isoformat() for i in range(count)]
     started = time.time()
-    if _ow_connection(user_id):
-        via, data = "open_wearables", _from_ow(user_id, keys, today)
+    source = PROVIDER
+    if conn := _ow_connection(user_id):
+        source = conn["provider"]
+        _nudge_ow_sync(user_id, source)
+        via, data = "open_wearables", _from_ow(user_id, keys, today, source)
     elif garmin.status(user_id).get("connected"):
         via, data = "garmin_connect", _from_garmin(user_id, keys, today)
     else:
         raise NoSource("No wearable is connected for this user")
     return {
-        "source": PROVIDER,
+        "source": source,
         "via": via,
         "syncedAt": datetime.now().isoformat(timespec="seconds"),
         "tookMs": int((time.time() - started) * 1000),
