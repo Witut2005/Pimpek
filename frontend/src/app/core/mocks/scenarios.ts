@@ -118,11 +118,12 @@ const GOOD: readonly SeedDay[] = [
 ];
 
 // Last entry 3 days ago: Pimpek has been neglected and the wearable shows short nights.
+// The food notes tell of skipped meals, so the AI profile has a story to notice.
 const ROUGH: readonly SeedDay[] = [
-  { daysAgo: 3, mood: 4, food: 40, screen: 7, km: 0, note: 'zarwana noc, kawa za kawą', foodNote: 'drożdżówka i energetyk' },
-  { daysAgo: 4, mood: 5, food: 50, screen: 6, km: 0 },
-  { daysAgo: 7, mood: 3, food: 35, screen: 8, km: 0, note: 'nic mi się nie chce' },
-  { daysAgo: 8, mood: 5, food: 55, screen: 5.5, km: 1.5, social: 'kawa z sąsiadką' },
+  { daysAgo: 3, mood: 4, food: 40, screen: 7, km: 0, note: 'zarwana noc, kawa za kawą', foodNote: 'drożdżówka i energetyk, obiadu nie było' },
+  { daysAgo: 4, mood: 5, food: 50, screen: 6, km: 0, foodNote: 'tylko kawa do południa, obiad dopiero wieczorem' },
+  { daysAgo: 7, mood: 3, food: 35, screen: 8, km: 0, note: 'nic mi się nie chce', foodNote: 'prawie nic, brak apetytu' },
+  { daysAgo: 8, mood: 5, food: 55, screen: 5.5, km: 1.5, social: 'kawa z sąsiadką', foodNote: 'śniadanie pominięte' },
   { daysAgo: 12, mood: 4, food: 45, screen: 7.5, km: 0 },
   { daysAgo: 16, mood: 6, food: 60, screen: 5, km: 2 },
   { daysAgo: 21, mood: 5, food: 48, screen: 6.5, km: 0 },

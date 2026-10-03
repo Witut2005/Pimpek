@@ -129,19 +129,18 @@ def _clean(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def rate(day: dict[str, Any]) -> dict[str, Any]:
-    """`day` is `{date, meals: [{name, time?, items: [{name, amount?, source, kcal?, ...}]}]}`."""
+def ask_json(system: str, user_text: str, schema: dict[str, Any], feature: str) -> tuple[Any, str]:
+    """One structured Gemini call: the parsed JSON answer and the model that gave it.
+
+    Shared by everything that asks Gemini (food rating, food check, profile summary). User input
+    goes into `user_text` only, never into `system`. `feature` names it in the 503 message.
+    """
     if not is_configured():
-        raise NotConfigured("AI food rating is not configured: set GEMINI_API_KEY in backend/.env")
+        raise NotConfigured(f"{feature} is not configured: set GEMINI_API_KEY in backend/.env")
     body = {
-        "systemInstruction": {"parts": [{"text": prompt()}]},
-        "contents": [
-            {
-                "role": "user",
-                "parts": [{"text": "Oceń jedzenie z tego dnia:\n" + json.dumps(day, ensure_ascii=False)}],
-            }
-        ],
-        "generationConfig": {"responseMimeType": "application/json", "responseSchema": RESPONSE_SCHEMA},
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": user_text}]}],
+        "generationConfig": {"responseMimeType": "application/json", "responseSchema": schema},
     }
     resp, model = _generate(body)
     if resp.status_code >= 400:
@@ -151,31 +150,26 @@ def rate(day: dict[str, Any]) -> dict[str, Any]:
             detail = resp.text[:300]
         raise RatingError(resp.status_code, detail)
     try:
-        return {**_clean(json.loads(_answer_text(resp.json()))), "model": model}
+        return json.loads(_answer_text(resp.json())), model
+    except ValueError as e:
+        raise RatingError(502, f"unreadable answer: {e}") from e
+
+
+def rate(day: dict[str, Any]) -> dict[str, Any]:
+    """`day` is `{date, meals: [{name, time?, items: [{name, amount?, source, kcal?, ...}]}]}`."""
+    user_text = "Oceń jedzenie z tego dnia:\n" + json.dumps(day, ensure_ascii=False)
+    raw, model = ask_json(prompt(), user_text, RESPONSE_SCHEMA, "AI food rating")
+    try:
+        return {**_clean(raw), "model": model}
     except (ValueError, KeyError, TypeError) as e:
         raise RatingError(502, f"unreadable answer: {e}") from e
 
 
 def check_food(entry: dict[str, Any]) -> dict[str, Any]:
     """`entry` is `{name, amount?}` as typed by hand. Returns `{is_food, message}`."""
-    if not is_configured():
-        raise NotConfigured("AI food check is not configured: set GEMINI_API_KEY in backend/.env")
-    body = {
-        "systemInstruction": {"parts": [{"text": CHECK_FILE.read_text(encoding="utf-8")}]},
-        "contents": [
-            {"role": "user", "parts": [{"text": "Sprawdź wpis:\n" + json.dumps(entry, ensure_ascii=False)}]}
-        ],
-        "generationConfig": {"responseMimeType": "application/json", "responseSchema": CHECK_SCHEMA},
-    }
-    resp, _ = _generate(body)
-    if resp.status_code >= 400:
-        try:
-            detail = resp.json().get("error", {}).get("message") or resp.text[:300]
-        except ValueError:
-            detail = resp.text[:300]
-        raise RatingError(resp.status_code, detail)
+    user_text = "Sprawdź wpis:\n" + json.dumps(entry, ensure_ascii=False)
+    raw, _ = ask_json(CHECK_FILE.read_text(encoding="utf-8"), user_text, CHECK_SCHEMA, "AI food check")
     try:
-        raw = json.loads(_answer_text(resp.json()))
         return {"is_food": bool(raw["is_food"]), "message": str(raw.get("message") or "").strip()}
-    except (ValueError, KeyError, TypeError) as e:
+    except (KeyError, TypeError) as e:
         raise RatingError(502, f"unreadable answer: {e}") from e

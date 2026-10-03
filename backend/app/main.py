@@ -1,5 +1,5 @@
 import logging
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +16,7 @@ from . import food_rating
 from . import garmin_service as garmin
 from . import nutrition
 from . import open_wearables as ow
+from . import user_profile
 from .config import settings
 from .main_deps import current_user
 from .wearables_router import router as wearables_router
@@ -253,3 +254,61 @@ def rate_food(body: RatingBody, user: str = Depends(current_user)):
     503 when no GEMINI_API_KEY is set: the frontend then shows its own rough estimate.
     """
     return _map_rating_errors(food_rating.rate, body.model_dump(exclude_none=True))
+
+
+# --- Profile summary (Gemini) -------------------------------------------------------
+# Field names match the frontend's camelCase: the body goes to Gemini as it is.
+
+Need = Literal["energy", "nutrition", "fitness", "mood", "screen"]
+Note = Annotated[str, Field(max_length=300)]
+
+
+class ProfileGoals(BaseModel):
+    sleepHours: float = Field(ge=0, le=24)
+    steps: int = Field(ge=0, le=100_000)
+    runningKm: float = Field(ge=0, le=200)
+    screenMaxHours: float = Field(ge=0, le=24)
+
+
+class ProfilePattern(BaseModel):
+    need: Need
+    label: str = Field(min_length=1, max_length=60)
+    streak: int = Field(ge=0, le=31)
+    badDays: int = Field(ge=0, le=31)
+    days: int = Field(ge=0, le=31)
+
+
+class ProfileDay(BaseModel):
+    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    mood: int = Field(ge=1, le=10)
+    sleepHours: float = Field(ge=0, le=24)
+    rested: bool
+    sleepNote: Note | None = None
+    foodScore: int = Field(ge=0, le=100)
+    foodSummary: Note | None = None
+    meals: list[Annotated[str, Field(max_length=160)]] = Field(default_factory=list, max_length=40)
+    kcal: int | None = Field(None, ge=0, le=20_000)
+    foodNote: Note | None = None
+    runningKm: float = Field(ge=0, le=200)
+    steps: int | None = Field(None, ge=0, le=200_000)
+    screenHours: float = Field(ge=0, le=24)
+    metFriends: bool
+    socialNote: Note | None = None
+    note: str | None = Field(None, max_length=1000)
+
+
+class ProfileBody(BaseModel):
+    today: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    goals: ProfileGoals
+    patterns: list[ProfilePattern] = Field(default_factory=list, max_length=10)
+    days: list[ProfileDay] = Field(min_length=1, max_length=31)
+
+
+@app.post("/api/profile/summary")
+def summarize_profile(body: ProfileBody, user: str = Depends(current_user)):
+    """Gemini's read of the recent check-ins: what keeps repeating and the one need to work on.
+
+    Stateless: the check-ins live in the browser's localStorage and come with the request.
+    503 when no GEMINI_API_KEY is set: the frontend then shows only its own rule-based patterns.
+    """
+    return _map_rating_errors(user_profile.summarize, body.model_dump(exclude_none=True))

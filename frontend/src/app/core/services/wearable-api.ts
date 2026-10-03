@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { FoodCheck, FoodRating, MealDay, RatingRequest } from '../models/meals.model';
 import { SourceId, WearableDay } from '../models/metrics.model';
+import { ProfileAnswer, ProfileRequest } from '../models/profile.model';
 
 const HISTORY_DAYS = 28;
 
@@ -88,6 +89,11 @@ export class WearableApi {
     return this.http
       .post<Omit<FoodRating, 'source'>>('/api/food/rating', request)
       .pipe(map((rating) => ({ ...rating, source: 'ai' as const })));
+  }
+
+  /** Gemini's read of the recent check-ins and notes. 503 when the backend has no Gemini key. */
+  summarizeProfile(request: ProfileRequest): Observable<ProfileAnswer> {
+    return this.http.post<ProfileAnswer>('/api/profile/summary', request);
   }
 
   /** Whether a food typed in by hand is food at all. Fails (errors) when the AI is off. */

@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from '../models/settings.model';
 import { MockWearableService } from '../services/wearable.service';
 import { ClockStore } from './clock.store';
 import { PetStore } from './pet.store';
+import { ProfileStore } from './profile.store';
 import { ScenarioStore } from './scenario.store';
 import { SettingsStore } from './settings.store';
 import { SourcesStore } from './sources.store';
@@ -23,6 +24,7 @@ export class DemoControls {
   private readonly wallet = inject(WalletStore);
   private readonly clock = inject(ClockStore);
   private readonly pet = inject(PetStore);
+  private readonly profile = inject(ProfileStore);
   private readonly wearableApi = inject(MockWearableService);
 
   readonly scenario = computed(() => this.scenarioStore.state().scenario);
@@ -47,6 +49,7 @@ export class DemoControls {
         : [{ id: 'garmin', via: 'demo', connectedAt: new Date().toISOString() }],
     );
     writeJson(KEYS.checkIns, buildScenarioCheckIns(scenario, today, 'garmin'));
+    this.profile.clear();
     this.wallet.replace({ balance: WALLET_SEED[scenario] });
     this.sync.clear();
     this.pet.load();
