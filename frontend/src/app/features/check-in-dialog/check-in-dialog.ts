@@ -158,14 +158,17 @@ export class CheckInDialog {
       ...(m.sleepHours !== undefined && { sleepHours: m.sleepHours }),
       ...(rested !== undefined && { feelingRested: rested }),
       ...(km !== undefined && { runningKm: km }),
+      ...(m.screenHours !== undefined && { screenHours: m.screenHours }),
     });
   }
 
   /** Puts the watch's reading back after the user moved away from it. */
-  protected useMeasured(field: 'sleepHours' | 'runningKm'): void {
+  protected useMeasured(field: 'sleepHours' | 'runningKm' | 'screenHours'): void {
     const m = this.measured();
     if (field === 'sleepHours' && m?.sleepHours !== undefined) {
       this.form.controls.sleepHours.setValue(m.sleepHours);
+    } else if (field === 'screenHours' && m?.screenHours !== undefined) {
+      this.form.controls.screenHours.setValue(m.screenHours);
     } else if (field === 'runningKm') {
       const km = this.measuredKm();
       if (km !== undefined) this.form.controls.runningKm.setValue(km);

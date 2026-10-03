@@ -127,6 +127,7 @@ export class NeedDetail {
     const measured = this.stat() === 'energy' || this.stat() === 'fitness';
     if (measured && today.wearable) return `z ${this.sources.primary()?.genitive ?? 'zegarka'}`;
     if (today.entry) return 'z Twojego wpisu';
+    if (this.stat() === 'screen' && today.wearable?.screenHours !== undefined) return 'z telefonu';
     return 'brak danych';
   });
 

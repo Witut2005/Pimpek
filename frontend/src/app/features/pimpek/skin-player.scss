@@ -9,6 +9,8 @@
 .stage {
   width: 100%;
   height: 100%;
+  // Squash and stretch from the feet, also for packs that switch Pimpek's own motion off.
+  transform-origin: 50% 100%;
 }
 
 img,
@@ -26,6 +28,57 @@ img,
 // Even a pack that moves on its own should jump for joy.
 :host(.is-celebrating) .stage {
   animation: jump 0.55s ease-out 3;
+}
+
+// Good news while not happy: a one-off nudge in the mood's own style instead of a party.
+:host(.is-reacting.is-neutral) .stage {
+  animation: perk 0.6s ease-in-out 2;
+}
+
+:host(.is-reacting.is-sleepy) .stage {
+  animation: nod 1.8s ease-in-out;
+}
+
+:host(.is-reacting.is-sad) .stage {
+  animation: sigh 1.8s ease-in-out;
+}
+
+:host(.is-reacting.is-sick) .stage {
+  animation: shudder 0.45s linear 3;
+}
+
+@keyframes perk {
+  50% {
+    transform: translateY(-5%) scale(0.98, 1.03);
+  }
+}
+
+// Startled awake for a moment, then sinks back into the doze.
+@keyframes nod {
+  25% {
+    transform: translateY(-3%) scale(0.98, 1.03);
+  }
+  60% {
+    transform: translateY(2%) scale(1.03, 0.95) rotate(-2deg);
+  }
+}
+
+@keyframes sigh {
+  20% {
+    transform: translateY(-2%) scale(0.99, 1.02);
+  }
+  60% {
+    transform: translateY(4%) scale(1.05, 0.9);
+  }
+}
+
+@keyframes shudder {
+  25% {
+    transform: translateX(-1.5%) rotate(-1deg);
+  }
+  75% {
+    transform: translateX(1.5%) rotate(1deg);
+  }
 }
 
 @keyframes pop-in {

@@ -203,6 +203,17 @@
               />
               <small>Cel: max {{ goals().screenMaxHours }} h</small>
             </label>
+            @if (measured()?.screenHours; as hours) {
+              <div class="hint">
+                <app-icon name="phone" />
+                <span
+                  >Według telefonu: <strong>{{ formatHours(hours) }}</strong></span
+                >
+                @if (values().screenHours !== hours) {
+                  <button type="button" class="link" (click)="useMeasured('screenHours')">Użyj</button>
+                }
+              </div>
+            }
           }
         }
         @case (4) {
