@@ -89,6 +89,9 @@ export class PetStore {
     () => !!this.latestEntry() || !!this.todayWearable() || this.strava.runKmByDate().has(this.today()),
   );
 
+  /** Nothing to go on yet: no entry, no data, and no watch linked that could still deliver some. */
+  readonly isNewcomer = computed(() => !this.hasAnyData() && !this.sources.primary());
+
   readonly daysSinceLastEntry = computed(() => {
     const latest = this.latestEntry();
     return latest ? daysBetween(latest.date, this.today()) : Infinity;

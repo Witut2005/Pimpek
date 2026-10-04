@@ -44,7 +44,7 @@
   </section>
 
   @if (!store.loading()) {
-    @if (store.hasAnyData()) {
+    @if (!store.isNewcomer()) {
       <app-daily-quest (completed)="onQuestDone($event)" />
       <app-stat-gauges
         [stats]="store.stats()"
