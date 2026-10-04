@@ -1,7 +1,17 @@
+@if (room() === 'play') {
+  <div class="tools games" role="group" aria-label="Zabawa">
+    @for (g of games; track g.id) {
+      <button type="button" class="tool" [attr.aria-pressed]="game() === g.id" (click)="setGame(g.id)">
+        <app-icon [name]="g.icon" /> {{ g.label }}
+      </button>
+    }
+  </div>
+}
+
 <div aria-live="polite">
   <!-- @for keyed by the text re-creates the bubble, so the pop-in replays on every new message -->
   @for (text of [shownMessage()]; track text) {
-    <p class="bubble" [class.attention]="needsAttention() && text === message()">{{ text }}</p>
+    <p class="bubble" [class.attention]="needsAttention() && room() === 'home' && text === message()">{{ text }}</p>
   }
 </div>
 
@@ -18,8 +28,10 @@
     [class.hugging]="!!hug()"
     [class.breathing]="hug() === 'breathe'"
     [class.sighing]="sighing()"
+    [class.bathing]="room() === 'bath'"
+    [class.shaking]="bath.shaking()"
     [style.--lean]="lean()"
-    aria-label="Pimpek"
+    [attr.aria-label]="room() === 'bath' ? 'Pimpek w kąpieli – pocieraj go palcem, żeby go namydlić' : 'Pimpek'"
   >
     @if (petting() && !tickling()) {
       <span class="purr-wave" aria-hidden="true"></span>
@@ -27,7 +39,7 @@
     }
     <app-pimpek-avatar
       [state]="shownState()"
-      [celebrating]="celebrating()"
+      [celebrating]="shownCelebrating()"
       [color]="color()"
       [gaze]="shownGaze()"
       [petted]="petting()"
@@ -37,15 +49,84 @@
     @for (heart of hearts(); track heart.id) {
       <span class="heart" aria-hidden="true" [style.left.%]="heart.x" [style.top.%]="heart.y">{{ heart.icon }}</span>
     }
+    @if (room() === 'bath') {
+      @for (spot of bath.mud(); track spot.id) {
+        <span
+          class="mud"
+          aria-hidden="true"
+          [style.left.%]="spot.x"
+          [style.top.%]="spot.y"
+          [style.--size]="spot.size"
+          [style.opacity]="spot.left"
+        ></span>
+      }
+      @for (dollop of bath.foam(); track dollop.id) {
+        <span
+          class="foam"
+          aria-hidden="true"
+          [class.popped]="dollop.popped"
+          [style.left.%]="dollop.x"
+          [style.top.%]="dollop.y"
+          [style.--size]="dollop.size"
+        ></span>
+      }
+      @if (bath.rinsing()) {
+        <span class="shower" aria-hidden="true">
+          <span class="shower-head"></span>
+          @for (drop of splashes; track $index) {
+            <span class="drop" [style.--i]="$index"></span>
+          }
+        </span>
+      }
+      @if (bath.shaking()) {
+        @for (angle of splashes; track angle) {
+          <span class="splash" aria-hidden="true" [style.--angle]="angle + 'deg'">💧</span>
+        }
+      }
+    }
   </button>
 </div>
 
-<div #rug class="rug" aria-hidden="true"></div>
-
-<!-- Zero-sized anchor in the middle of the rug; the ball's position is relative to it. -->
-<div #field class="playfield">
-  <span #ballShadow class="ball-shadow" aria-hidden="true"></span>
-  <button #ball type="button" class="ball" aria-label="Piłka – rzuć ją Pimpkowi">
-    <span #ballSkin class="ball-skin"></span>
-  </button>
-</div>
+@switch (room()) {
+  @case ('bath') {
+    <app-pimpek-tub (squeak)="bath.squeak()" />
+    <div class="tools" role="group" aria-label="Kąpiel">
+      <button type="button" class="tool" [disabled]="bath.rinsing() || bath.shaking()" (click)="bath.lather()">
+        <app-icon name="soap" /> Mydło
+      </button>
+      <button
+        type="button"
+        class="tool"
+        [class.ready]="bath.soaped()"
+        [attr.aria-pressed]="bath.rinsing()"
+        [disabled]="bath.shaking()"
+        (click)="bath.toggleRinse()"
+      >
+        <app-icon name="shower" /> Prysznic
+      </button>
+    </div>
+  }
+  @case ('play') {
+    <div #rug class="rug" aria-hidden="true"></div>
+    @if (game() === 'ball') {
+      <!-- Zero-sized anchor in the middle of the rug; the ball's position is relative to it. -->
+      <div #field class="playfield">
+        <span #ballShadow class="ball-shadow" aria-hidden="true"></span>
+        <button #ball type="button" class="ball" aria-label="Piłka – rzuć ją Pimpkowi">
+          <span #ballSkin class="ball-skin"></span>
+        </button>
+      </div>
+    } @else {
+      <app-pimpek-cups
+        [state]="state()"
+        (say)="gameLine.set($event)"
+        (face)="gameMood.set($event)"
+        (look)="lookAt($event)"
+        (cheer)="cheer()"
+      />
+    }
+  }
+  @default {
+    <div class="rug" aria-hidden="true"></div>
+  }
+}

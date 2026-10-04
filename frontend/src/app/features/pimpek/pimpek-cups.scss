@@ -1,0 +1,155 @@
+// Sized off Pimpek (--pet-width comes from app-pimpek), so the cups grow and shrink with him.
+:host {
+  --row: calc(var(--pet-width) * 1.2);
+  --gap: calc(var(--row) / 3);
+  --cup-w: calc(var(--pet-width) * 0.3);
+  position: relative;
+  z-index: 3;
+  display: block;
+  margin-top: calc(var(--pet-width) * -0.07);
+}
+
+.row {
+  position: relative;
+  width: var(--row);
+  height: calc(var(--cup-w) * 1.02);
+}
+
+.cup {
+  position: absolute;
+  left: calc(50% - var(--cup-w) / 2);
+  bottom: 0;
+  width: var(--cup-w);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  // Where it stands; a swap animates over this and hands back to it when done.
+  transform: translate(calc((var(--place) - 1) * var(--gap)), 0) scale(1);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 3px dashed var(--terracotta-400);
+    outline-offset: 4px;
+    border-radius: 1rem;
+  }
+
+  // Its shadow on the floor, squeezing as the cup lifts.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: -4%;
+    height: 14%;
+    border-radius: 50%;
+    background: rgb(120 70 40 / 0.28);
+    filter: blur(2px);
+    transition: transform 0.35s ease;
+  }
+
+  &.lifted::before {
+    transform: scale(0.7);
+  }
+}
+
+.shape {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0.25rem 0.3rem rgb(120 70 40 / 0.25));
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  .body {
+    fill: var(--terracotta-400);
+  }
+
+  .handle {
+    fill: none;
+    stroke: var(--terracotta-600);
+    stroke-width: 7;
+    stroke-linecap: round;
+  }
+
+  .dot {
+    fill: var(--honey-200);
+  }
+
+  .shine {
+    fill: none;
+    stroke: rgb(255 240 225 / 0.55);
+    stroke-width: 5;
+    stroke-linecap: round;
+  }
+
+  .rim {
+    fill: var(--terracotta-600);
+  }
+}
+
+.cup.lifted .shape {
+  transform: translateY(-64%) rotate(-7deg);
+}
+
+.picking .cup:hover .shape {
+  transform: translateY(-6%);
+}
+
+// Waiting for a tap: the cups wobble one after another.
+.waiting .cup .shape {
+  animation: wobble 2.4s ease-in-out infinite;
+}
+
+.waiting .cup:nth-child(2) .shape {
+  animation-delay: 0.2s;
+}
+
+.waiting .cup:nth-child(3) .shape {
+  animation-delay: 0.4s;
+}
+
+// The same felt ball as on the rug, hiding under the cup.
+.ball {
+  position: absolute;
+  left: 50%;
+  bottom: 4%;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.55), transparent 40%),
+    conic-gradient(var(--terracotta-400) 0 25%, var(--honey-200) 0 50%, var(--sage-400) 0 75%, var(--honey-200) 0);
+  box-shadow: inset 0 -0.2rem 0.4rem rgb(90 40 20 / 0.25);
+  transform: translateX(-50%);
+}
+
+@keyframes wobble {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0);
+  }
+  78% {
+    transform: rotate(-5deg);
+  }
+  86% {
+    transform: rotate(4deg);
+  }
+  93% {
+    transform: rotate(-2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waiting .cup .shape {
+    animation: none;
+  }
+}

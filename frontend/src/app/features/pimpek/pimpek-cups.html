@@ -1,0 +1,28 @@
+<div #row class="row" [class.waiting]="phase() === 'idle'" [class.picking]="phase() === 'picking'">
+  @for (cup of cups; track cup) {
+    <button
+      #cup
+      type="button"
+      class="cup"
+      [class.lifted]="lifted().includes(cup)"
+      [style.--place]="places()[cup]"
+      [disabled]="phase() !== 'idle' && phase() !== 'picking'"
+      [attr.aria-label]="label(cup)"
+      (click)="pick(cup)"
+    >
+      @if (ballCup() === cup) {
+        <span class="ball" aria-hidden="true"></span>
+      }
+      <svg class="shape" viewBox="0 0 100 100" aria-hidden="true">
+        <path class="handle" d="M80 30Q97 31 96 48Q95 64 84 66" />
+        <path class="body" d="M19 16Q19 6 29 6H71Q81 6 81 16L88 86H12Z" />
+        <circle class="dot" cx="38" cy="36" r="6" />
+        <circle class="dot" cx="61" cy="28" r="4.5" />
+        <circle class="dot" cx="64" cy="58" r="7" />
+        <circle class="dot" cx="40" cy="66" r="4.5" />
+        <path class="shine" d="M27 18 22 72" />
+        <rect class="rim" x="8" y="84" width="84" height="12" rx="6" />
+      </svg>
+    </button>
+  }
+</div>

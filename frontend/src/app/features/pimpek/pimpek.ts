@@ -4,19 +4,26 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   ElementRef,
   inject,
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { AvatarState } from '../../core/models/check-in.model';
 import { HUGS, THANKS } from '../../core/models/speech.model';
 import { SettingsStore } from '../../core/state/settings.store';
+import { Icon } from '../../shared/icon/icon';
+import { Bath } from './bath';
 import { Gaze } from './gaze';
 import { PimpekAvatar } from './pimpek-avatar';
+import { PimpekCups } from './pimpek-cups';
+import { PimpekTub } from './pimpek-tub';
 import { Playground } from './play';
+import { Game, GAME_HINTS, GAMES, Room } from './rooms';
 
 /** Past this distance from his eyes the gaze is at full stretch. */
 const GAZE_RANGE_PX = 260;
@@ -49,8 +56,11 @@ const BREATH_MS = 10_000;
 const INHALE_MS = 4000;
 const SIGH_MS = 1600;
 const THANKS_MS = 2600;
+const CHEER_MS = 1800;
 
 const HEARTS = ['💗', '💛', '🧡', '💙'];
+/** Drops flung off him as he shakes himself dry after the bath. */
+const SPLASHES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 /** Being hugged, and whether the hug has turned into breathing together. */
 export type Cuddle = 'hug' | 'breathe';
@@ -78,18 +88,33 @@ function newStroke(x: number, y: number): Stroke {
   return { x, y, distance: 0, sinceHeart: 0, dirX: 0, dirY: 0, flips: [], at: performance.now() };
 }
 
+/** Which way his eyes turn to look at a point on screen. */
+function gazeAt(eyes: DOMRect, x: number, y: number): Gaze {
+  // His eyes sit right in the middle of the avatar box.
+  const dx = x - (eyes.left + eyes.width / 2);
+  const dy = y - (eyes.top + eyes.height / 2);
+  const distance = Math.hypot(dx, dy) || 1;
+  const reach = Math.min(1, distance / GAZE_RANGE_PX);
+  return { x: (dx / distance) * reach, y: (dy / distance) * reach };
+}
+
 /**
- * Pimpek on stage: speech bubble and tap target around the avatar, and his ball on the rug.
+ * Pimpek on stage, in whichever room he's in: speech bubble and tap target around the avatar,
+ * plus the room's things — the tub in the bathroom, the ball or the cups in the playroom.
  * His eyes follow the pointer; he purrs when stroked, giggles when tickled and hugs back when
- * held. Pointer listeners are native, so moving the mouse never runs change detection — only
- * the signals they set do.
+ * held — in the tub, rubbing him soaps him instead. Pointer listeners are native, so moving the
+ * mouse never runs change detection — only the signals they set do.
  */
 @Component({
   selector: 'app-pimpek',
-  imports: [PimpekAvatar],
+  imports: [PimpekAvatar, PimpekCups, PimpekTub, Icon],
   templateUrl: './pimpek.html',
   styleUrl: './pimpek.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.in-bath]': "room() === 'bath'",
+    '[class.in-play]': "room() === 'play'",
+  },
 })
 export class Pimpek {
   readonly state = input.required<AvatarState>();
@@ -98,6 +123,7 @@ export class Pimpek {
   readonly color = input<string>();
   /** Pimpek is waiting for today's check-in. */
   readonly needsAttention = input(false);
+  readonly room = input<Room>('home');
 
   /** A hug started, turned into breathing, or ended (null) — the room warms up meanwhile. */
   readonly cuddle = output<Cuddle | null>();
@@ -105,11 +131,21 @@ export class Pimpek {
   private readonly settings = inject(SettingsStore);
   private readonly pet = viewChild.required<ElementRef<HTMLButtonElement>>('pet');
   private readonly mover = viewChild.required<ElementRef<HTMLElement>>('mover');
-  private readonly rug = viewChild.required<ElementRef<HTMLElement>>('rug');
-  private readonly field = viewChild.required<ElementRef<HTMLElement>>('field');
-  private readonly ball = viewChild.required<ElementRef<HTMLElement>>('ball');
-  private readonly ballSkin = viewChild.required<ElementRef<HTMLElement>>('ballSkin');
-  private readonly ballShadow = viewChild.required<ElementRef<HTMLElement>>('ballShadow');
+  // Only in the playroom with the ball out.
+  private readonly rug = viewChild<ElementRef<HTMLElement>>('rug');
+  private readonly field = viewChild<ElementRef<HTMLElement>>('field');
+  private readonly ball = viewChild<ElementRef<HTMLElement>>('ball');
+  private readonly ballSkin = viewChild<ElementRef<HTMLElement>>('ballSkin');
+  private readonly ballShadow = viewChild<ElementRef<HTMLElement>>('ballShadow');
+
+  protected readonly games = GAMES;
+  protected readonly splashes = SPLASHES;
+  protected readonly game = signal<Game>('ball');
+  protected readonly bath = new Bath(() => this.state(), {
+    say: (line) => this.gameLine.set(line),
+    mood: (state) => this.gameMood.set(state),
+    cheer: () => this.cheer(),
+  });
 
   private readonly gaze = signal<Gaze | null>(null);
   protected readonly petting = signal(false);
@@ -124,19 +160,30 @@ export class Pimpek {
   private readonly purr = signal('');
   /** Giggles, hugs and their afterglow; wins over everything else in the bubble. */
   private readonly line = signal<string | null>(null);
-  private readonly playLine = signal<string | null>(null);
-  private readonly playMood = signal<AvatarState | null>(null);
-  private readonly ballGaze = signal<Gaze | null>(null);
+  /** What the game going on in this room (ball, cups or bath) has him say, the face and where he looks. */
+  protected readonly gameLine = signal<string | null>(null);
+  protected readonly gameMood = signal<AvatarState | null>(null);
+  private readonly gameGaze = signal<Gaze | null>(null);
+  /** A game won or a bath done. */
+  private readonly cheering = signal(false);
 
   /** Stroked, tickled or hugged he's happy whatever his mood; playing has its own face. */
   protected readonly shownState = computed<AvatarState>(() =>
-    this.petting() || this.tickling() || this.hug() ? 'happy' : (this.playMood() ?? this.state()),
+    this.petting() || this.tickling() || this.hug() ? 'happy' : (this.gameMood() ?? this.state()),
   );
+  /** Away from his room he talks about the room's game rather than the journal. */
+  private readonly roomLine = computed(() => {
+    const room = this.room();
+    if (room === 'bath') return this.bath.hint();
+    if (room === 'play') return GAME_HINTS[this.game()][this.state()];
+    return this.message();
+  });
   protected readonly shownMessage = computed(
-    () => this.line() ?? (this.petting() ? this.purr() : null) ?? this.playLine() ?? this.message(),
+    () => this.line() ?? (this.petting() ? this.purr() : null) ?? this.gameLine() ?? this.roomLine(),
   );
-  /** While playing he watches the ball, not the pointer. */
-  protected readonly shownGaze = computed(() => this.ballGaze() ?? this.gaze());
+  /** While playing he watches the ball or the cups, not the pointer. */
+  protected readonly shownGaze = computed(() => this.gameGaze() ?? this.gaze());
+  protected readonly shownCelebrating = computed(() => this.celebrating() || this.cheering());
 
   private stroke?: Stroke;
   private pressAt?: { x: number; y: number };
@@ -152,31 +199,60 @@ export class Pimpek {
   private exhaleTimer?: ReturnType<typeof setTimeout>;
   private sighTimer?: ReturnType<typeof setTimeout>;
   private beatTimer?: ReturnType<typeof setInterval>;
+  private cheerTimer?: ReturnType<typeof setTimeout>;
   private frame = 0;
   private play?: Playground;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
-    afterNextRender(() => {
-      // The ball works with reduced motion too: a tap is a quick catch instead of a throw.
-      this.play = new Playground(
-        {
-          field: this.field().nativeElement,
-          ball: this.ball().nativeElement,
-          skin: this.ballSkin().nativeElement,
-          shadow: this.ballShadow().nativeElement,
-          mover: this.mover().nativeElement,
-          rug: this.rug().nativeElement,
-        },
-        () => this.state(),
-        {
-          say: (line) => this.playLine.set(line),
-          mood: (state) => this.playMood.set(state),
-          look: (gaze) => this.ballGaze.set(gaze),
-        },
-      );
-      destroyRef.onDestroy(() => this.play?.destroy());
 
+    // A new room or game starts with a clean slate: no leftover lines, faces or gaze.
+    effect((onCleanup) => {
+      const room = this.room();
+      this.game();
+      untracked(() => {
+        this.gameLine.set(null);
+        this.gameMood.set(null);
+        this.gameGaze.set(null);
+        if (room === 'bath') this.bath.enter();
+      });
+      onCleanup(() => this.bath.leave());
+    });
+
+    // The ball is on the rug only in the playroom; the game comes and goes with it.
+    // It works with reduced motion too: a tap is a quick catch instead of a throw.
+    effect((onCleanup) => {
+      const [field, ball, skin, shadow, rug] = [this.field(), this.ball(), this.ballSkin(), this.ballShadow(), this.rug()];
+      if (!field || !ball || !skin || !shadow || !rug) return;
+      const play = untracked(
+        () =>
+          new Playground(
+            {
+              field: field.nativeElement,
+              ball: ball.nativeElement,
+              skin: skin.nativeElement,
+              shadow: shadow.nativeElement,
+              mover: this.mover().nativeElement,
+              rug: rug.nativeElement,
+            },
+            () => this.state(),
+            {
+              say: (line) => this.gameLine.set(line),
+              mood: (state) => this.gameMood.set(state),
+              look: (gaze) => this.gameGaze.set(gaze),
+            },
+          ),
+      );
+      this.play = play;
+      onCleanup(() => {
+        play.destroy();
+        this.play = undefined;
+      });
+    });
+
+    destroyRef.onDestroy(() => clearTimeout(this.cheerTimer));
+
+    afterNextRender(() => {
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const pet = this.pet().nativeElement;
       const track = (e: PointerEvent) => this.track(e);
@@ -186,7 +262,8 @@ export class Pimpek {
         this.pressAt = { x: e.clientX, y: e.clientY };
         this.stroke = newStroke(e.clientX, e.clientY);
         clearTimeout(this.hugTimer);
-        if (e.button === 0) this.hugTimer = setTimeout(() => this.startHug(), HUG_HOLD_MS);
+        // No hugs in the tub: holding him there is just soaping.
+        if (e.button === 0 && this.room() !== 'bath') this.hugTimer = setTimeout(() => this.startHug(), HUG_HOLD_MS);
       };
       const release = () => {
         clearTimeout(this.hugTimer);
@@ -217,18 +294,27 @@ export class Pimpek {
     });
   }
 
+  protected setGame(game: Game): void {
+    this.game.set(game);
+  }
+
+  /** The cups game points his eyes at a cup; null hands them back to the pointer. */
+  protected lookAt(point: { x: number; y: number } | null): void {
+    this.gameGaze.set(point && gazeAt(this.pet().nativeElement.getBoundingClientRect(), point.x, point.y));
+  }
+
+  protected cheer(): void {
+    this.cheering.set(true);
+    clearTimeout(this.cheerTimer);
+    this.cheerTimer = setTimeout(() => this.cheering.set(false), CHEER_MS);
+  }
+
   /** Points the eyes at the pointer, once per frame. */
   private track(e: PointerEvent): void {
     const { clientX, clientY } = e;
     cancelAnimationFrame(this.frame);
     this.frame = requestAnimationFrame(() => {
-      const rect = this.pet().nativeElement.getBoundingClientRect();
-      // His eyes sit right in the middle of the avatar box.
-      const dx = clientX - (rect.left + rect.width / 2);
-      const dy = clientY - (rect.top + rect.height / 2);
-      const distance = Math.hypot(dx, dy) || 1;
-      const reach = Math.min(1, distance / GAZE_RANGE_PX);
-      this.gaze.set({ x: (dx / distance) * reach, y: (dy / distance) * reach });
+      this.gaze.set(gazeAt(this.pet().nativeElement.getBoundingClientRect(), clientX, clientY));
     });
     clearTimeout(this.gazeTimer);
     this.gazeTimer = setTimeout(() => this.gaze.set(null), GAZE_IDLE_MS);
@@ -274,7 +360,14 @@ export class Pimpek {
     s.y = e.clientY;
     s.at = now;
 
-    if (s.distance > PET_PX) this.petted(e, s, now);
+    if (this.room() === 'bath') {
+      const rect = this.pet().nativeElement.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      this.bath.scrub(x, y, step);
+    } else if (s.distance > PET_PX) {
+      this.petted(e, s, now);
+    }
   }
 
   private petted(e: PointerEvent, s: Stroke, now: number): void {

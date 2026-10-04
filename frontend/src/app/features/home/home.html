@@ -1,6 +1,6 @@
 <main
   class="room"
-  [class]="'mood-' + store.avatarState()"
+  [class]="'mood-' + store.avatarState() + ' in-' + room()"
   [class.hugged]="!!cuddle()"
   [class.breathing]="cuddle() === 'breathe'"
 >
@@ -8,6 +8,8 @@
     <span class="blob blob-sage"></span>
     <span class="blob blob-peach"></span>
     <span class="glow"></span>
+    <span class="tiles"></span>
+    <span class="dots"></span>
     <span class="floor"></span>
     <span class="hug-tint"></span>
   </div>
@@ -30,18 +32,42 @@
     </div>
   </header>
 
-  <section class="stage">
+  <!-- Where he is: the room's name and a dot for each room, left to right. -->
+  <div class="where" aria-live="polite">
+    <span class="where-name"><app-icon [name]="current().icon" /> {{ current().label }}</span>
+    <span class="pips" aria-hidden="true">
+      @for (r of rooms; track r.id) {
+        <span [class.on]="r.id === room()"></span>
+      }
+    </span>
+  </div>
+
+  @if (leftRoom(); as r) {
+    <button type="button" class="room-arrow left" [attr.aria-label]="'Przejdź do: ' + r.label" (click)="go(-1)">
+      <span class="arrow-knob"><app-icon name="chevron-left" /></span>
+      <span class="arrow-label">{{ r.label }}</span>
+    </button>
+  }
+  @if (rightRoom(); as r) {
+    <button type="button" class="room-arrow right" [attr.aria-label]="'Przejdź do: ' + r.label" (click)="go(1)">
+      <span class="arrow-knob"><app-icon name="chevron-right" /></span>
+      <span class="arrow-label">{{ r.label }}</span>
+    </button>
+  }
+
+  <section #stage class="stage">
     <app-pimpek
       [state]="store.avatarState()"
       [message]="store.bubbleMessage()"
       [celebrating]="celebrating()"
       [color]="settings.petHex()"
       [needsAttention]="!store.todayEntry()"
+      [room]="room()"
       (cuddle)="cuddle.set($event)"
     />
   </section>
 
-  @if (!store.hasAnyData()) {
+  @if (!store.hasAnyData() && room() === 'home') {
     <section class="welcome">
       <strong>{{ settings.petName() }} dopiero Cię poznaje</strong>
       <p>Powiedz mu, jak się czujesz. Każdy wpis trafi do Twojego dziennika nastrojów.</p>

@@ -171,11 +171,13 @@ export class Playground {
     if (this.mode === 'returning' && this.returnFrom?.at === Infinity) this.returnFrom = { x: this.x, at: performance.now() };
   }
 
+  /** Also when he leaves the playroom mid-game: he's put back where he stood. */
   destroy(): void {
     cancelAnimationFrame(this.frame);
     clearTimeout(this.overTimer);
     clearTimeout(this.lineTimer);
     this.cleanup.forEach((fn) => fn());
+    this.els.mover.style.transform = '';
   }
 
   private measure(): void {

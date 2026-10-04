@@ -4,6 +4,8 @@ export const KEYS = {
   settings: 'pimpek.settings',
   skin: 'pimpek.skin',
   ai: 'pimpek.ai',
+  /** The day of Pimpek's last bath. */
+  bath: 'pimpek.bath',
 } as const;
 
 /**
