@@ -4,10 +4,10 @@ import { MoodLevel } from './journal.model';
 /** Moments when Pimpek says something the user can put their own words into. */
 export type SpeechSituation =
   | 'greeting'
-  | 'mood4'
-  | 'mood3'
-  | 'mood2'
   | 'mood1'
+  | 'mood2'
+  | 'mood3'
+  | 'mood4'
   | 'petted'
   | 'tickled'
   | 'hugged'
@@ -24,10 +24,10 @@ export interface SpeechSituationMeta {
 /** In the order the settings list them. */
 export const SPEECH_SITUATIONS: readonly SpeechSituationMeta[] = [
   { id: 'greeting', label: 'Powitanie', hint: 'Gdy dziś nie ma jeszcze wpisu' },
-  { id: 'mood4', label: 'Po wpisie', hint: 'Przez resztę dnia po wpisie', mood: 4 },
-  { id: 'mood3', label: 'Po wpisie', hint: 'Przez resztę dnia po wpisie', mood: 3 },
-  { id: 'mood2', label: 'Po wpisie', hint: 'Przez resztę dnia po wpisie', mood: 2 },
   { id: 'mood1', label: 'Po wpisie', hint: 'Przez resztę dnia po wpisie', mood: 1 },
+  { id: 'mood2', label: 'Po wpisie', hint: 'Przez resztę dnia po wpisie', mood: 2 },
+  { id: 'mood3', label: 'Po wpisie', hint: 'Przez resztę dnia po wpisie', mood: 3 },
+  { id: 'mood4', label: 'Po wpisie', hint: 'Przez resztę dnia po wpisie', mood: 4 },
   { id: 'petted', label: 'Głaskanie', hint: 'Gdy go głaszczesz' },
   { id: 'tickled', label: 'Łaskotki', hint: 'Gdy szybko łaskoczesz go palcem' },
   { id: 'hugged', label: 'Przytulanie', hint: 'Gdy przytrzymasz na nim palec' },

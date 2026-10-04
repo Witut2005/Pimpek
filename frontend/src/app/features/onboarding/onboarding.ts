@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { MOODS } from '../../core/models/journal.model';
 import { SettingsStore } from '../../core/state/settings.store';
 import { PimpekAvatar } from '../pimpek/pimpek-avatar';
 
@@ -22,7 +21,6 @@ export class Onboarding {
   protected readonly steps = Array.from({ length: STEP_COUNT }, (_, i) => i);
   protected readonly step = signal(0);
   protected readonly hatch = signal<'egg' | 'hatching' | 'hatched'>('egg');
-  protected readonly moods = MOODS;
 
   protected crackEgg(): void {
     if (this.hatch() !== 'egg') return;

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { MOOD_LABEL_MAX_LENGTH, MoodLevel, moodMeta } from '../../core/models/journal.model';
 import { PET_COLORS, PetColor } from '../../core/models/settings.model';
 import { PetSkin } from '../../core/models/skin.model';
 import { DEFAULT_LINES, LINE_MAX_LENGTH, SPEECH_SITUATIONS, SpeechSituation } from '../../core/models/speech.model';
@@ -30,13 +31,28 @@ export class SettingsPanel {
   protected readonly uploadError = signal<string | undefined>(undefined);
   protected readonly dragging = signal(false);
 
-  protected readonly situations = SPEECH_SITUATIONS;
+  protected readonly moodLabelMax = MOOD_LABEL_MAX_LENGTH;
+  protected readonly defaultMoodLabel = (level: MoodLevel) => moodMeta(level).label;
+
+  /** Moments after an entry are titled with the mood's name as the user calls it. */
+  protected readonly situations = computed(() =>
+    SPEECH_SITUATIONS.map((s) => {
+      if (!s.mood) return s;
+      const { label, emoji } = this.settings.moodMeta(s.mood);
+      return { ...s, label: `${s.label}: ${label} ${emoji}` };
+    }),
+  );
   protected readonly defaultLines = DEFAULT_LINES;
   protected readonly lineMax = LINE_MAX_LENGTH;
 
   /** Clears the field only when the line was taken, so a duplicate stays there to fix. */
   protected addLine(situation: SpeechSituation, field: HTMLInputElement): void {
     if (this.settings.addLine(situation, field.value)) field.value = '';
+  }
+
+  protected renameMood(level: MoodLevel, field: HTMLInputElement): void {
+    this.settings.setMoodLabel(level, field.value);
+    field.value = this.settings.settings().moodLabels[level] ?? '';
   }
 
   /** Renames whichever Pimpek is on screen — each look keeps its own name. */

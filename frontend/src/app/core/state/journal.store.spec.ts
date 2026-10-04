@@ -17,12 +17,12 @@ describe('JournalStore', () => {
     const store = create();
     store.save({ date: '2026-10-03', mood: 2 });
     store.save({ date: '2026-10-04', mood: 3 });
-    store.save({ date: '2026-10-04', mood: 5, note: 'spacer' });
+    store.save({ date: '2026-10-04', mood: 4, note: 'spacer' });
     expect(store.entries()).toEqual([
-      { date: '2026-10-04', mood: 5, note: 'spacer' },
+      { date: '2026-10-04', mood: 4, note: 'spacer' },
       { date: '2026-10-03', mood: 2 },
     ]);
-    expect(store.byDate().get('2026-10-04')?.mood).toBe(5);
+    expect(store.byDate().get('2026-10-04')?.mood).toBe(4);
   });
 
   it('edits, moves and deletes an entry', () => {
@@ -30,21 +30,31 @@ describe('JournalStore', () => {
     store.save({ date: '2026-09-20', mood: 3, note: 'notatka' });
     store.save({ date: '2026-09-20', mood: 4 });
     expect(store.entries()).toEqual([{ date: '2026-09-20', mood: 4 }]);
-    store.save({ date: '2026-10-03', mood: 5 }, '2026-09-20');
-    expect(store.entries()).toEqual([{ date: '2026-10-03', mood: 5 }]);
+    store.save({ date: '2026-10-03', mood: 1 }, '2026-09-20');
+    expect(store.entries()).toEqual([{ date: '2026-10-03', mood: 1 }]);
     store.remove('2026-10-03');
     expect(store.entries()).toEqual([]);
   });
 
   it('merges older timed entries into one per day, keeping the last one written', () => {
     localStorage.setItem(
-      KEYS.journal,
+      LEGACY_KEYS.fiveLevelJournal,
       JSON.stringify([
         { id: 'x', date: '2026-10-04', createdAt: '2026-10-04T08:00:00.000Z', mood: 2 },
         { id: 'y', date: '2026-10-04', createdAt: '2026-10-04T20:00:00.000Z', mood: 4, note: 'wieczór' },
       ]),
     );
-    expect(create().entries()).toEqual([{ date: '2026-10-04', mood: 4, note: 'wieczór' }]);
+    expect(create().entries()).toEqual([{ date: '2026-10-04', mood: 3, note: 'wieczór' }]);
+  });
+
+  it('moves the five-level journal to four levels, the two lowest becoming one', () => {
+    localStorage.setItem(
+      LEGACY_KEYS.fiveLevelJournal,
+      JSON.stringify([5, 4, 3, 2, 1].map((mood, i) => ({ date: `2026-10-0${i + 1}`, mood }))),
+    );
+    const store = create();
+    expect(store.entries().map((e) => e.mood)).toEqual([1, 1, 2, 3, 4]);
+    expect(localStorage.getItem(LEGACY_KEYS.fiveLevelJournal)).toBeNull();
   });
 
   it('turns old daily check-ins into mood entries and drops the integration caches', () => {
@@ -59,7 +69,7 @@ describe('JournalStore', () => {
     const store = create();
     expect(store.entries()).toEqual([
       { date: '2026-10-02', mood: 2 },
-      { date: '2026-10-01', mood: 5, note: 'super' },
+      { date: '2026-10-01', mood: 4, note: 'super' },
     ]);
     expect(localStorage.getItem(LEGACY_KEYS.checkIns)).toBeNull();
     expect(localStorage.getItem(LEGACY_KEYS.strava)).toBeNull();

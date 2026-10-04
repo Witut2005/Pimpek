@@ -31,28 +31,18 @@
         [class.filled]="!!cell.mood"
         [style.--mood]="cell.mood ? 'var(--mood-' + cell.mood + ')' : null"
         [disabled]="cell.future"
-        [attr.aria-label]="cell.day + (cell.mood ? ': ' + moodMeta(cell.mood).label : ': brak wpisu, dodaj')"
+        [attr.aria-label]="cell.day + (cell.mood ? ': ' + settings.moodMeta(cell.mood).label : ': brak wpisu, dodaj')"
         (click)="pickDay(cell)"
       >
         {{ cell.day }}
       </button>
     }
   </div>
-
-  <ul class="counts" aria-label="Nastroje w tym miesiącu">
-    @for (c of counts(); track c.level) {
-      <li [style.--mood]="'var(--mood-' + c.level + ')'" [class.zero]="!c.count" [title]="c.label">
-        <span class="face" aria-hidden="true">{{ c.emoji }}</span>
-        <strong>{{ c.count }}</strong>
-        <span class="sr-only">{{ c.label }}</span>
-      </li>
-    }
-  </ul>
 </section>
 
 @for (day of days(); track day.entry.date) {
   @let entry = day.entry;
-  @let meta = moodMeta(entry.mood);
+  @let meta = settings.moodMeta(entry.mood);
   <section class="day-group" [id]="'journal-' + entry.date">
     <h3>{{ day.title }}</h3>
     <button

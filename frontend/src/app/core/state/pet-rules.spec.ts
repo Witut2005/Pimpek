@@ -2,10 +2,9 @@ import { avatarStateFor, daysTogether } from './pet-rules';
 
 describe('pet rules', () => {
   it('mirrors the mood just written down', () => {
-    expect(avatarStateFor(5)).toBe('happy');
     expect(avatarStateFor(4)).toBe('happy');
-    expect(avatarStateFor(3)).toBe('neutral');
-    expect(avatarStateFor(2)).toBe('sad');
+    expect(avatarStateFor(3)).toBe('happy');
+    expect(avatarStateFor(2)).toBe('neutral');
     expect(avatarStateFor(1)).toBe('sad');
   });
 

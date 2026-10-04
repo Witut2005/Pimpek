@@ -14,6 +14,15 @@ app-sheet {
   text-align: right;
 }
 
+.mood-face {
+  font-size: 1.5rem;
+}
+
+.mood-name {
+  flex: 1;
+  max-width: 14rem;
+}
+
 .swatches {
   display: flex;
   gap: 0.5rem;

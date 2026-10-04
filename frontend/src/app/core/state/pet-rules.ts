@@ -3,8 +3,8 @@ import { MoodLevel } from '../models/journal.model';
 
 /** Pimpek mirrors the mood you just wrote down. */
 export function avatarStateFor(mood: MoodLevel): AvatarState {
-  if (mood >= 4) return 'happy';
-  if (mood === 3) return 'neutral';
+  if (mood >= 3) return 'happy';
+  if (mood === 2) return 'neutral';
   return 'sad';
 }
 

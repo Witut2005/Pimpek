@@ -16,14 +16,14 @@ export interface MoodMeta {
 }
 
 /**
- * Best first, the order the picker shows them in. Colours are `--mood-<level>` in styles.scss.
+ * Worst first, left to right as the picker shows them. Colours are `--mood-<level>` in styles.scss.
  * The labels are only defaults: the user can rename every mood in the settings.
  */
 export const MOODS: readonly MoodMeta[] = [
-  { level: 4, label: 'Hapi hapi', emoji: '😄' },
-  { level: 3, label: 'Ok', emoji: '🙂' },
-  { level: 2, label: 'Średni', emoji: '😐' },
   { level: 1, label: 'Zły', emoji: '😞' },
+  { level: 2, label: 'Średni', emoji: '😐' },
+  { level: 3, label: 'Ok', emoji: '🙂' },
+  { level: 4, label: 'Hapi hapi', emoji: '😄' },
 ];
 
 export const MOOD_LABEL_MAX_LENGTH = 20;
@@ -36,7 +36,7 @@ export function withLabels(labels: MoodLabels): MoodMeta[] {
 }
 
 export function moodMeta(level: MoodLevel, moods: readonly MoodMeta[] = MOODS): MoodMeta {
-  return moods.find((m) => m.level === level) ?? moods[moods.length - 1];
+  return moods.find((m) => m.level === level) ?? moods[0];
 }
 
 /** Journals from before the four-level scale used 1–5: zły takes both of the two lowest. */

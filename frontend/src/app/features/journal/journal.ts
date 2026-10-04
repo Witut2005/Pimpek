@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
-import { MoodEntry, MoodLevel, moodMeta, MOODS } from '../../core/models/journal.model';
+import { MoodEntry, MoodLevel } from '../../core/models/journal.model';
 import { JournalStore } from '../../core/state/journal.store';
 import { PetStore } from '../../core/state/pet.store';
+import { SettingsStore } from '../../core/state/settings.store';
 import { addDays, toDateKey } from '../../shared/date';
 import { formatMonthYear } from '../../shared/format';
 import { Icon } from '../../shared/icon/icon';
@@ -37,6 +38,7 @@ function shiftMonth(monthKey: string, delta: number): string {
 export class Journal {
   private readonly journal = inject(JournalStore);
   private readonly pet = inject(PetStore);
+  protected readonly settings = inject(SettingsStore);
 
   /** "Dodaj wpis" from the empty state. */
   readonly add = output<void>();
@@ -46,8 +48,6 @@ export class Journal {
   readonly edit = output<MoodEntry>();
 
   protected readonly weekdays = WEEKDAY_HEADERS;
-  protected readonly moods = MOODS;
-  protected readonly moodMeta = moodMeta;
 
   private readonly currentMonth = computed(() => this.pet.today().slice(0, 7));
   /** Picked by the arrows; follows the current month until then. */
@@ -80,12 +80,6 @@ export class Journal {
   private readonly monthEntries = computed(() =>
     this.journal.entries().filter((e) => e.date.startsWith(this.month())),
   );
-
-  /** How many times each mood was picked this month. */
-  protected readonly counts = computed(() => {
-    const entries = this.monthEntries();
-    return MOODS.map((m) => ({ ...m, count: entries.filter((e) => e.mood === m.level).length }));
-  });
 
   /** The month's entries, newest day first, each titled with its day. */
   protected readonly days = computed(() => {

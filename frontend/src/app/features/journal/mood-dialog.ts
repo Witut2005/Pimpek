@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, output, signal, viewChild } from '@angular/core';
-import { MoodEntry, MoodLevel, moodMeta, MOODS, NOTE_MAX_LENGTH } from '../../core/models/journal.model';
+import { MoodEntry, MoodLevel, NOTE_MAX_LENGTH } from '../../core/models/journal.model';
 import { JournalStore } from '../../core/state/journal.store';
 import { PetStore } from '../../core/state/pet.store';
+import { SettingsStore } from '../../core/state/settings.store';
 import { formatDayMonth } from '../../shared/format';
 import { Icon } from '../../shared/icon/icon';
 
@@ -19,13 +20,12 @@ import { Icon } from '../../shared/icon/icon';
 export class MoodDialog {
   private readonly pet = inject(PetStore);
   private readonly journal = inject(JournalStore);
+  protected readonly settings = inject(SettingsStore);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   /** A new entry was added (not emitted for edits or deletes). */
   readonly saved = output<MoodEntry>();
 
-  protected readonly moods = MOODS;
-  protected readonly moodMeta = moodMeta;
   protected readonly noteMax = NOTE_MAX_LENGTH;
   protected readonly today = this.pet.today;
   /** The entry being edited, as it was when opened. */

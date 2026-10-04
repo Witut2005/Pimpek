@@ -119,6 +119,25 @@
 </app-sheet>
 
 <section class="card">
+  <h3><app-icon name="star" /> Nastroje</h3>
+  <p class="muted">Nazwij nastroje po swojemu. Puste pole przywraca nazwę domyślną.</p>
+  @for (m of settings.moods(); track m.level) {
+    <label class="row">
+      <span class="mood-face" aria-hidden="true">{{ m.emoji }}</span>
+      <input
+        #field
+        class="text-input mood-name"
+        [attr.maxlength]="moodLabelMax"
+        [placeholder]="defaultMoodLabel(m.level)"
+        [value]="settings.settings().moodLabels[m.level] ?? ''"
+        [attr.aria-label]="'Nazwa nastroju ' + m.emoji + ' (domyślnie: ' + defaultMoodLabel(m.level) + ')'"
+        (change)="renameMood(m.level, field)"
+      />
+    </label>
+  }
+</section>
+
+<section class="card">
   <h3><app-icon name="pencil" /> Ustawienia Pimpka</h3>
   <p class="muted">
     Dopisz, co {{ settings.petName() }} ma mówić w danej chwili. Gdy tekstów jest kilka, za każdym
@@ -137,7 +156,7 @@
     />
   </label>
   <div class="speech">
-    @for (s of situations; track s.id) {
+    @for (s of situations(); track s.id) {
       @let own = settings.speech().lines[s.id] ?? [];
       <details class="situation">
         <summary>

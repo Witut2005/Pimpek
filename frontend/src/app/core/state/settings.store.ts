@@ -36,7 +36,7 @@ export class SettingsStore {
   readonly petHex = computed(() => PET_COLORS[this.settings().petColor].hex);
   /** Changes only when the lines do, so a picked line stays put while other settings change. */
   readonly speech = computed(() => this.settings().speech);
-  /** The moods under the user's own names, best first. */
+  /** The moods under the user's own names, worst first. */
   readonly moods = computed(() => withLabels(this.settings().moodLabels));
 
   constructor() {

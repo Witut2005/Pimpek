@@ -54,7 +54,7 @@
           cieszyć i smucić razem z Tobą.
         </p>
         <ul class="moods" aria-label="Nastroje do wyboru">
-          @for (m of moods; track m.level) {
+          @for (m of settings.moods(); track m.level) {
             <li [style.--mood]="'var(--mood-' + m.level + ')'">
               <span aria-hidden="true">{{ m.emoji }}</span>
               <small>{{ m.label }}</small>
