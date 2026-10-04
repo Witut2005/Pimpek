@@ -140,9 +140,7 @@ export function currentStreak(dates: ReadonlySet<string>, today: string): number
   return streak;
 }
 
-// ---- daily quest & leaves (the soft currency) ----
-
-export const QUEST_REWARD = 5;
+// ---- daily quest ----
 
 export interface Quest {
   stat: StatKey;
@@ -166,14 +164,3 @@ export function questFor(stats: PetStats, known: ReadonlySet<StatKey> = new Set(
   return { stat: weakest, ...QUESTS[weakest] };
 }
 
-/** 10 for showing up, +5 for every goal met — capped so nobody farms leaves. */
-export function leavesFor(entry: CheckInInput, goals: Goals): number {
-  const met = [
-    entry.sleep.durationHours >= goals.sleepHours,
-    (entry.metrics.steps ?? 0) >= goals.steps || entry.metrics.runningDistanceKm >= goals.runningKm,
-    entry.food.qualityScore >= 80,
-    entry.metrics.screenTimeHours <= goals.screenMaxHours,
-    entry.social.metWithFriends,
-  ].filter(Boolean).length;
-  return Math.min(30, 10 + met * 5);
-}

@@ -6,8 +6,6 @@ import { KEYS, readJson, writeJson } from '../../shared/storage';
 
 interface StravaState {
   data?: StravaImport;
-  /** The welcome leaves are paid once, even after disconnecting and connecting again. */
-  bonusGiven: boolean;
 }
 
 export interface SportShare {
@@ -38,7 +36,7 @@ const maxBy = <T>(list: readonly T[], score: (item: T) => number): T | undefined
 @Injectable({ providedIn: 'root' })
 export class StravaStore {
   private readonly clock = inject(ClockStore);
-  private readonly state = signal<StravaState>(readJson(KEYS.strava, { bonusGiven: false }));
+  private readonly state = signal<StravaState>(readJson(KEYS.strava, {}));
 
   readonly data = computed(() => this.state().data);
   readonly connected = computed(() => !!this.data());
@@ -117,14 +115,11 @@ export class StravaStore {
     effect(() => writeJson(KEYS.strava, this.state()));
   }
 
-  /** Stores an import. Returns true when the one-time welcome bonus should be paid now. */
-  save(data: StravaImport): boolean {
-    const payBonus = !this.state().bonusGiven;
-    this.state.set({ data, bonusGiven: true });
-    return payBonus;
+  save(data: StravaImport): void {
+    this.state.set({ data });
   }
 
   clear(): void {
-    this.state.update((s) => ({ bonusGiven: s.bonusGiven }));
+    this.state.set({});
   }
 }

@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
-import { QUEST_REWARD } from '../../core/state/pet-rules';
 import { PetStore } from '../../core/state/pet.store';
-import { WalletStore } from '../../core/state/wallet.store';
+import { QuestStore } from '../../core/state/quest.store';
 import { Icon } from '../../shared/icon/icon';
 
 /** One small, doable thing a day — always aimed at Pimpek's weakest need. Never a list. */
@@ -19,7 +18,7 @@ import { Icon } from '../../shared/icon/icon';
         <span class="pill"><app-icon name="check" /> Zrobione</span>
       } @else {
         <button type="button" class="btn soft small" (click)="complete()">
-          +{{ reward }} <app-icon name="leaf" />
+          <app-icon name="check" /> Gotowe
         </button>
       }
     </section>
@@ -74,15 +73,14 @@ import { Icon } from '../../shared/icon/icon';
 })
 export class DailyQuest {
   private readonly store = inject(PetStore);
-  private readonly wallet = inject(WalletStore);
+  private readonly questStore = inject(QuestStore);
 
-  readonly completed = output<number>();
+  readonly completed = output<void>();
 
-  protected readonly reward = QUEST_REWARD;
   protected readonly quest = this.store.quest;
-  protected readonly done = computed(() => this.wallet.questDoneOn() === this.store.today());
+  protected readonly done = computed(() => this.questStore.doneOn() === this.store.today());
 
   protected complete(): void {
-    if (this.wallet.completeQuest(this.store.today(), QUEST_REWARD)) this.completed.emit(QUEST_REWARD);
+    if (this.questStore.complete(this.store.today())) this.completed.emit();
   }
 }

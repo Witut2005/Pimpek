@@ -172,41 +172,6 @@
   font-size: 1.1rem;
 }
 
-.leaves-float {
-  position: absolute;
-  left: 50%;
-  bottom: 45%;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 1.5rem;
-  background: var(--sage-200);
-  color: var(--sage-700);
-  font-size: 1.2rem;
-  font-weight: 800;
-  box-shadow: var(--shadow-clay);
-  animation: float-away 2.2s ease-out forwards;
-}
-
-@keyframes float-away {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, 1rem) scale(0.8);
-  }
-  20% {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1.05);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -4rem) scale(1);
-  }
-}
-
 // ---- first-run invitation instead of a row of scary empty needs ----
 
 .welcome {

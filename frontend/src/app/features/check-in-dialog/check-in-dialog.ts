@@ -18,7 +18,7 @@ import { WearableApi } from '../../core/services/wearable-api';
 import { moodLabel, StatKey } from '../../core/state/pet-rules';
 import { ClockStore } from '../../core/state/clock.store';
 import { estimateFoodRating, mergeDiary, ratingRequest } from '../../core/state/food-entries';
-import { PetStore, SaveResult } from '../../core/state/pet.store';
+import { PetStore } from '../../core/state/pet.store';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
 import { formatDayMonth, formatHours, formatKm, formatSteps } from '../../shared/format';
@@ -91,7 +91,7 @@ export class CheckInDialog {
   /** The entry being edited, if any. */
   private existing?: DailyCheckIn;
 
-  readonly saved = output<SaveResult>();
+  readonly saved = output<DailyCheckIn>();
 
   protected readonly steps = STEPS;
   protected readonly goals = this.store.goals;

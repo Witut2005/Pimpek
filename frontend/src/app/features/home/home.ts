@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { PetStore, SaveResult } from '../../core/state/pet.store';
+import { PetStore } from '../../core/state/pet.store';
 import { StatKey } from '../../core/state/pet-rules';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SyncStore } from '../../core/state/sync.store';
@@ -27,7 +27,6 @@ import { DailyQuest } from './daily-quest';
 import { SyncBadge } from './sync-badge';
 
 const CELEBRATION_MS = 1800;
-const LEAVES_MS = 2200;
 /** Wearable data younger than this isn't re-fetched when the room opens. */
 const FRESH_MS = 60_000;
 
@@ -71,12 +70,9 @@ export class Home implements OnInit {
 
   protected readonly greeting = greetingFor(new Date().getHours());
   protected readonly celebrating = signal(false);
-  protected readonly leavesEarned = signal(0);
   protected readonly askReminders = signal(false);
   protected readonly selectedNeed = signal<StatKey>('energy');
   protected readonly needTitle = computed(() => NEEDS[this.selectedNeed()].label);
-
-  private leavesTimer?: ReturnType<typeof setTimeout>;
 
   constructor() {
     afterNextRender(() => {
@@ -111,16 +107,10 @@ export class Home implements OnInit {
     this.needSheet().open();
   }
 
-  protected onSaved({ leaves }: SaveResult): void {
+  protected onSaved(): void {
     this.celebrate();
-    if (leaves) this.showLeaves(leaves);
     // Ask about reminders only once Pimpek has proven useful, never on the first screen.
     if (!this.settings.settings().reminders.asked) setTimeout(() => this.askReminders.set(true), 2500);
-  }
-
-  protected onQuestDone(reward: number): void {
-    this.celebrate();
-    this.showLeaves(reward);
   }
 
   protected answerReminders(enabled: boolean): void {
@@ -128,14 +118,8 @@ export class Home implements OnInit {
     this.askReminders.set(false);
   }
 
-  private celebrate(): void {
+  protected celebrate(): void {
     this.celebrating.set(true);
     setTimeout(() => this.celebrating.set(false), CELEBRATION_MS);
-  }
-
-  private showLeaves(amount: number): void {
-    clearTimeout(this.leavesTimer);
-    this.leavesEarned.set(amount);
-    this.leavesTimer = setTimeout(() => this.leavesEarned.set(0), LEAVES_MS);
   }
 }

@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { finalize, map, Observable, tap } from 'rxjs';
+import { finalize, Observable, tap } from 'rxjs';
 import { AvatarState, CheckInInput, DailyCheckIn } from '../models/check-in.model';
 import { WearableDay } from '../models/metrics.model';
 import { CheckInService } from '../services/check-in.service';
@@ -10,7 +10,6 @@ import {
   decayStats,
   fitnessScore,
   idleAvatarState,
-  leavesFor,
   measuredStats,
   PetStats,
   questFor,
@@ -24,19 +23,12 @@ import { SettingsStore } from './settings.store';
 import { SourcesStore } from './sources.store';
 import { StravaStore } from './strava.store';
 import { SyncStore } from './sync.store';
-import { WalletStore } from './wallet.store';
 import { addDays, daysBetween } from '../../shared/date';
 
 const EMPTY_STATS: PetStats = { energy: 0, fitness: 0, nutrition: 0, mood: 0, screen: 0 };
 const HISTORY_DAYS = 28;
 /** Below this, a short night shows on Pimpek's face even before the check-in. */
 const SLEEPY_ENERGY = 55;
-
-export interface SaveResult {
-  checkIn: DailyCheckIn;
-  /** Leaves earned — only the first save of a day pays out. */
-  leaves: number;
-}
 
 /** One calendar day as the progress views see it: the manual entry, with the wearable filling gaps. */
 export interface DayView {
@@ -60,7 +52,6 @@ export class PetStore {
   private readonly clock = inject(ClockStore);
   private readonly sync = inject(SyncStore);
   private readonly sources = inject(SourcesStore);
-  private readonly wallet = inject(WalletStore);
   private readonly strava = inject(StravaStore);
 
   readonly today = this.clock.today;
@@ -185,8 +176,7 @@ export class PetStore {
       .subscribe((checkIns) => this.checkIns.set(checkIns));
   }
 
-  save(input: CheckInInput): Observable<SaveResult> {
-    const firstToday = !this.checkInsByDate().has(input.date);
+  save(input: CheckInInput): Observable<DailyCheckIn> {
     this.saving.set(true);
     return this.api.saveCheckIn(input).pipe(
       tap((saved) =>
@@ -196,11 +186,6 @@ export class PetStore {
           ),
         ),
       ),
-      map((checkIn) => {
-        const leaves = firstToday ? leavesFor(checkIn, this.goals()) : 0;
-        if (leaves) this.wallet.earn(leaves);
-        return { checkIn, leaves };
-      }),
       finalize(() => this.saving.set(false)),
     );
   }

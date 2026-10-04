@@ -15,15 +15,12 @@ import { ImportPhase, ImportProgress, MockStravaService } from '../../core/servi
 import { SettingsStore } from '../../core/state/settings.store';
 import { SourcesStore } from '../../core/state/sources.store';
 import { pace, StravaStore } from '../../core/state/strava.store';
-import { WalletStore } from '../../core/state/wallet.store';
 import { formatDayMonth, formatDuration, formatKm, formatPace, formatSteps } from '../../shared/format';
 import { Icon } from '../../shared/icon/icon';
 import { PimpekAvatar } from '../pimpek/pimpek-avatar';
 
 type Step = 'consent' | 'login' | 'authorizing' | 'importing' | 'summary' | 'error';
 
-/** Leaves for bringing the training history along — paid once. */
-const WELCOME_BONUS = 25;
 const DEMO_EMAIL = 'ola@pimpek.app';
 
 const PHASES: readonly { id: ImportPhase; label: string }[] = [
@@ -47,7 +44,6 @@ const PHASES: readonly { id: ImportPhase; label: string }[] = [
 export class StravaConnect {
   private readonly api = inject(MockStravaService);
   private readonly sources = inject(SourcesStore);
-  private readonly wallet = inject(WalletStore);
   protected readonly strava = inject(StravaStore);
   protected readonly settings = inject(SettingsStore);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
@@ -67,7 +63,6 @@ export class StravaConnect {
   protected readonly withHr = signal(true);
   protected readonly progress = signal<ImportProgress | undefined>(undefined);
   protected readonly firstName = signal('');
-  protected readonly bonus = signal(0);
 
   protected email = '';
   protected password = '';
@@ -98,7 +93,6 @@ export class StravaConnect {
     this.request?.unsubscribe();
     this.step.set('consent');
     this.progress.set(undefined);
-    this.bonus.set(0);
     this.email = '';
     this.password = '';
     this.dialog().nativeElement.showModal();
@@ -144,12 +138,8 @@ export class StravaConnect {
           this.progress.set(event.progress);
           return;
         }
-        const payBonus = this.strava.save(event.result);
+        this.strava.save(event.result);
         this.sources.connectLocal('strava');
-        if (payBonus) {
-          this.wallet.earn(WELCOME_BONUS);
-          this.bonus.set(WELCOME_BONUS);
-        }
         this.step.set('summary');
       },
       error: () => this.step.set('error'),

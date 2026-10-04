@@ -1,15 +1,15 @@
 import { computed, inject, Injectable } from '@angular/core';
-import { buildScenarioCheckIns, Scenario, WALLET_SEED } from '../mocks/scenarios';
+import { buildScenarioCheckIns, Scenario } from '../mocks/scenarios';
 import { DEFAULT_SETTINGS } from '../models/settings.model';
 import { MockWearableService } from '../services/wearable.service';
 import { ClockStore } from './clock.store';
 import { PetStore } from './pet.store';
 import { ProfileStore } from './profile.store';
+import { QuestStore } from './quest.store';
 import { ScenarioStore } from './scenario.store';
 import { SettingsStore } from './settings.store';
 import { SourcesStore } from './sources.store';
 import { SyncStore } from './sync.store';
-import { WalletStore } from './wallet.store';
 import { toDateKey } from '../../shared/date';
 import { skinDb } from '../../shared/skin-db';
 import { clearAll, KEYS, writeJson } from '../../shared/storage';
@@ -21,7 +21,7 @@ export class DemoControls {
   private readonly settings = inject(SettingsStore);
   private readonly sources = inject(SourcesStore);
   private readonly sync = inject(SyncStore);
-  private readonly wallet = inject(WalletStore);
+  private readonly quest = inject(QuestStore);
   private readonly clock = inject(ClockStore);
   private readonly pet = inject(PetStore);
   private readonly profile = inject(ProfileStore);
@@ -50,7 +50,7 @@ export class DemoControls {
     );
     writeJson(KEYS.checkIns, buildScenarioCheckIns(scenario, today, 'garmin'));
     this.profile.clear();
-    this.wallet.replace({ balance: WALLET_SEED[scenario] });
+    this.quest.reset();
     this.sync.clear();
     this.pet.load();
     this.sync.sync();

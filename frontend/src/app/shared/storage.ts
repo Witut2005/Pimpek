@@ -4,7 +4,7 @@ export const KEYS = {
   settings: 'pimpek.settings',
   sources: 'pimpek.sources',
   wearable: 'pimpek.wearable',
-  wallet: 'pimpek.wallet',
+  quest: 'pimpek.quest',
   scenario: 'pimpek.scenario',
   clock: 'pimpek.clock',
   skin: 'pimpek.skin',

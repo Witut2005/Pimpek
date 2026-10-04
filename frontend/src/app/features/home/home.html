@@ -37,15 +37,12 @@
         [needsAttention]="!store.todayEntry()"
         (petClick)="openCheckIn()"
       />
-      @if (leavesEarned()) {
-        <span class="leaves-float" role="status">+{{ leavesEarned() }} <app-icon name="leaf" /></span>
-      }
     }
   </section>
 
   @if (!store.loading()) {
     @if (!store.isNewcomer()) {
-      <app-daily-quest (completed)="onQuestDone($event)" />
+      <app-daily-quest (completed)="celebrate()" />
       <app-stat-gauges
         [stats]="store.stats()"
         [known]="store.knownStats()"
@@ -73,7 +70,7 @@
   </nav>
 </main>
 
-<app-check-in-dialog (saved)="onSaved($event)" />
+<app-check-in-dialog (saved)="onSaved()" />
 
 <app-sheet #progress title="Postępy">
   <app-progress />

@@ -13,8 +13,6 @@ export const SCENARIOS: readonly { id: Scenario; label: string; hint: string }[]
   { id: 'new', label: 'Nowy użytkownik', hint: 'zero danych, bez zegarka' },
 ];
 
-export const WALLET_SEED: Record<Scenario, number> = { good: 35, rough: 10, new: 0 };
-
 /** FNV-1a hash → 0..1, so the same day always gets the same fake numbers. */
 function noise(seed: string): number {
   let h = 2166136261;
