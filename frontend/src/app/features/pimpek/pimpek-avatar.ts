@@ -35,6 +35,10 @@ export class PimpekAvatar {
   readonly gaze = input<Gaze | null>(null);
   /** Being stroked right now. */
   readonly petted = input(false);
+  /** Being tickled: giggling with squeezed > < eyes. */
+  readonly tickled = input(false);
+  /** Being hugged. The drawing shows it like stroking; a skin may have its own clip. */
+  readonly hugged = input(false);
 
   protected readonly skin = inject(SkinStore).active;
   protected readonly burst = BURST;
@@ -44,4 +48,7 @@ export class PimpekAvatar {
    * the others just react the way that mood would — a sleepy one stays sleepy.
    */
   protected readonly cheering = computed(() => this.celebrating() && (!this.skin() || this.state() === 'happy'));
+
+  /** A skin's face is out of reach, so one without its own tickling clip gets tears of laughter on top. */
+  protected readonly skinTears = computed(() => this.tickled() && !!this.skin() && !this.skin()?.clips.tickled);
 }

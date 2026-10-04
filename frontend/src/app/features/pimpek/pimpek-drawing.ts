@@ -21,7 +21,7 @@ const PUPIL_REACH = { x: 22, y: 14 };
     '[class.is-tracking]': '!!gaze()',
     '[style.--gaze-x]': 'gazeX()',
     '[style.--gaze-y]': 'gazeY()',
-    '[class.is-petted]': 'petted()',
+    '[class.is-petted]': 'petted() || tickled()',
   },
 })
 export class PimpekDrawing {
@@ -33,6 +33,8 @@ export class PimpekDrawing {
   readonly gaze = input<Gaze | null>(null);
   /** Being stroked: eyes squeezed shut in a happy ^ ^ and blushing. */
   readonly petted = input(false);
+  /** Tickled: > < eyes squeezed shut and tears of laughter. */
+  readonly tickled = input(false);
 
   protected readonly gazeX = computed(() => `${(this.gaze()?.x ?? 0) * PUPIL_REACH.x}px`);
   protected readonly gazeY = computed(() => `${(this.gaze()?.y ?? 0) * PUPIL_REACH.y}px`);

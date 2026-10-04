@@ -18,13 +18,24 @@
     <path class="brow brow-left" [attr.d]="paths.browLeft" />
     <path class="brow brow-right" [attr.d]="paths.browRight" />
 
-    @if (petted()) {
+    @if (petted() || tickled()) {
       <!-- Stroked: lids shut (see .is-petted .eyelid), happy ^ ^ on top, rosy cheeks. -->
       <g class="petted">
         <!-- Body-coloured patches a bit larger than the sockets hide the seam around the shut lids. -->
         <ellipse class="lid-patch" cx="460" cy="490" rx="90" ry="90" />
         <ellipse class="lid-patch" cx="638" cy="490" rx="90" ry="90" />
-        <path class="ink-line" d="M410 505 Q460 452 510 505 M588 505 Q638 452 688 505" />
+        @if (tickled()) {
+          <!-- Tickled: eyes squeezed into > <, tears of laughter flying off both sides. -->
+          <path class="ink-line" d="M425 462 L500 492 L425 522 M673 462 L598 492 L673 522" />
+          <g transform="translate(368 480)">
+            <path class="laugh-tear" d="M0 -22 C-15 3 -18 18 0 23 C18 18 15 3 0 -22 Z" />
+          </g>
+          <g transform="translate(730 480)">
+            <path class="laugh-tear right" d="M0 -22 C-15 3 -18 18 0 23 C18 18 15 3 0 -22 Z" />
+          </g>
+        } @else {
+          <path class="ink-line" d="M410 505 Q460 452 510 505 M588 505 Q638 452 688 505" />
+        }
         <ellipse cx="420" cy="590" rx="40" ry="22" />
         <ellipse cx="676" cy="590" rx="40" ry="22" />
       </g>

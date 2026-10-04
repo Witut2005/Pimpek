@@ -28,7 +28,7 @@
             (input)="rename($event)"
           />
           <p class="muted">
-            Będę reagować na to, jak śpisz, jesz i się ruszasz. Zero oceniania, obiecuję.
+            Będę reagować na to, jak się czujesz. Zero oceniania, obiecuję.
           </p>
           <button type="button" class="btn primary" (click)="next()">Miło mi!</button>
         } @else {
@@ -46,85 +46,42 @@
     }
     @case (1) {
       <section class="panel">
-        <h1>Nad czym chcesz popracować?</h1>
-        <p class="muted">
-          Wybierz do trzech rzeczy. Na nich {{ settings.petName() }} skupi się najbardziej.
-        </p>
-        <div class="focus">
-          @for (f of focusOptions; track f.id) {
-            <button
-              type="button"
-              class="chip"
-              [attr.aria-pressed]="isFocused(f.id)"
-              (click)="toggleFocus(f.id)"
-            >
-              <app-icon [name]="f.icon" /> {{ f.label }}
-            </button>
-          }
-        </div>
-      </section>
-    }
-    @case (2) {
-      <section class="panel">
-        <h1>Jakie cele są dla Ciebie realne?</h1>
-        <p class="muted">
-          Lepiej mały cel, który się udaje, niż duży, który zniechęca. Zmienisz je w każdej chwili.
-        </p>
-        <app-goals-picker />
-      </section>
-    }
-    @case (3) {
-      <section class="panel">
         <app-pimpek-avatar class="pet small" state="neutral" [color]="settings.petHex()" />
         <h1>Skąd mam wiedzieć, jak się czujesz?</h1>
         <p class="muted">
-          Połącz konto Garmin, a sen, kroki i bieganie pojawią się same, bez wpisywania. Z Fitatu
-          zajrzę też do Twoich posiłków. Resztę opowiesz mi wieczorem.
+          Kiedy tylko chcesz, stuknij „Dodaj wpis” i wybierz, jak się teraz czujesz. Możesz dopisać
+          krótką notatkę. Wszystko trafi do Twojego dziennika, a {{ settings.petName() }} będzie się
+          cieszyć i smucić razem z Tobą.
         </p>
-        <div class="sources">
-          @for (source of allSources; track source.id) {
-            <app-source-card [source]="source" returnTo="/witaj?krok=3" />
+        <ul class="moods" aria-label="Nastroje do wyboru">
+          @for (m of moods; track m.level) {
+            <li [style.--mood]="'var(--mood-' + m.level + ')'">
+              <span aria-hidden="true">{{ m.emoji }}</span>
+              <small>{{ m.label }}</small>
+            </li>
           }
-        </div>
+        </ul>
         <button type="button" class="btn demo" (click)="startDemo()">
-          <app-icon name="sparkle" /> Tryb demo (gotowy tydzień danych)
+          <app-icon name="sparkle" /> Tryb demo (gotowy miesiąc wpisów)
         </button>
-        @if (!anyConnected()) {
-          <button type="button" class="btn ghost skip" (click)="skipWatch()">
-            Kontynuuj bez Garmina
-          </button>
-          <p class="muted hint">Wszystko opowiesz mi sam/a. Zegarek podłączysz później w ustawieniach.</p>
-        }
       </section>
     }
-    @case (4) {
+    @case (2) {
       <section class="panel center">
         <app-pimpek-avatar class="pet" state="happy" [color]="settings.petHex()" />
         <h1>Gotowe!</h1>
         <p class="muted">
-          @if (anyConnected()) {
-            {{ settings.petName() }} rozgląda się po swoim pokoju. Zajrzy do Twojego Garmina i od
-            razu będzie wiedział, jak spałeś/aś.
-          } @else {
-            {{ settings.petName() }} rozgląda się po swoim pokoju. Wieczorem zapyta Cię, jak minął
-            dzień.
-          }
+          {{ settings.petName() }} rozgląda się po swoim pokoju i czeka na Twój pierwszy wpis.
         </p>
         <button type="button" class="btn primary" (click)="finish()">Wejdź do pokoju</button>
       </section>
     }
   }
 
-  @if (step() > 0 && step() < 4) {
+  @if (step() === 1) {
     <footer>
       <button type="button" class="btn ghost" (click)="back()">Wstecz</button>
-      <button type="button" class="btn primary" [disabled]="needsWatch()" (click)="next()">
-        @if (needsWatch()) {
-          Najpierw połącz Garmina
-        } @else {
-          Dalej
-        }
-      </button>
+      <button type="button" class="btn primary" (click)="next()">Dalej</button>
     </footer>
   }
 </main>

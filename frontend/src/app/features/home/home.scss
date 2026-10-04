@@ -19,8 +19,6 @@
 
   > .top,
   > .stage,
-  > app-daily-quest,
-  > app-stat-gauges,
   > .welcome {
     width: 100%;
     max-width: 30rem;
@@ -67,6 +65,44 @@
   transition: background 1.2s ease;
 }
 
+// A hug warms the room: rosier light, the sage blob blushing too.
+.hug-tint {
+  inset: 0;
+  background:
+    radial-gradient(120% 75% at 50% 45%, rgb(247 200 190 / 0.55) 0%, rgb(252 222 206 / 0.35) 45%, transparent 85%);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.room.hugged {
+  .hug-tint {
+    opacity: 1;
+  }
+
+  .blob-sage {
+    background: var(--rose-200);
+  }
+
+  .glow {
+    opacity: 0.85;
+  }
+}
+
+// Breathing together: the glow swells on the 4 s inhale and settles on the 6 s exhale.
+.room.breathing .glow {
+  animation: glow-breathe 10s ease-in-out infinite;
+}
+
+@keyframes glow-breathe {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
 .blob-sage {
   top: -4rem;
   left: -5rem;
@@ -94,7 +130,9 @@
   background: radial-gradient(circle, var(--tint-strong) 0%, transparent 65%);
   opacity: 0.55;
   transform: translate(-50%, -50%);
-  transition: background 1.2s ease;
+  transition:
+    background 1.2s ease,
+    opacity 1.2s ease;
 }
 
 .floor {
@@ -166,48 +204,7 @@
   place-items: end center;
 }
 
-.loading {
-  align-self: center;
-  color: var(--text-muted);
-  font-size: 1.1rem;
-}
-
-.leaves-float {
-  position: absolute;
-  left: 50%;
-  bottom: 45%;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 1.5rem;
-  background: var(--sage-200);
-  color: var(--sage-700);
-  font-size: 1.2rem;
-  font-weight: 800;
-  box-shadow: var(--shadow-clay);
-  animation: float-away 2.2s ease-out forwards;
-}
-
-@keyframes float-away {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, 1rem) scale(0.8);
-  }
-  20% {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1.05);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -4rem) scale(1);
-  }
-}
-
-// ---- first-run invitation instead of a row of scary empty needs ----
+// ---- first-run invitation ----
 
 .welcome {
   display: flex;

@@ -90,6 +90,11 @@
         <code>happy</code>, <code>neutral</code>, <code>sleepy</code>, <code>sad</code>,
         <code>sick</code> i opcjonalnie <code>celebrate</code>.
       </p>
+      <p>
+        Możesz też dodać, jak reaguje na dotyk: <code>petted</code> (głaskanie),
+        <code>tickled</code> (łaskotki) i <code>hugged</code> (przytulanie). Bez nich Pimpek użyje
+        <code>happy</code>.
+      </p>
       <ul>
         <li>plik: <code>happy.svg</code>, <code>.gif</code>, <code>.webp</code>, <code>.png</code> albo Lottie <code>happy.json</code>,</li>
         <li>albo folder klatek: <code>happy/001.png</code>, <code>happy/002.png</code>…</li>
@@ -148,21 +153,6 @@
 </section>
 
 <section class="card">
-  <h3><app-icon name="flag" /> Cele</h3>
-  <app-goals-picker />
-</section>
-
-<section class="card">
-  <h3><app-icon name="watch" /> Źródła danych</h3>
-  <p class="muted">
-    Sen i kroki Pimpek bierze z zegarka, a posiłki z Fitatu. Nastrój i ludzi opowiadasz mu sam(a).
-  </p>
-  @for (source of sources; track source.id) {
-    <app-source-card [source]="source" returnTo="/?panel=ustawienia" />
-  }
-</section>
-
-<section class="card">
   <h3><app-icon name="bell" /> Przypomnienia</h3>
   <label class="row">
     <span>Przypominaj o wpisie</span>
@@ -180,21 +170,6 @@
     </label>
   }
   <label class="row">
-    <span>Pimpek ziewa przed snem</span>
-    <input
-      type="checkbox"
-      class="switch"
-      [checked]="settings.settings().reminders.bedtimeNudge"
-      (change)="settings.updateReminders({ bedtimeNudge: !settings.settings().reminders.bedtimeNudge })"
-    />
-  </label>
-  @if (settings.settings().reminders.bedtimeNudge) {
-    <label class="row sub">
-      <span>Pora snu</span>
-      <input type="time" [value]="settings.settings().reminders.bedtime" (change)="setTime('bedtime', $event)" />
-    </label>
-  }
-  <label class="row">
     <span>Cisza nocna (22:00–7:00)</span>
     <input
       type="checkbox"
@@ -206,32 +181,17 @@
 </section>
 
 <section class="card">
-  <label class="row">
-    <span class="with-hint">
-      <strong>Łagodny tryb</strong>
-      <small>Pimpek nigdy nie choruje, a jego słowa są jeszcze delikatniejsze.</small>
-    </span>
-    <input
-      type="checkbox"
-      class="switch"
-      [checked]="settings.settings().gentleMode"
-      (change)="settings.update({ gentleMode: !settings.settings().gentleMode })"
-    />
-  </label>
-</section>
-
-<section class="card">
   <h3><app-icon name="shield" /> Prywatność</h3>
   <p class="muted">
-    Dane zdrowotne trzymamy tylko po to, żeby Pimpek mógł na nie reagować. Nie sprzedajemy ich i nie
-    pokazujemy nikomu.
+    Twój dziennik nastrojów zostaje tylko na tym urządzeniu. Nigdzie go nie wysyłamy i nie pokazujemy
+    nikomu.
   </p>
   <button type="button" class="btn ghost small with-icon" (click)="exportData()">
     <app-icon name="download" /> Pobierz moje dane
   </button>
   @if (confirmDelete()) {
     <div class="danger">
-      <p>To usunie wszystkie wpisy, połączenia i Pimpka. Nie da się tego cofnąć.</p>
+      <p>To usunie wszystkie wpisy i Pimpka. Nie da się tego cofnąć.</p>
       <div class="actions">
         <button type="button" class="btn ghost small" (click)="confirmDelete.set(false)">Zostaw</button>
         <button type="button" class="btn primary small" (click)="demo.resetAll()">Usuń wszystko</button>
@@ -246,7 +206,7 @@
 
 <section class="card demo">
   <h3><app-icon name="sparkle" /> Tryb demo</h3>
-  <p class="muted">Pilot dla jury. Każdy scenariusz podmienia dane i od razu synchronizuje „zegarek”.</p>
+  <p class="muted">Pilot dla jury. Każdy scenariusz podmienia wpisy w dzienniku.</p>
   <div class="scenarios">
     @for (s of scenarios; track s.id) {
       <button
@@ -270,6 +230,5 @@
     @if (demo.dayOffset()) {
       <button type="button" class="btn ghost small" (click)="demo.backToToday()">Wróć do dzisiaj</button>
     }
-    <button type="button" class="btn ghost small" (click)="demo.failNextSync()">Zepsuj synchronizację</button>
   </div>
 </section>

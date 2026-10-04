@@ -18,6 +18,7 @@ const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').match
 /**
  * Plays an uploaded skin: the clip for the current state, or its celebration while there is one.
  * While reacting it stays in its mood's clip and only gives a short nudge in that mood's style.
+ * Stroked, tickled or hugged it plays the pack's touch clip, if it drew one.
  */
 @Component({
   selector: 'app-skin-player',
@@ -39,6 +40,9 @@ export class SkinPlayer {
   readonly reacting = input(false);
   /** A pack's pupils are out of reach, so the whole skin leans towards the pointer instead. */
   readonly gaze = input<Gaze | null>(null);
+  readonly petted = input(false);
+  readonly tickled = input(false);
+  readonly hugged = input(false);
 
   protected readonly lean = computed(() => {
     const gaze = this.gaze();
@@ -47,7 +51,12 @@ export class SkinPlayer {
 
   protected readonly clip = computed(() => {
     const clips = this.skin().clips;
-    return (this.celebrating() && clips.celebrate) || clips[this.state()];
+    // Tickling and hugging borrow the stroking clip before falling back to the mood (happy by then).
+    const touch =
+      (this.tickled() && (clips.tickled ?? clips.petted)) ||
+      (this.hugged() && (clips.hugged ?? clips.petted)) ||
+      (this.petted() && clips.petted);
+    return touch || (this.celebrating() && clips.celebrate) || clips[this.state()];
   });
 
   private readonly tick = signal(0);

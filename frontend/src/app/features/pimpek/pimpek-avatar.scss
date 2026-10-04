@@ -54,6 +54,86 @@
   animation: burst 1.2s ease-out forwards;
 }
 
+.giggle {
+  top: 14%;
+  left: 10%;
+  color: var(--terracotta-600);
+  font-size: 1.25rem;
+  font-weight: 800;
+  animation: giggle 0.9s ease-out infinite;
+
+  &:nth-child(2) {
+    left: auto;
+    right: 8%;
+    top: 22%;
+    animation-delay: 0.3s;
+  }
+
+  &:nth-child(3) {
+    left: 22%;
+    top: 4%;
+    animation-delay: 0.6s;
+  }
+}
+
+// Tears of laughter for skins, flung off both sides of the head.
+.tear {
+  top: 40%;
+  left: 14%;
+  font-size: 1.1rem;
+  animation: fling-left 0.7s ease-out infinite;
+
+  &.right {
+    left: auto;
+    right: 14%;
+    animation-name: fling-right;
+    animation-delay: 0.2s;
+  }
+}
+
+@keyframes giggle {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.1) rotate(-8deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-1.6rem) rotate(8deg);
+  }
+}
+
+@keyframes fling-left {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-1.8rem, -1rem) rotate(-40deg);
+  }
+}
+
+@keyframes fling-right {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(1.8rem, -1rem) rotate(40deg);
+  }
+}
+
 @keyframes float-up {
   0% {
     transform: translate(0, 0);

@@ -36,6 +36,13 @@
   --low: var(--rose-400);
   --danger-text: var(--terracotta-700);
 
+  // Journal moods, 5 = świetnie … 1 = okropnie. Soft enough to sit behind an emoji.
+  --mood-5: #9fc28e;
+  --mood-4: #cbd48f;
+  --mood-3: #ecc56f;
+  --mood-2: #e79a73;
+  --mood-1: #b39ac4;
+
   // Clay: a wide warm drop shadow, a light top bevel and a darker bottom bevel.
   --shadow-clay:
     0 0.9rem 1.8rem -0.7rem rgb(120 80 50 / 0.24),

@@ -49,6 +49,7 @@ svg {
   stroke: var(--ink);
   stroke-width: 14;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 // ---- body ----
@@ -159,6 +160,17 @@ svg {
   animation: drip 2.4s ease-in infinite;
 }
 
+.laugh-tear {
+  fill: #9cc3e3;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fling-left 0.7s ease-out infinite;
+
+  &.right {
+    animation-name: fling-right;
+  }
+}
+
 // ---- keyframes ----
 
 @keyframes blink {
@@ -211,6 +223,34 @@ svg {
   100% {
     transform: translateY(90px);
     opacity: 0;
+  }
+}
+
+@keyframes fling-left {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-60px, -30px) rotate(-40deg);
+  }
+}
+
+@keyframes fling-right {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(60px, -30px) rotate(40deg);
   }
 }
 

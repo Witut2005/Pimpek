@@ -181,17 +181,34 @@
   <section class="card">
     <h3><app-icon name="star" /> Podgląd</h3>
     <div class="stage">
-      <app-skin-player [skin]="skin" [state]="previewMood()" [celebrating]="celebrating()" />
+      <app-skin-player
+        [skin]="skin"
+        [state]="previewTouch() ? 'happy' : previewMood()"
+        [celebrating]="celebrating()"
+        [petted]="previewTouch() === 'petted'"
+        [tickled]="previewTouch() === 'tickled'"
+        [hugged]="previewTouch() === 'hugged'"
+      />
     </div>
     <div class="chips" aria-label="Nastrój w podglądzie">
       @for (mood of moods; track mood) {
         <button
           type="button"
           class="chip"
-          [attr.aria-pressed]="previewMood() === mood"
-          (click)="previewMood.set(mood)"
+          [attr.aria-pressed]="!previewTouch() && previewMood() === mood"
+          (click)="previewMood.set(mood); previewTouch.set(null)"
         >
           {{ briefs[mood].label }}
+        </button>
+      }
+      @for (touch of touches; track touch) {
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="previewTouch() === touch"
+          (click)="previewTouch.set(touch)"
+        >
+          {{ briefs[touch].label }}
         </button>
       }
       <button type="button" class="chip" (click)="celebrate()">🎉 {{ briefs.celebrate.label }}</button>

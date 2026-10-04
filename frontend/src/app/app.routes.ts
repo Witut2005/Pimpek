@@ -14,11 +14,5 @@ export const routes: Routes = [
     title: 'Witaj · Pimpek',
     loadComponent: () => import('./features/onboarding/onboarding').then((m) => m.Onboarding),
   },
-  {
-    // Matches the redirect_uri the backend's Open Wearables flow expects.
-    path: 'onboarding/done',
-    title: 'Łączenie · Pimpek',
-    loadComponent: () => import('./features/onboarding/oauth-callback').then((m) => m.OAuthCallback),
-  },
   { path: '**', redirectTo: '' },
 ];

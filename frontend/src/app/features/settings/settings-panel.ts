@@ -1,9 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { SCENARIOS } from '../../core/mocks/scenarios';
-import { SOURCES } from '../../core/models/metrics.model';
 import { bmiCategory, Body, PET_COLORS, PetColor } from '../../core/models/settings.model';
 import { PetSkin } from '../../core/models/skin.model';
-import { SkinPackError } from '../../core/services/skin-pack';
+import { SKIN_STATES, SkinPackError } from '../../core/services/skin-pack';
 import { DemoControls } from '../../core/state/demo-controls';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SkinStore } from '../../core/state/skin.store';
@@ -13,12 +12,10 @@ import { KEYS, readJson } from '../../shared/storage';
 import { PimpekDrawing } from '../pimpek/pimpek-drawing';
 import { SkinPlayer } from '../pimpek/skin-player';
 import { SkinStudio } from '../skin-studio/skin-studio';
-import { GoalsPicker } from './goals-picker';
-import { SourceCard } from './source-card';
 
 @Component({
   selector: 'app-settings-panel',
-  imports: [Icon, GoalsPicker, SourceCard, PimpekDrawing, SkinPlayer, Sheet, SkinStudio],
+  imports: [Icon, PimpekDrawing, SkinPlayer, Sheet, SkinStudio],
   templateUrl: './settings-panel.html',
   styleUrl: './settings-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,7 +25,6 @@ export class SettingsPanel {
   protected readonly demo = inject(DemoControls);
   protected readonly skins = inject(SkinStore);
 
-  protected readonly sources = SOURCES;
   protected readonly scenarios = SCENARIOS;
   protected readonly colors = Object.entries(PET_COLORS) as [PetColor, { label: string; hex: string }][];
   protected readonly confirmDelete = signal(false);
@@ -82,12 +78,12 @@ export class SettingsPanel {
 
   /** How many of the five moods the pack really draws; the rest are borrowed. */
   protected coverage(skin: PetSkin): string {
-    const moods = skin.provided.filter((pose) => pose !== 'celebrate').length;
+    const moods = skin.provided.filter((pose) => (SKIN_STATES as readonly string[]).includes(pose)).length;
     if (moods === 5) return 'wszystkie nastroje';
     return moods ? `${moods} z 5 nastrojów` : 'jedna na wszystko';
   }
 
-  protected setTime(key: 'checkInTime' | 'bedtime', event: Event): void {
+  protected setTime(key: 'checkInTime', event: Event): void {
     this.settings.updateReminders({ [key]: (event.target as HTMLInputElement).value });
   }
 

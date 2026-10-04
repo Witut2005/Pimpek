@@ -1,16 +1,23 @@
 import { computed, effect, inject, Injectable, signal } from '@angular/core';
-import { bmi, Body, DEFAULT_SETTINGS, Goals, PET_COLORS, Reminders, Settings } from '../models/settings.model';
+import { bmi, Body, DEFAULT_SETTINGS, PET_COLORS, Reminders, Settings } from '../models/settings.model';
 import { SkinStore } from './skin.store';
 import { KEYS, readJson, writeJson } from '../../shared/storage';
 
 function load(): Settings {
   const stored = readJson<Partial<Settings>>(KEYS.settings, {});
+  const d = DEFAULT_SETTINGS;
+  // Field by field, so settings of removed features (goals, focus, bedtime) don't linger.
   return {
-    ...DEFAULT_SETTINGS,
-    ...stored,
-    goals: { ...DEFAULT_SETTINGS.goals, ...stored.goals },
-    body: { ...DEFAULT_SETTINGS.body, ...stored.body },
-    reminders: { ...DEFAULT_SETTINGS.reminders, ...stored.reminders },
+    onboarded: stored.onboarded ?? d.onboarded,
+    petName: stored.petName ?? d.petName,
+    petColor: stored.petColor ?? d.petColor,
+    body: { ...d.body, ...stored.body },
+    reminders: {
+      enabled: stored.reminders?.enabled ?? d.reminders.enabled,
+      checkInTime: stored.reminders?.checkInTime ?? d.reminders.checkInTime,
+      quietNights: stored.reminders?.quietNights ?? d.reminders.quietNights,
+      asked: stored.reminders?.asked ?? d.reminders.asked,
+    },
   };
 }
 
@@ -19,7 +26,6 @@ export class SettingsStore {
   private readonly skins = inject(SkinStore);
   readonly settings = signal<Settings>(load());
 
-  readonly goals = computed(() => this.settings().goals);
   /** Every look is a different Pimpek with a name of its own; petName belongs to the hand-drawn one. */
   readonly petName = computed(() => this.skins.active()?.name ?? (this.settings().petName.trim() || 'Pimpek'));
   readonly petHex = computed(() => PET_COLORS[this.settings().petColor].hex);
@@ -31,10 +37,6 @@ export class SettingsStore {
 
   update(patch: Partial<Settings>): void {
     this.settings.update((s) => ({ ...s, ...patch }));
-  }
-
-  updateGoals(patch: Partial<Goals>): void {
-    this.settings.update((s) => ({ ...s, goals: { ...s.goals, ...patch } }));
   }
 
   updateBody(patch: Partial<Body>): void {

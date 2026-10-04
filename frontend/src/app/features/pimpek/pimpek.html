@@ -1,31 +1,55 @@
 <div aria-live="polite">
   <!-- @for keyed by the text re-creates the bubble, so the pop-in replays on every new message -->
   @for (text of [shownMessage()]; track text) {
-    <p class="bubble" [class.attention]="needsAttention() && !petting()">{{ text }}</p>
+    <p class="bubble" [class.attention]="needsAttention() && text === message()">{{ text }}</p>
   }
 </div>
 
-<button
-  #pet
-  type="button"
-  class="pet"
-  [class.petting]="petting()"
-  (click)="onClick()"
-  [attr.aria-label]="needsAttention() ? 'Pimpek – dodaj dzisiejszy wpis' : 'Pimpek – edytuj dzisiejszy wpis'"
->
-  @if (needsAttention() && !petting()) {
-    <span class="badge" aria-hidden="true">!</span>
-  }
-  <app-pimpek-avatar
-    [state]="shownState()"
-    [celebrating]="celebrating()"
-    [color]="color()"
-    [gaze]="gaze()"
-    [petted]="petting()"
-  />
-  @for (heart of hearts(); track heart.id) {
-    <span class="heart" aria-hidden="true" [style.left.%]="heart.x" [style.top.%]="heart.y">{{ heart.icon }}</span>
-  }
-</button>
+<!-- Walking and jumping after the ball move this wrapper; the button keeps its own squishes. -->
+<div #mover class="mover">
+  <button
+    #pet
+    type="button"
+    class="pet"
+    [class.petting]="petting()"
+    [class.melted]="melted()"
+    [class.tickled]="tickling()"
+    [class.panting]="panting()"
+    [class.hugging]="!!hug()"
+    [class.breathing]="hug() === 'breathe'"
+    [class.sighing]="sighing()"
+    [style.--lean]="lean()"
+    (click)="onClick()"
+    [attr.aria-label]="needsAttention() ? 'Pimpek – dodaj dzisiejszy wpis' : 'Pimpek – edytuj dzisiejszy wpis'"
+  >
+    @if (needsAttention() && !petting() && !hug()) {
+      <span class="badge" aria-hidden="true">!</span>
+    }
+    @if (petting() && !tickling()) {
+      <span class="purr-wave" aria-hidden="true"></span>
+      <span class="purr-wave" aria-hidden="true"></span>
+    }
+    <app-pimpek-avatar
+      [state]="shownState()"
+      [celebrating]="celebrating()"
+      [color]="color()"
+      [gaze]="shownGaze()"
+      [petted]="petting()"
+      [tickled]="tickling()"
+      [hugged]="!!hug()"
+    />
+    @for (heart of hearts(); track heart.id) {
+      <span class="heart" aria-hidden="true" [style.left.%]="heart.x" [style.top.%]="heart.y">{{ heart.icon }}</span>
+    }
+  </button>
+</div>
 
-<div class="rug" aria-hidden="true"></div>
+<div #rug class="rug" aria-hidden="true"></div>
+
+<!-- Zero-sized anchor in the middle of the rug; the ball's position is relative to it. -->
+<div #field class="playfield">
+  <span #ballShadow class="ball-shadow" aria-hidden="true"></span>
+  <button #ball type="button" class="ball" aria-label="Piłka – rzuć ją Pimpkowi">
+    <span #ballSkin class="ball-skin"></span>
+  </button>
+</div>

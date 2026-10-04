@@ -1,0 +1,85 @@
+<section class="card calendar" aria-label="Kalendarz nastrojów">
+  <header class="month">
+    <button type="button" class="icon-btn" aria-label="Poprzedni miesiąc" (click)="shift(-1)">
+      <app-icon name="chevron" class="prev" />
+    </button>
+    <h3>{{ monthTitle() }}</h3>
+    <button
+      type="button"
+      class="icon-btn"
+      aria-label="Następny miesiąc"
+      [disabled]="isCurrentMonth()"
+      (click)="shift(1)"
+    >
+      <app-icon name="chevron" class="next" />
+    </button>
+  </header>
+
+  <div class="grid">
+    @for (w of weekdays; track w) {
+      <span class="weekday">{{ w }}</span>
+    }
+    @for (b of calendar().blanks; track $index) {
+      <span></span>
+    }
+    @for (cell of calendar().cells; track cell.date) {
+      <button
+        type="button"
+        class="day"
+        [class.today]="cell.today"
+        [class.future]="cell.future"
+        [class.filled]="!!cell.mood"
+        [style.--mood]="cell.mood ? 'var(--mood-' + cell.mood + ')' : null"
+        [disabled]="cell.future"
+        [attr.aria-label]="cell.day + (cell.mood ? ': ' + moodMeta(cell.mood).label : ': brak wpisu, dodaj')"
+        (click)="pickDay(cell)"
+      >
+        {{ cell.day }}
+      </button>
+    }
+  </div>
+
+  <ul class="counts" aria-label="Nastroje w tym miesiącu">
+    @for (c of counts(); track c.level) {
+      <li [style.--mood]="'var(--mood-' + c.level + ')'" [class.zero]="!c.count" [title]="c.label">
+        <span class="face" aria-hidden="true">{{ c.emoji }}</span>
+        <strong>{{ c.count }}</strong>
+        <span class="sr-only">{{ c.label }}</span>
+      </li>
+    }
+  </ul>
+</section>
+
+@for (day of days(); track day.entry.date) {
+  @let entry = day.entry;
+  @let meta = moodMeta(entry.mood);
+  <section class="day-group" [id]="'journal-' + entry.date">
+    <h3>{{ day.title }}</h3>
+    <button
+      type="button"
+      class="entry"
+      [style.--mood]="'var(--mood-' + entry.mood + ')'"
+      [attr.aria-label]="day.title + ': ' + meta.label + '. Edytuj'"
+      (click)="edit.emit(entry)"
+    >
+      <span class="face" aria-hidden="true">{{ meta.emoji }}</span>
+      <span class="text">
+        <strong>{{ meta.label }}</strong>
+        @if (entry.note) {
+          <span class="note">{{ entry.note }}</span>
+        }
+      </span>
+      <app-icon name="pencil" class="edit" />
+    </button>
+  </section>
+} @empty {
+  <section class="empty">
+    <p>
+      {{ isCurrentMonth() ? 'W tym miesiącu nie ma jeszcze wpisów.' : 'W tym miesiącu nie było wpisów.' }}
+      Zapisz, jak się czujesz, a Pimpek to zapamięta.
+    </p>
+    @if (isCurrentMonth()) {
+      <button type="button" class="btn primary small" (click)="add.emit()">Dodaj wpis</button>
+    }
+  </section>
+}

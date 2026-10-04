@@ -5,6 +5,9 @@
     [celebrating]="cheering()"
     [reacting]="celebrating() && !cheering()"
     [gaze]="gaze()"
+    [petted]="petted()"
+    [tickled]="tickled()"
+    [hugged]="hugged()"
   />
 } @else {
   <app-pimpek-drawing
@@ -12,7 +15,8 @@
     [celebrating]="celebrating()"
     [color]="color()"
     [gaze]="gaze()"
-    [petted]="petted()"
+    [petted]="petted() || hugged()"
+    [tickled]="tickled()"
   />
 }
 
@@ -24,6 +28,12 @@
     @case ('happy') {
       <span class="spark">✨</span><span class="spark">💙</span>
     }
+  }
+  @if (tickled()) {
+    <span class="giggle">ha</span><span class="giggle">hi</span><span class="giggle">ha</span>
+  }
+  @if (skinTears()) {
+    <span class="tear left">💧</span><span class="tear right">💧</span>
   }
   @if (cheering()) {
     @for (b of burst; track $index) {
