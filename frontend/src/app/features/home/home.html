@@ -63,8 +63,8 @@
 
 <app-mood-dialog (saved)="onSaved()" />
 
-<app-sheet #journal title="Dziennik">
-  <app-journal (add)="journal.close(); addEntry()" (addOn)="addEntryOn($event)" (edit)="editEntry($event)" />
+<app-sheet #journal title="Dziennik" fixed>
+  <app-journal (addOn)="addEntryOn($event)" (edit)="editEntry($event)" />
 </app-sheet>
 
 <app-sheet #settingsSheet title="Ty i Pimpek">

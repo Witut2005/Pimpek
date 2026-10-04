@@ -22,11 +22,8 @@ import { Playground } from './play';
 const GAZE_RANGE_PX = 260;
 /** No pointer movement for this long and he goes back to looking around on his own. */
 const GAZE_IDLE_MS = 2500;
-/** Finger, pen or pressed mouse: this much stroking counts as petting. */
-const PET_PRESSED_PX = 110;
-/** A plain hovering mouse needs a longer, back-and-forth stroke, so passing over him doesn't count. */
-const PET_HOVER_PX = 220;
-const PET_HOVER_REVERSALS = 2;
+/** Finger, pen or pressed mouse: this much stroking counts as petting. A plain hovering mouse only draws his gaze. */
+const PET_PX = 110;
 /** A pause longer than this starts a new stroke. */
 const STROKE_GAP_MS = 400;
 /** Moving further than this between press and release is a drag, not a tap. */
@@ -65,11 +62,9 @@ interface Stroke {
   sinceHeart: number;
   dirX: number;
   dirY: number;
-  reversals: number;
   /** When the recent changes of direction happened, to tell tickling from stroking. */
   flips: number[];
   at: number;
-  pressed: boolean;
 }
 
 interface Heart {
@@ -79,8 +74,8 @@ interface Heart {
   icon: string;
 }
 
-function newStroke(x: number, y: number, pressed: boolean): Stroke {
-  return { x, y, distance: 0, sinceHeart: 0, dirX: 0, dirY: 0, reversals: 0, flips: [], at: performance.now(), pressed };
+function newStroke(x: number, y: number): Stroke {
+  return { x, y, distance: 0, sinceHeart: 0, dirX: 0, dirY: 0, flips: [], at: performance.now() };
 }
 
 /**
@@ -189,7 +184,7 @@ export class Pimpek {
       // The stroke starts where the finger lands, so even one fast swipe counts.
       const press = (e: PointerEvent) => {
         this.pressAt = { x: e.clientX, y: e.clientY };
-        this.stroke = newStroke(e.clientX, e.clientY, true);
+        this.stroke = newStroke(e.clientX, e.clientY);
         clearTimeout(this.hugTimer);
         if (e.button === 0) this.hugTimer = setTimeout(() => this.startHug(), HUG_HOLD_MS);
       };
@@ -242,30 +237,33 @@ export class Pimpek {
   private onStroke(e: PointerEvent): void {
     // Hugging: a finger shifting a little doesn't turn it into stroking.
     if (this.hug()) return;
-    const pressed = e.pointerType !== 'mouse' || e.buttons > 0;
-    if (pressed && this.pressAt && Math.hypot(e.clientX - this.pressAt.x, e.clientY - this.pressAt.y) > TAP_SLOP_PX) {
+    // Only a pressed pointer strokes him; a mouse merely passing over just catches his eye.
+    if (e.buttons === 0) {
+      this.stroke = undefined;
+      return;
+    }
+    if (this.pressAt && Math.hypot(e.clientX - this.pressAt.x, e.clientY - this.pressAt.y) > TAP_SLOP_PX) {
       clearTimeout(this.hugTimer);
     }
     const now = performance.now();
     const s = this.stroke;
-    if (!s || s.pressed !== pressed) {
-      this.stroke = newStroke(e.clientX, e.clientY, pressed);
+    if (!s) {
+      this.stroke = newStroke(e.clientX, e.clientY);
       return;
     }
     // After a pause the count starts over, but this movement (from where the pointer rested) still counts.
     if (now - s.at > STROKE_GAP_MS) {
-      Object.assign(s, { distance: 0, sinceHeart: 0, dirX: 0, dirY: 0, reversals: 0, flips: [] });
+      Object.assign(s, { distance: 0, sinceHeart: 0, dirX: 0, dirY: 0, flips: [] });
     }
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
     const step = Math.hypot(dx, dy);
     if (step < 2) return;
 
-    // Back-and-forth along either axis is what makes it a stroke rather than a pass.
+    // Back-and-forth along either axis, quick enough, is tickling.
     const dirX = Math.abs(dx) > 3 ? Math.sign(dx) : 0;
     const dirY = Math.abs(dy) > 3 ? Math.sign(dy) : 0;
     if ((dirX && s.dirX && dirX !== s.dirX) || (dirY && s.dirY && dirY !== s.dirY)) {
-      s.reversals++;
       s.flips.push(now);
     }
     s.dirX = dirX || s.dirX;
@@ -276,10 +274,7 @@ export class Pimpek {
     s.y = e.clientY;
     s.at = now;
 
-    const petting = pressed
-      ? s.distance > PET_PRESSED_PX
-      : s.distance > PET_HOVER_PX && s.reversals >= PET_HOVER_REVERSALS;
-    if (petting) this.petted(e, s, now);
+    if (s.distance > PET_PX) this.petted(e, s, now);
   }
 
   private petted(e: PointerEvent, s: Stroke, now: number): void {
@@ -292,7 +287,7 @@ export class Pimpek {
     }
 
     s.flips = s.flips.filter((t) => now - t < TICKLE_WINDOW_MS);
-    if (s.pressed && s.flips.length >= TICKLE_FLIPS) {
+    if (s.flips.length >= TICKLE_FLIPS) {
       this.tickled(now);
     } else if (!this.tickling() && !this.melted() && now - this.pettingSince > MELT_AFTER_MS) {
       this.melted.set(true);

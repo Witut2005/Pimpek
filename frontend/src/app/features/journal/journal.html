@@ -40,6 +40,22 @@
   </div>
 </section>
 
+<section class="legend" aria-label="Legenda nastrojów">
+  <p>
+    Tu zapisujesz, jak się czujesz każdego dnia, a dzień w kalendarzu dostaje kolor tego nastroju. Kliknij pusty
+    dzień, żeby go uzupełnić, a kolorowy, żeby zobaczyć wpis.
+  </p>
+  <ul>
+    @for (mood of tally(); track mood.level) {
+      <li [style.--mood]="'var(--mood-' + mood.level + ')'">
+        <span class="swatch" aria-hidden="true">{{ mood.emoji }}</span>
+        <span class="label">{{ mood.label }}</span>
+        <strong>{{ mood.count }}</strong>
+      </li>
+    }
+  </ul>
+</section>
+
 @for (day of days(); track day.entry.date) {
   @let entry = day.entry;
   @let meta = settings.moodMeta(entry.mood);
@@ -61,15 +77,5 @@
       </span>
       <app-icon name="pencil" class="edit" />
     </button>
-  </section>
-} @empty {
-  <section class="empty">
-    <p>
-      {{ isCurrentMonth() ? 'W tym miesiącu nie ma jeszcze wpisów.' : 'W tym miesiącu nie było wpisów.' }}
-      Zapisz, jak się czujesz, a Pimpek to zapamięta.
-    </p>
-    @if (isCurrentMonth()) {
-      <button type="button" class="btn primary small" (click)="add.emit()">Dodaj wpis</button>
-    }
   </section>
 }

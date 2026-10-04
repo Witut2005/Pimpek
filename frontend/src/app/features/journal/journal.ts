@@ -40,8 +40,6 @@ export class Journal {
   private readonly pet = inject(PetStore);
   protected readonly settings = inject(SettingsStore);
 
-  /** "Dodaj wpis" from the empty state. */
-  readonly add = output<void>();
   /** An empty past day was tapped, to fill it in. */
   readonly addOn = output<string>();
   /** An entry was tapped, to edit or delete it. */
@@ -80,6 +78,12 @@ export class Journal {
   private readonly monthEntries = computed(() =>
     this.journal.entries().filter((e) => e.date.startsWith(this.month())),
   );
+
+  /** Every mood with how many days of the shown month it painted. */
+  protected readonly tally = computed(() => {
+    const entries = this.monthEntries();
+    return this.settings.moods().map((m) => ({ ...m, count: entries.filter((e) => e.mood === m.level).length }));
+  });
 
   /** The month's entries, newest day first, each titled with its day. */
   protected readonly days = computed(() => {

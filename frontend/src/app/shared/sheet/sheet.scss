@@ -12,6 +12,10 @@ dialog {
   color: var(--text);
   box-shadow: 0 -1rem 3rem -1rem rgb(90 60 40 / 0.3);
 
+  &.fixed {
+    height: 88dvh;
+  }
+
   &[open] {
     animation: slide-up 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
