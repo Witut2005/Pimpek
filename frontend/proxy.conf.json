@@ -1,6 +1,7 @@
 {
   "/api": {
-    "target": "http://localhost:8001",
-    "secure": false
+    "target": "https://api.day1media.pl",
+    "secure": true,
+    "changeOrigin": true
   }
 }
