@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     token_dir: Path = Path("data/tokens")
-    cors_origins: str = "http://localhost:4200"
+    cors_origins: str = "http://localhost:4200,https://hackyeah.wiktor-glogowski.workers.dev"
     mfa_ttl_seconds: int = 600
     open_wearables_url: str = "http://localhost:8000"
     open_wearables_api_key: str = ""
