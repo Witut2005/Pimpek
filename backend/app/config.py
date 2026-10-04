@@ -2,12 +2,18 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Origins allowed to call this API. Fixed in code on purpose: a CORS_ORIGINS env var
+# on the server must not be able to lock the deployed frontend out.
+CORS_ORIGINS = [
+    "http://localhost:4200",
+    "https://hackyeah.wiktor-glogowski.workers.dev",
+]
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     token_dir: Path = Path("data/tokens")
-    cors_origins: str = "http://localhost:4200,https://hackyeah.wiktor-glogowski.workers.dev"
     mfa_ttl_seconds: int = 600
     open_wearables_url: str = "http://localhost:8000"
     open_wearables_api_key: str = ""
@@ -34,7 +40,7 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return CORS_ORIGINS
 
     @property
     def open_wearables_provider_list(self) -> list[str]:
