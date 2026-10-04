@@ -1,0 +1,81 @@
+<section class="card calendar" aria-label="Kalendarz nastrojów">
+  <header class="month">
+    <button type="button" class="icon-btn" aria-label="Poprzedni miesiąc" (click)="shift(-1)">
+      <app-icon name="chevron" class="prev" />
+    </button>
+    <h3>{{ monthTitle() }}</h3>
+    <button
+      type="button"
+      class="icon-btn"
+      aria-label="Następny miesiąc"
+      [disabled]="isCurrentMonth()"
+      (click)="shift(1)"
+    >
+      <app-icon name="chevron" class="next" />
+    </button>
+  </header>
+
+  <div class="grid">
+    @for (w of weekdays; track w) {
+      <span class="weekday">{{ w }}</span>
+    }
+    @for (b of calendar().blanks; track $index) {
+      <span></span>
+    }
+    @for (cell of calendar().cells; track cell.date) {
+      <button
+        type="button"
+        class="day"
+        [class.today]="cell.today"
+        [class.future]="cell.future"
+        [class.filled]="!!cell.mood"
+        [style.--mood]="cell.mood ? 'var(--mood-' + cell.mood + ')' : null"
+        [disabled]="cell.future"
+        [attr.aria-label]="cell.day + (cell.mood ? ': ' + settings.moodMeta(cell.mood).label : ': brak wpisu, dodaj')"
+        (click)="pickDay(cell)"
+      >
+        {{ cell.day }}
+      </button>
+    }
+  </div>
+</section>
+
+<section class="legend" aria-label="Legenda nastrojów">
+  <p>
+    Tu zapisujesz, jak się czujesz każdego dnia, a dzień w kalendarzu dostaje kolor tego nastroju. Kliknij pusty
+    dzień, żeby go uzupełnić, a kolorowy, żeby zobaczyć wpis.
+  </p>
+  <ul>
+    @for (mood of tally(); track mood.level) {
+      <li [style.--mood]="'var(--mood-' + mood.level + ')'">
+        <span class="swatch" aria-hidden="true">{{ mood.emoji }}</span>
+        <span class="label">{{ mood.label }}</span>
+        <strong>{{ mood.count }}</strong>
+      </li>
+    }
+  </ul>
+</section>
+
+@for (day of days(); track day.entry.date) {
+  @let entry = day.entry;
+  @let meta = settings.moodMeta(entry.mood);
+  <section class="day-group" [id]="'journal-' + entry.date">
+    <h3>{{ day.title }}</h3>
+    <button
+      type="button"
+      class="entry"
+      [style.--mood]="'var(--mood-' + entry.mood + ')'"
+      [attr.aria-label]="day.title + ': ' + meta.label + '. Edytuj'"
+      (click)="edit.emit(entry)"
+    >
+      <span class="face" aria-hidden="true">{{ meta.emoji }}</span>
+      <span class="text">
+        <strong>{{ meta.label }}</strong>
+        @if (entry.note) {
+          <span class="note">{{ entry.note }}</span>
+        }
+      </span>
+      <app-icon name="pencil" class="edit" />
+    </button>
+  </section>
+}

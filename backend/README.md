@@ -1,86 +1,11 @@
-# Backend (FastAPI + Garmin Connect + Open Wearables)
+# Backend (FastAPI)
 
     python3 -m venv .venv && .venv/bin/pip install -r requirements.txt pytest
     cp .env.example .env
     .venv/bin/uvicorn app.main:app --reload --port 8001
 
-Port 8001, because Open Wearables uses 8000. The Angular dev server proxies `/api` here
-(`frontend/proxy.conf.json`). Docs: http://localhost:8001/docs. Tests: `.venv/bin/pytest`.
+The Angular dev server proxies `/api` here (`frontend/proxy.conf.json`). Docs: http://localhost:8001/docs.
+Tests: `.venv/bin/pytest`.
 
-## What the frontend uses
-- `GET /api/sources`: connected sources, `[{id:"garmin"|"fitatu", via:"open_wearables"|"garmin_connect"|"fitatu", connectedAt}]`
-- `DELETE /api/sources/garmin`: disconnect, whichever way it was connected
-- `DELETE /api/sources/fitatu`: forget the Fitatu session
-- `GET /api/days?count=28&today=YYYY-MM-DD`: one row per day, newest first:
-  `{date, source, sleepHours, sleepScore, steps, restingHr, runningKm, complete}`. Missing values are `null`.
-  Returns 409 when nothing is connected.
-
-`/api/days` reads from Open Wearables when it has an active Garmin connection for the user,
-and from the direct Garmin login otherwise. If OW is down, it falls back to the direct login. Days older
-than yesterday are cached in `data/cache/<user>.json`, so only the first sync is slow.
-
-- `GET /api/meals?date=YYYY-MM-DD` (default today): the day's meals from Fitatu,
-  `{date, source:"fitatu", meals:[{key, name, time, kcal, items:[{id, name, brand, amount, kcal, protein, fat, carbs, fiber, sugars}]}], totals}`.
-  Only meals with items are listed. Every item counts, like in Fitatu's own day total (its `eaten` flag is
-  false for products added the usual way, so it is ignored).
-  Returns 409 when Fitatu is not connected or its session ended.
-
-- `POST /api/food/rating` `{date, meals:[{name, time?, items:[{name, amount?, source:"fitatu"|"manual", kcal?, protein?, fat?, carbs?, fiber?, sugars?}]}]}`
-  -> `{score, label, summary, positives, improvements, model}`: Gemini's 0–100 rating of the day's food.
-  503 when `GEMINI_API_KEY` is not set (the frontend then shows its own rough estimate), 502/429 when Gemini fails.
-
-## AI food rating (Gemini)
-Put a key from https://aistudio.google.com/apikey into `backend/.env` as `GEMINI_API_KEY` and restart the backend.
-`GEMINI_MODEL` picks the model (default `gemini-3.8-flash`). The key stays on the backend, never in the browser.
-When Gemini is overloaded (503 "high demand") or answers 500, the backend retries once after a second, then
-tries `GEMINI_FALLBACK_MODEL` (default `gemini-3.5-flash-lite`, empty to disable) the same way.
-The rating instructions are in `app/prompts/food_rating.md`: edit them there. The file is read on every rating,
-so changes apply without restarting the backend.
-Meal names typed by users only go into the user turn as JSON, never into the instructions.
-The meals are sent to Google; on the free tier Google may use them to improve its products.
-
-## Connecting Fitatu
-`POST /api/fitatu/connect` `{email, password}` -> `{status:"connected"}`, or 401 for a wrong e-mail/password.
-
-The password is never stored, only the JWT and refresh token (`data/fitatu/<user>.json`), refreshed on expiry.
-Fitatu has no public API: this uses the private API of its mobile app (base URL and client headers in `app/config.py`,
-overridable with `FITATU_*` env vars), as documented by community clients. It may break without notice and is not
-covered by Fitatu's terms.
-
-## Connecting Garmin
-**Direct login** (works today):
-1. `POST /api/garmin/connect` `{email, password}` -> `{status:"connected"}` or `{status:"mfa_required", mfa_session}`
-2. If MFA: `POST /api/garmin/mfa` `{mfa_session, code}` -> `{status:"connected"}`
-
-The password is never stored, only Garmin session tokens (`data/tokens/<user>/`).
-This uses the unofficial `garminconnect` library, which is not covered by Garmin's official API terms.
-
-Open Wearables lives in `open-wearables/` as a git submodule: clone with `git clone --recursive`,
-or run `git submodule update --init` in an existing checkout. Its `backend/config/.env` is not in git.
-
-**Official OAuth via Open Wearables**: `POST /api/wearables/connect/garmin` `{redirect_uri}` -> `{authorization_url}`.
-This needs real `GARMIN_CLIENT_ID`/`GARMIN_CLIENT_SECRET` in `open-wearables/backend/config/.env`
-(Garmin Connect Developer Program), plus OW reachable from the internet (e.g. `ngrok http 8000`) with
-`https://<public-url>/api/v1/garmin/webhooks/push` registered in the Garmin portal. Garmin only pushes data.
-
-## Other watches (Polar, Fitbit, Oura, Whoop, Withings, …)
-Every Open Wearables provider with a cloud API works the same way, and `/api/days` reads OW's normalised
-summaries, so no mapping code is needed per brand. To enable one:
-1. Create an OAuth app in the provider's developer portal (self-service for Polar AccessLink, Fitbit, Oura,
-   Whoop, Withings, Strava; Suunto and Ultrahuman need partner approval). Redirect URL:
-   `http://localhost:8000/api/v1/oauth/<provider>/callback`.
-2. Put its client id/secret into `open-wearables/backend/config/.env` (`POLAR_CLIENT_ID`, …) and restart OW.
-3. Add the provider to `OPEN_WEARABLES_PROVIDERS` in `backend/.env` and restart the backend.
-
-- `GET /api/sources/available` -> `{oauth: [...]}`: providers that can be connected now; the frontend offers
-  "Połącz" only for these. `POST /api/wearables/connect/{provider}` answers 409 for the rest.
-- With several watches linked, the first one linked leads (its id is the day's `source`).
-- Pull providers (all but Garmin) are polled by OW; `/api/days` also asks OW for a poll at most every 15 min.
-- `DELETE /api/sources/{provider}` unlinks any of them.
-
-Identity is the `X-User-Id` header (defaults to the hardcoded UUID `82b25836-a99e-4f59-8c7b-34d451ddcd90`), which is a placeholder for real auth.
-The frontend sends a random id per browser, kept in localStorage (`pimpek.userId`).
-
-The Gemini endpoints (`/api/food/rating`, `/api/food/check`, `/api/profile/summary`) answer 429 with `Retry-After`
-over `AI_RATE_LIMIT_PER_USER` (default 10) requests a minute per user id, or `AI_RATE_LIMIT_PER_IP` (default 60) per IP.
-The counts are in memory, so they reset when the backend restarts.
+Only `GET /api/health` is left. The app keeps its mood journal on the device and fetches no data from
+external sources: the Garmin, Open Wearables, Fitatu and Gemini food-rating endpoints were removed.

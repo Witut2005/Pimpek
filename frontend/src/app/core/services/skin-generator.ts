@@ -5,7 +5,17 @@ import { SkinPose } from '../models/skin.model';
 import { AiProvider } from './ai/ai-provider';
 
 /** Neutral first: it designs the character, every other pose is drawn from it. */
-export const GENERATED_POSES: readonly SkinPose[] = ['neutral', 'happy', 'sleepy', 'sad', 'sick', 'celebrate'];
+export const GENERATED_POSES: readonly SkinPose[] = [
+  'neutral',
+  'happy',
+  'sleepy',
+  'sad',
+  'sick',
+  'celebrate',
+  'petted',
+  'tickled',
+  'hugged',
+];
 
 /** Same footprint as the built-in drawing and the sample packs. */
 const VIEW_BOX = '0 0 780 850';
@@ -60,6 +70,24 @@ export const POSE_BRIEFS: Record<SkinPose, PoseBrief> = {
     hint: 'ręce w górze, konfetti',
     prompt:
       'celebrating a success: arms (or paws, fins, leaves) raised high, huge open smile, eyes closed in joy (^ ^), a few confetti pieces around the head, inside the viewBox. Animation: confetti falls and twinkles, arms wave. This clip plays for 2 seconds while the app makes the whole body jump.',
+  },
+  petted: {
+    label: 'Głaskany',
+    hint: 'oczy ^ ^, mruczy',
+    prompt:
+      'being stroked and loving it: eyes squeezed shut in blissful ^ ^ arcs, rosy cheeks, small contented smile. Animation: cheeks gently pulse, ears/tail/antennae slowly wiggle as if purring. Do not draw hearts, the app adds them.',
+  },
+  tickled: {
+    label: 'Łaskotany',
+    hint: 'oczy > <, łzy ze śmiechu',
+    prompt:
+      'being tickled: eyes squeezed shut as > < shapes, wide open laughing mouth, rosy cheeks, small tears of laughter at the outer corners of the eyes. Animation: the tears fly off sideways and fade out, the mouth opens and closes quickly as it laughs. Do not draw letters, the app adds them.',
+  },
+  hugged: {
+    label: 'Przytulany',
+    hint: 'obejmuje, przymknięte oczy',
+    prompt:
+      'being hugged: eyes peacefully closed (^ ^), soft warm smile, extra rosy cheeks, arms (or paws, fins, leaves) wrapped in front of the body as if hugging back. Animation: the cheeks slowly glow brighter and fainter, about every 4 s. The app squeezes the whole body and makes it breathe.',
   },
 };
 

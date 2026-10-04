@@ -1,34 +1,17 @@
-import {
-  afterNextRender,
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  OnInit,
-  signal,
-  viewChild,
-} from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { MoodEntry } from '../../core/models/journal.model';
 import { PetStore } from '../../core/state/pet.store';
-import { StatKey } from '../../core/state/pet-rules';
 import { SettingsStore } from '../../core/state/settings.store';
-import { SyncStore } from '../../core/state/sync.store';
 import { Icon } from '../../shared/icon/icon';
 import { Sheet } from '../../shared/sheet/sheet';
-import { CheckInDialog } from '../check-in-dialog/check-in-dialog';
-import { NeedDetail } from '../needs/need-detail';
-import { NEEDS } from '../needs/needs';
-import { Pimpek } from '../pimpek/pimpek';
-import { Progress } from '../progress/progress';
+import { Journal } from '../journal/journal';
+import { MoodDialog } from '../journal/mood-dialog';
+import { Cuddle, Pimpek } from '../pimpek/pimpek';
+import { Room, ROOMS } from '../pimpek/rooms';
 import { SettingsPanel } from '../settings/settings-panel';
-import { StatGauges } from '../stat-gauges/stat-gauges';
-import { DailyQuest } from './daily-quest';
-import { SyncBadge } from './sync-badge';
 
 const CELEBRATION_MS = 1800;
-/** Wearable data younger than this isn't re-fetched when the room opens. */
-const FRESH_MS = 60_000;
+const SLIDE_MS = 380;
 
 function greetingFor(hour: number): string {
   if (hour < 5 || hour >= 22) return 'Późno już, czas na sen';
@@ -37,88 +20,71 @@ function greetingFor(hour: number): string {
   return 'Dobry wieczór';
 }
 
-/** Pimpek's room — the only full screen. Everything else slides up as a sheet. */
+/** Pimpek's home — the only full screen, with his room, the bathroom and the playroom. Everything else slides up as a sheet. */
 @Component({
   selector: 'app-home',
-  imports: [
-    Pimpek,
-    StatGauges,
-    CheckInDialog,
-    Sheet,
-    Progress,
-    SettingsPanel,
-    NeedDetail,
-    DailyQuest,
-    SyncBadge,
-    Icon,
-  ],
+  imports: [Pimpek, MoodDialog, Sheet, Journal, SettingsPanel, Icon],
   templateUrl: './home.html',
   styleUrl: './home.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Home implements OnInit {
+export class Home {
   protected readonly store = inject(PetStore);
   protected readonly settings = inject(SettingsStore);
-  private readonly sync = inject(SyncStore);
-  private readonly router = inject(Router);
-  private readonly checkInDialog = viewChild.required(CheckInDialog);
+  private readonly moodDialog = viewChild.required(MoodDialog);
   private readonly settingsSheet = viewChild.required<Sheet>('settingsSheet');
-  private readonly needSheet = viewChild.required<Sheet>('needSheet');
-
-  /** `?panel=ustawienia` reopens settings after coming back from a provider's login page. */
-  readonly panel = input<string>();
+  private readonly stage = viewChild.required<ElementRef<HTMLElement>>('stage');
 
   protected readonly greeting = greetingFor(new Date().getHours());
+  protected readonly rooms = ROOMS;
+  protected readonly room = signal<Room>('home');
+  private readonly roomIndex = computed(() => ROOMS.findIndex((r) => r.id === this.room()));
+  protected readonly current = computed(() => ROOMS[this.roomIndex()]);
+  /** The rooms behind the left and right arrows; none past the ends. */
+  protected readonly leftRoom = computed(() => ROOMS[this.roomIndex() - 1]);
+  protected readonly rightRoom = computed(() => ROOMS[this.roomIndex() + 1]);
   protected readonly celebrating = signal(false);
-  protected readonly askReminders = signal(false);
-  protected readonly selectedNeed = signal<StatKey>('energy');
-  protected readonly needTitle = computed(() => NEEDS[this.selectedNeed()].label);
+  /** While Pimpek is hugged the room warms up; while breathing, its glow breathes along. */
+  protected readonly cuddle = signal<Cuddle | null>(null);
 
-  constructor() {
-    afterNextRender(() => {
-      if (this.panel() !== 'ustawienia') return;
-      this.settingsSheet().open();
-      this.router.navigate([], { queryParams: {}, replaceUrl: true });
-    });
+  /** "Dodaj wpis": today's entry, or an offer to edit it if today already has one. */
+  protected addEntry(): void {
+    this.moodDialog().open();
   }
 
-  ngOnInit(): void {
-    this.store.load();
-    const syncedAt = this.sync.syncedAt();
-    if (!syncedAt || Date.now() - new Date(syncedAt).getTime() > FRESH_MS) this.sync.sync();
+  /** Fills in a day that was skipped, straight from the journal calendar. */
+  protected addEntryOn(date: string): void {
+    this.moodDialog().open(undefined, date);
   }
 
-  protected openCheckIn(): void {
-    this.checkInDialog().open(this.store.todayEntry());
+  protected editEntry(entry: MoodEntry): void {
+    this.moodDialog().open(entry);
   }
 
-  /** From a need's detail sheet straight to editing just that need. */
-  protected editNeed(): void {
-    this.needSheet().close();
-    this.checkInDialog().open(this.store.todayEntry(), this.selectedNeed());
+  /** Next room over; the new one slides in from the side the arrow pointed to. */
+  protected go(step: -1 | 1): void {
+    const next = ROOMS[this.roomIndex() + step];
+    if (!next) return;
+    this.room.set(next.id);
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    this.stage().nativeElement.animate(
+      [
+        { transform: `translateX(${step * 40}%)`, opacity: 0 },
+        { transform: 'none', opacity: 1 },
+      ],
+      { duration: SLIDE_MS, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    );
   }
 
   protected openSettings(): void {
     this.settingsSheet().open();
   }
 
-  protected openNeed(key: StatKey): void {
-    this.selectedNeed.set(key);
-    this.needSheet().open();
-  }
-
   protected onSaved(): void {
     this.celebrate();
-    // Ask about reminders only once Pimpek has proven useful, never on the first screen.
-    if (!this.settings.settings().reminders.asked) setTimeout(() => this.askReminders.set(true), 2500);
   }
 
-  protected answerReminders(enabled: boolean): void {
-    this.settings.updateReminders({ enabled, asked: true });
-    this.askReminders.set(false);
-  }
-
-  protected celebrate(): void {
+  private celebrate(): void {
     this.celebrating.set(true);
     setTimeout(() => this.celebrating.set(false), CELEBRATION_MS);
   }

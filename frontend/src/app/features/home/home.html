@@ -1,96 +1,98 @@
-<main class="room" [class]="'mood-' + store.avatarState()">
+<main
+  class="room"
+  [class]="'mood-' + store.avatarState() + ' in-' + room()"
+  [class.hugged]="!!cuddle()"
+  [class.breathing]="cuddle() === 'breathe'"
+>
   <div class="scenery" aria-hidden="true">
     <span class="blob blob-sage"></span>
     <span class="blob blob-peach"></span>
     <span class="glow"></span>
+    <span class="tiles"></span>
+    <span class="dots"></span>
     <span class="floor"></span>
+    <span class="hug-tint"></span>
   </div>
 
   <header class="top">
     <div class="hello">
       <p>{{ greeting }}</p>
       <h1>{{ settings.petName() }}</h1>
-      @if (store.streak() > 0) {
-        <span class="streak" title="Dni z rzędu z wpisem">
+      @if (store.daysTogether() > 0) {
+        <span class="streak" title="Dni z wpisem w dzienniku">
           <app-icon name="sprout" />
-          {{ store.streak() }} {{ store.streak() === 1 ? 'dzień' : 'dni' }} razem
+          {{ store.daysTogether() }} {{ store.daysTogether() === 1 ? 'dzień' : 'dni' }} razem
         </span>
       }
     </div>
     <div class="actions">
-      <app-sync-badge (connectRequested)="openSettings()" />
       <button type="button" class="icon-btn" aria-label="Profil i ustawienia" (click)="openSettings()">
         <app-icon name="user" />
       </button>
     </div>
   </header>
 
-  <section class="stage">
-    @if (store.loading()) {
-      <p class="loading">Pimpek się przeciąga i budzi…</p>
-    } @else {
-      <app-pimpek
-        [state]="store.avatarState()"
-        [message]="store.bubbleMessage()"
-        [celebrating]="celebrating()"
-        [color]="settings.petHex()"
-        [needsAttention]="!store.todayEntry()"
-        (petClick)="openCheckIn()"
-      />
-    }
+  <!-- Where he is: the room's name and a dot for each room, left to right. -->
+  <div class="where" aria-live="polite">
+    <span class="where-name"><app-icon [name]="current().icon" /> {{ current().label }}</span>
+    <span class="pips" aria-hidden="true">
+      @for (r of rooms; track r.id) {
+        <span [class.on]="r.id === room()"></span>
+      }
+    </span>
+  </div>
+
+  @if (leftRoom(); as r) {
+    <button type="button" class="room-arrow left" [attr.aria-label]="'Przejdź do: ' + r.label" (click)="go(-1)">
+      <span class="arrow-knob"><app-icon name="chevron-left" /></span>
+      <span class="arrow-label">{{ r.label }}</span>
+    </button>
+  }
+  @if (rightRoom(); as r) {
+    <button type="button" class="room-arrow right" [attr.aria-label]="'Przejdź do: ' + r.label" (click)="go(1)">
+      <span class="arrow-knob"><app-icon name="chevron-right" /></span>
+      <span class="arrow-label">{{ r.label }}</span>
+    </button>
+  }
+
+  <section #stage class="stage">
+    <app-pimpek
+      [state]="store.avatarState()"
+      [message]="store.bubbleMessage()"
+      [celebrating]="celebrating()"
+      [color]="settings.petHex()"
+      [needsAttention]="!store.todayEntry()"
+      [room]="room()"
+      (cuddle)="cuddle.set($event)"
+    />
   </section>
 
-  @if (!store.loading()) {
-    @if (!store.isNewcomer()) {
-      <app-daily-quest (completed)="celebrate()" />
-      <app-stat-gauges
-        [stats]="store.stats()"
-        [known]="store.knownStats()"
-        (select)="openNeed($event)"
-      />
-    } @else {
-      <section class="welcome">
-        <strong>{{ settings.petName() }} dopiero Cię poznaje</strong>
-        <p>Opowiedz mu o swoim dniu albo połącz zegarek, a sam zobaczy, jak spałeś/aś.</p>
-        <div class="welcome-actions">
-          <button type="button" class="btn primary small" (click)="openCheckIn()">Pierwszy wpis</button>
-          <button type="button" class="btn ghost small" (click)="openSettings()">Połącz zegarek</button>
-        </div>
-      </section>
-    }
+  @if (!store.hasAnyData() && room() === 'home') {
+    <section class="welcome">
+      <strong>{{ settings.petName() }} dopiero Cię poznaje</strong>
+      <p>Powiedz mu, jak się czujesz. Każdy wpis trafi do Twojego dziennika nastrojów.</p>
+      <div class="welcome-actions">
+        <button type="button" class="btn primary small" (click)="addEntry()">Pierwszy wpis</button>
+      </div>
+    </section>
   }
 
   <nav class="dock">
-    <button type="button" class="main" (click)="openCheckIn()" [disabled]="store.loading()">
-      <app-icon name="pencil" /> {{ store.todayEntry() ? 'Edytuj wpis' : 'Dodaj wpis' }}
+    <button type="button" class="main" (click)="addEntry()">
+      <app-icon name="pencil" /> Dodaj wpis
     </button>
-    <button type="button" (click)="progress.open()">
-      <app-icon name="chart" /> Postępy
+    <button type="button" (click)="journal.open()">
+      <app-icon name="calendar" /> Dziennik
     </button>
   </nav>
 </main>
 
-<app-check-in-dialog (saved)="onSaved()" />
+<app-mood-dialog (saved)="onSaved()" />
 
-<app-sheet #progress title="Postępy">
-  <app-progress />
+<app-sheet #journal title="Dziennik" fixed>
+  <app-journal (addOn)="addEntryOn($event)" (edit)="editEntry($event)" />
 </app-sheet>
 
 <app-sheet #settingsSheet title="Ty i Pimpek">
   <app-settings-panel />
 </app-sheet>
-
-<app-sheet #needSheet [title]="needTitle()">
-  <app-need-detail [stat]="selectedNeed()" (edit)="editNeed()" />
-</app-sheet>
-
-@if (askReminders()) {
-  <div class="ask" role="dialog" aria-labelledby="ask-title">
-    <app-icon name="bell" />
-    <p id="ask-title">Przypomnieć Ci jutro o {{ settings.settings().reminders.checkInTime }}, żebyśmy razem podsumowali dzień?</p>
-    <div class="ask-actions">
-      <button type="button" class="btn ghost small" (click)="answerReminders(false)">Nie teraz</button>
-      <button type="button" class="btn primary small" (click)="answerReminders(true)">Tak, przypomnij</button>
-    </div>
-  </div>
-}

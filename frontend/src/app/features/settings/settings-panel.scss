@@ -14,6 +14,15 @@ app-sheet {
   text-align: right;
 }
 
+.mood-face {
+  font-size: 1.5rem;
+}
+
+.mood-name {
+  flex: 1;
+  max-width: 14rem;
+}
+
 .swatches {
   display: flex;
   gap: 0.5rem;
@@ -32,11 +41,6 @@ app-sheet {
     outline: 3px solid var(--terracotta-400);
     transform: scale(1.1);
   }
-}
-
-.sub {
-  padding-left: 1rem;
-  color: var(--text-muted);
 }
 
 .with-hint {
@@ -72,32 +76,6 @@ app-sheet {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
-}
-
-.demo {
-  border: 2px dashed var(--honey-400);
-  background: var(--honey-200);
-}
-
-.scenarios {
-  display: grid;
-  gap: 0.45rem;
-
-  .chip {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    border-radius: 1.2rem;
-    text-align: left;
-
-    strong {
-      color: var(--text);
-    }
-
-    small {
-      font-weight: 600;
-    }
-  }
 }
 
 // ---- looks: built-in Pimpek and uploaded skin packs ----
@@ -252,16 +230,111 @@ app-sheet {
   }
 }
 
-.number {
-  width: 6rem;
-  text-align: right;
+// ---- what Pimpek says ----
+
+.speech {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.bmi {
-  margin: 0;
-  font-weight: 600;
+.situation {
+  border-radius: 1.2rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-clay);
 
-  small {
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    .with-hint {
+      flex: 1;
+    }
+
+    app-icon {
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &[open] summary app-icon {
+    transform: rotate(180deg);
+  }
+}
+
+.count {
+  min-width: 1.6rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 1rem;
+  background: var(--peach-100);
+  color: var(--terracotta-600);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0 0.9rem;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.2rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .builtin {
     color: var(--text-muted);
+    font-weight: 500;
+
+    small {
+      flex-shrink: 0;
+      font-size: 0.72rem;
+    }
+  }
+}
+
+.remove-line {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--terracotta-600);
+  }
+}
+
+.add-line {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem 0.8rem;
+
+  .text-input {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
   }
 }

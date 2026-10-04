@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { AiError } from '../../core/models/ai.model';
 import { AvatarState } from '../../core/models/check-in.model';
-import { PetSkin, SkinPose } from '../../core/models/skin.model';
+import { PetSkin, SkinPose, TouchPose } from '../../core/models/skin.model';
 import { readSkinPack } from '../../core/services/skin-pack';
 import { GENERATED_POSES, POSE_BRIEFS, SkinBrief, SkinGenerator } from '../../core/services/skin-generator';
 import { AiSettingsStore } from '../../core/state/ai-settings.store';
@@ -27,6 +27,7 @@ interface Draft {
 }
 
 const MOODS: readonly AvatarState[] = ['neutral', 'happy', 'sleepy', 'sad', 'sick'];
+const TOUCHES: readonly TouchPose[] = ['petted', 'tickled', 'hugged'];
 const CELEBRATION_MS = 1800;
 const DEFAULT_NAME = 'Mój Pimpek';
 
@@ -97,6 +98,9 @@ export class SkinStudio {
   /** The pack as it will be saved, played with the app's own motion on top. */
   protected readonly preview = signal<PetSkin | undefined>(undefined);
   protected readonly previewMood = signal<AvatarState>('neutral');
+  /** Plays a touch clip in the preview instead of the mood. */
+  protected readonly previewTouch = signal<TouchPose | null>(null);
+  protected readonly touches = TOUCHES;
   protected readonly celebrating = signal(false);
 
   private controller?: AbortController;

@@ -90,6 +90,11 @@
         <code>happy</code>, <code>neutral</code>, <code>sleepy</code>, <code>sad</code>,
         <code>sick</code> i opcjonalnie <code>celebrate</code>.
       </p>
+      <p>
+        Możesz też dodać, jak reaguje na dotyk: <code>petted</code> (głaskanie),
+        <code>tickled</code> (łaskotki) i <code>hugged</code> (przytulanie). Bez nich Pimpek użyje
+        <code>happy</code>.
+      </p>
       <ul>
         <li>plik: <code>happy.svg</code>, <code>.gif</code>, <code>.webp</code>, <code>.png</code> albo Lottie <code>happy.json</code>,</li>
         <li>albo folder klatek: <code>happy/001.png</code>, <code>happy/002.png</code>…</li>
@@ -114,127 +119,106 @@
 </app-sheet>
 
 <section class="card">
-  <h3><app-icon name="heart" /> Wzrost i waga</h3>
-  <p class="muted">Z tego liczymy BMI. Zostaje tylko na tym urządzeniu.</p>
-  <label class="row">
-    <span>Wzrost (cm)</span>
-    <input
-      class="text-input number"
-      type="number"
-      inputmode="decimal"
-      min="100"
-      max="250"
-      placeholder="np. 175"
-      [value]="settings.settings().body.heightCm ?? ''"
-      (change)="setBody('heightCm', $event)"
-    />
-  </label>
-  <label class="row">
-    <span>Waga (kg)</span>
-    <input
-      class="text-input number"
-      type="number"
-      inputmode="decimal"
-      min="30"
-      max="300"
-      placeholder="np. 70"
-      [value]="settings.settings().body.weightKg ?? ''"
-      (change)="setBody('weightKg', $event)"
-    />
-  </label>
-  @if (settings.bmi(); as value) {
-    <p class="bmi">BMI <strong>{{ value }}</strong> <small>({{ bmiCategory(value) }})</small></p>
+  <h3><app-icon name="star" /> Nastroje</h3>
+  <p class="muted">Nazwij nastroje po swojemu. Puste pole przywraca nazwę domyślną.</p>
+  @for (m of settings.moods(); track m.level) {
+    <label class="row">
+      <span class="mood-face" aria-hidden="true">{{ m.emoji }}</span>
+      <input
+        #field
+        class="text-input mood-name"
+        [attr.maxlength]="moodLabelMax"
+        [placeholder]="defaultMoodLabel(m.level)"
+        [value]="settings.settings().moodLabels[m.level] ?? ''"
+        [attr.aria-label]="'Nazwa nastroju ' + m.emoji + ' (domyślnie: ' + defaultMoodLabel(m.level) + ')'"
+        (change)="renameMood(m.level, field)"
+      />
+    </label>
   }
 </section>
 
 <section class="card">
-  <h3><app-icon name="flag" /> Cele</h3>
-  <app-goals-picker />
-</section>
-
-<section class="card">
-  <h3><app-icon name="watch" /> Źródła danych</h3>
+  <h3><app-icon name="pencil" /> Ustawienia Pimpka</h3>
   <p class="muted">
-    Sen i kroki Pimpek bierze z zegarka, a posiłki z Fitatu. Nastrój i ludzi opowiadasz mu sam(a).
+    Dopisz, co {{ settings.petName() }} ma mówić w danej chwili. Gdy tekstów jest kilka, za każdym
+    razem losuje jeden.
   </p>
-  @for (source of sources; track source.id) {
-    <app-source-card [source]="source" returnTo="/?panel=ustawienia" />
-  }
-</section>
-
-<section class="card">
-  <h3><app-icon name="bell" /> Przypomnienia</h3>
-  <label class="row">
-    <span>Przypominaj o wpisie</span>
-    <input
-      type="checkbox"
-      class="switch"
-      [checked]="settings.settings().reminders.enabled"
-      (change)="settings.updateReminders({ enabled: !settings.settings().reminders.enabled, asked: true })"
-    />
-  </label>
-  @if (settings.settings().reminders.enabled) {
-    <label class="row sub">
-      <span>Wieczorny wpis o</span>
-      <input type="time" [value]="settings.settings().reminders.checkInTime" (change)="setTime('checkInTime', $event)" />
-    </label>
-  }
-  <label class="row">
-    <span>Pimpek ziewa przed snem</span>
-    <input
-      type="checkbox"
-      class="switch"
-      [checked]="settings.settings().reminders.bedtimeNudge"
-      (change)="settings.updateReminders({ bedtimeNudge: !settings.settings().reminders.bedtimeNudge })"
-    />
-  </label>
-  @if (settings.settings().reminders.bedtimeNudge) {
-    <label class="row sub">
-      <span>Pora snu</span>
-      <input type="time" [value]="settings.settings().reminders.bedtime" (change)="setTime('bedtime', $event)" />
-    </label>
-  }
-  <label class="row">
-    <span>Cisza nocna (22:00–7:00)</span>
-    <input
-      type="checkbox"
-      class="switch"
-      [checked]="settings.settings().reminders.quietNights"
-      (change)="settings.updateReminders({ quietNights: !settings.settings().reminders.quietNights })"
-    />
-  </label>
-</section>
-
-<section class="card">
   <label class="row">
     <span class="with-hint">
-      <strong>Łagodny tryb</strong>
-      <small>Pimpek nigdy nie choruje, a jego słowa są jeszcze delikatniejsze.</small>
+      Mieszaj z wbudowanymi tekstami
+      <small>Wyłączone: gdy masz własne teksty, mówi tylko je</small>
     </span>
     <input
       type="checkbox"
       class="switch"
-      [checked]="settings.settings().gentleMode"
-      (change)="settings.update({ gentleMode: !settings.settings().gentleMode })"
+      [checked]="settings.speech().mixDefaults"
+      (change)="settings.setMixDefaults(!settings.speech().mixDefaults)"
     />
   </label>
+  <div class="speech">
+    @for (s of situations(); track s.id) {
+      @let own = settings.speech().lines[s.id] ?? [];
+      <details class="situation">
+        <summary>
+          <span class="with-hint">
+            {{ s.label }}
+            <small>{{ s.hint }}</small>
+          </span>
+          @if (own.length) {
+            <span class="count" [attr.aria-label]="'Twoje teksty: ' + own.length">{{ own.length }}</span>
+          }
+          <app-icon name="chevron" />
+        </summary>
+        <ul class="lines">
+          @for (line of own; track $index) {
+            <li>
+              <span>{{ line }}</span>
+              <button
+                type="button"
+                class="remove-line"
+                [attr.aria-label]="'Usuń tekst: ' + line"
+                (click)="settings.removeLine(s.id, $index)"
+              >
+                <app-icon name="trash" />
+              </button>
+            </li>
+          }
+          @if (!own.length || settings.speech().mixDefaults) {
+            @for (line of defaultLines[s.id]; track $index) {
+              <li class="builtin"><span>{{ line }}</span><small>wbudowany</small></li>
+            }
+          }
+        </ul>
+        <form class="add-line" (submit)="$event.preventDefault(); addLine(s.id, field)">
+          <input
+            #field
+            class="text-input"
+            [attr.maxlength]="lineMax"
+            placeholder="Nowy tekst…"
+            [attr.aria-label]="'Nowy tekst: ' + s.label"
+          />
+          <button type="submit" class="btn soft small">Dodaj</button>
+        </form>
+      </details>
+    }
+  </div>
 </section>
 
 <section class="card">
   <h3><app-icon name="shield" /> Prywatność</h3>
   <p class="muted">
-    Dane zdrowotne trzymamy tylko po to, żeby Pimpek mógł na nie reagować. Nie sprzedajemy ich i nie
-    pokazujemy nikomu.
+    Twój dziennik nastrojów zostaje tylko na tym urządzeniu. Nigdzie go nie wysyłamy i nie pokazujemy
+    nikomu.
   </p>
   <button type="button" class="btn ghost small with-icon" (click)="exportData()">
     <app-icon name="download" /> Pobierz moje dane
   </button>
   @if (confirmDelete()) {
     <div class="danger">
-      <p>To usunie wszystkie wpisy, połączenia i Pimpka. Nie da się tego cofnąć.</p>
+      <p>To usunie wszystkie wpisy i Pimpka. Nie da się tego cofnąć.</p>
       <div class="actions">
         <button type="button" class="btn ghost small" (click)="confirmDelete.set(false)">Zostaw</button>
-        <button type="button" class="btn primary small" (click)="demo.resetAll()">Usuń wszystko</button>
+        <button type="button" class="btn primary small" (click)="deleteAll()">Usuń wszystko</button>
       </div>
     </div>
   } @else {
@@ -242,34 +226,4 @@
       <app-icon name="trash" /> Usuń moje dane
     </button>
   }
-</section>
-
-<section class="card demo">
-  <h3><app-icon name="sparkle" /> Tryb demo</h3>
-  <p class="muted">Pilot dla jury. Każdy scenariusz podmienia dane i od razu synchronizuje „zegarek”.</p>
-  <div class="scenarios">
-    @for (s of scenarios; track s.id) {
-      <button
-        type="button"
-        class="chip"
-        [attr.aria-pressed]="demo.scenario() === s.id"
-        (click)="demo.load(s.id)"
-      >
-        <strong>{{ s.label }}</strong>
-        <small>{{ s.hint }}</small>
-      </button>
-    }
-  </div>
-  <div class="chips">
-    <button type="button" class="btn soft small" (click)="demo.advanceDay()">
-      Przewiń o dzień
-      @if (demo.dayOffset()) {
-        (+{{ demo.dayOffset() }})
-      }
-    </button>
-    @if (demo.dayOffset()) {
-      <button type="button" class="btn ghost small" (click)="demo.backToToday()">Wróć do dzisiaj</button>
-    }
-    <button type="button" class="btn ghost small" (click)="demo.failNextSync()">Zepsuj synchronizację</button>
-  </div>
 </section>

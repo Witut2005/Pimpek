@@ -1,0 +1,105 @@
+<dialog #dialog (click)="onDialogClick($event)" aria-labelledby="mood-title">
+  @if (existing(); as entry) {
+    @let meta = settings.moodMeta(entry.mood);
+    <div class="panel">
+      <header>
+        <h2 id="mood-title">{{ title() }}</h2>
+        <button type="button" class="icon-btn" (click)="close()" aria-label="Zamknij">
+          <app-icon name="close" />
+        </button>
+      </header>
+
+      <p>Na {{ dayLabel(entry.date) }} masz już wpis. Jeden dzień to jeden wpis — chcesz go edytować?</p>
+
+      <div class="existing" [style.--mood]="'var(--mood-' + entry.mood + ')'">
+        <span class="face" aria-hidden="true">{{ meta.emoji }}</span>
+        <span class="text">
+          <strong>{{ meta.label }}</strong>
+          @if (entry.note) {
+            <span class="muted">{{ entry.note }}</span>
+          }
+        </span>
+      </div>
+
+      <footer>
+        <button type="button" class="btn ghost" (click)="close()">Anuluj</button>
+        <button type="button" class="btn primary" (click)="open(entry)">Edytuj wpis</button>
+      </footer>
+    </div>
+  } @else {
+    <form class="panel" (submit)="$event.preventDefault(); save()">
+      <header>
+        <div>
+          <h2 id="mood-title">{{ title() }}</h2>
+          <label class="when">
+            <span class="sr-only">Dzień</span>
+            <input type="date" required [max]="today()" [value]="date()" (change)="onDate($event)" />
+          </label>
+        </div>
+        <button type="button" class="icon-btn" (click)="close()" aria-label="Zamknij">
+          <app-icon name="close" />
+        </button>
+      </header>
+
+      @if (conflict(); as other) {
+        <div class="notice" role="alert">
+          <p>
+            Na {{ dayLabel(other.date) }} masz już wpis ({{ settings.moodMeta(other.mood).emoji }}
+            {{ settings.moodMeta(other.mood).label }}). Chcesz go edytować?
+          </p>
+          <button type="button" class="btn ghost small" (click)="open(other)">Edytuj tamten wpis</button>
+        </div>
+      }
+
+      <div class="moods" role="radiogroup" aria-label="Nastrój">
+        @for (m of settings.moods(); track m.level) {
+          <button
+            type="button"
+            role="radio"
+            class="mood"
+            [style.--mood]="'var(--mood-' + m.level + ')'"
+            [attr.aria-checked]="mood() === m.level"
+            [class.dimmed]="mood() && mood() !== m.level"
+            (click)="mood.set(m.level)"
+          >
+            <span class="face" aria-hidden="true">{{ m.emoji }}</span>
+            <span class="label">{{ m.label }}</span>
+          </button>
+        }
+      </div>
+
+      <label class="field">
+        <span>Notatka <small>(opcjonalnie)</small></span>
+        <textarea
+          rows="3"
+          [attr.maxlength]="noteMax"
+          placeholder="Co sprawiło, że tak się czujesz?"
+          [value]="note()"
+          (input)="onNote($event)"
+        ></textarea>
+      </label>
+
+      @if (confirmDelete()) {
+        <div class="danger" role="alert">
+          <p>Usunąć ten wpis z dziennika?</p>
+          <div class="actions">
+            <button type="button" class="btn ghost small" (click)="confirmDelete.set(false)">Zostaw</button>
+            <button type="button" class="btn primary small" (click)="remove()">Usuń</button>
+          </div>
+        </div>
+      }
+
+      <footer>
+        @if (editing() && !confirmDelete()) {
+          <button type="button" class="delete" (click)="confirmDelete.set(true)" aria-label="Usuń wpis">
+            <app-icon name="trash" />
+          </button>
+        }
+        <button type="button" class="btn ghost" (click)="close()">Anuluj</button>
+        <button type="submit" class="btn primary" [disabled]="!canSave()">
+          {{ editing() ? 'Zapisz zmiany' : 'Zapisz' }}
+        </button>
+      </footer>
+    </form>
+  }
+</dialog>

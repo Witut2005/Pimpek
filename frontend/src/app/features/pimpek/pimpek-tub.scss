@@ -1,0 +1,115 @@
+// Pimpek sits in it: the front of the tub hides his lower third.
+:host {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: calc(var(--pet-width) * 1.45);
+  margin-top: calc(var(--pet-width) * -0.3);
+  // Rubbing through the water still soaps him.
+  pointer-events: none;
+}
+
+.tub {
+  position: relative;
+  height: calc(var(--pet-width) * 0.46);
+  border-radius: 1rem 1rem 46% 46% / 1rem 1rem 62% 62%;
+  background: linear-gradient(180deg, #fffdf8 0%, #f4ece1 70%, #e9dccb 100%);
+  box-shadow:
+    0 0.9rem 1.4rem -0.5rem rgb(120 70 40 / 0.3),
+    inset 0 -0.4rem 0.8rem rgb(150 105 70 / 0.12),
+    inset 0 0.5rem 0 #fff;
+
+  // Little golden feet.
+  &::after {
+    content: '';
+    position: absolute;
+    left: 16%;
+    bottom: -0.45rem;
+    width: 1.1rem;
+    height: 0.75rem;
+    border-radius: 0 0 0.6rem 0.6rem;
+    background: var(--honey-400);
+    box-shadow: calc(var(--pet-width) * 1.45 * 0.68 - 1.1rem) 0 0 var(--honey-400);
+  }
+}
+
+// Suds spilling over the rim.
+.tub-suds {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  top: -0.7rem;
+  height: 1.5rem;
+  background:
+    radial-gradient(circle at 50% 60%, #fff 0 58%, transparent 61%) 0 0.2rem / 1.5rem 1.3rem repeat-x,
+    radial-gradient(circle at 50% 60%, #f3f7fa 0 58%, transparent 61%) 0.7rem 0 / 1.9rem 1.3rem repeat-x;
+  filter: drop-shadow(0 0.1rem 0.15rem rgb(120 130 150 / 0.25));
+}
+
+.duck {
+  position: absolute;
+  right: 4%;
+  top: calc(var(--pet-width) * -0.13);
+  width: calc(var(--pet-width) * 0.24);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  transform-origin: 50% 100%;
+  animation: bob 2.6s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    animation: none;
+    transform: scale(1.1, 0.82);
+  }
+
+  &:focus-visible {
+    outline: 3px dashed var(--terracotta-400);
+    outline-offset: 4px;
+    border-radius: 50%;
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 0.2rem 0.25rem rgb(120 80 30 / 0.3));
+  }
+
+  .duck-body {
+    fill: #f4c84e;
+  }
+
+  .duck-beak {
+    fill: var(--terracotta-400);
+  }
+
+  .duck-eye {
+    fill: var(--bark);
+  }
+
+  .duck-wing {
+    fill: none;
+    stroke: #d9a531;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(-4%) rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .duck {
+    animation: none;
+  }
+}

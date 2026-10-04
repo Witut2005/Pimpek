@@ -1,19 +1,29 @@
-/** Every key the app keeps in localStorage, so "reset demo" can wipe them all. */
+/** Every key the app keeps in localStorage, so "delete my data" can wipe them all. */
 export const KEYS = {
-  checkIns: 'pimpek.checkIns',
+  journal: 'pimpek.moods',
   settings: 'pimpek.settings',
-  sources: 'pimpek.sources',
-  wearable: 'pimpek.wearable',
-  quest: 'pimpek.quest',
-  scenario: 'pimpek.scenario',
-  clock: 'pimpek.clock',
   skin: 'pimpek.skin',
   ai: 'pimpek.ai',
-  strava: 'pimpek.strava',
-  profile: 'pimpek.profile',
+  /** The day of Pimpek's last bath. */
+  bath: 'pimpek.bath',
 } as const;
 
-/** localStorage that never throws (private mode, blocked storage) — the demo must not crash on it. */
+/**
+ * Left behind by older versions: the five-level journal, daily check-ins, the leaf wallet, the removed
+ * wearable / Strava sync and demo mode.
+ */
+export const LEGACY_KEYS = {
+  fiveLevelJournal: 'pimpek.journal',
+  checkIns: 'pimpek.checkIns',
+  sources: 'pimpek.sources',
+  wearable: 'pimpek.wearable',
+  strava: 'pimpek.strava',
+  wallet: 'pimpek.wallet',
+  scenario: 'pimpek.scenario',
+  clock: 'pimpek.clock',
+} as const;
+
+/** localStorage that never throws (private mode, blocked storage) — the app must not crash on it. */
 export function readJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -33,8 +43,16 @@ export function writeJson(key: string, value: unknown): void {
 
 export function clearAll(): void {
   try {
-    Object.values(KEYS).forEach((key) => localStorage.removeItem(key));
+    [...Object.values(KEYS), ...Object.values(LEGACY_KEYS)].forEach((key) => localStorage.removeItem(key));
   } catch {
     // Nothing to clear.
+  }
+}
+
+export function removeKey(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Nothing to remove.
   }
 }

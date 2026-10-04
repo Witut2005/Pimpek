@@ -6,15 +6,18 @@ export type SkinClip =
   | { kind: 'frames'; urls: readonly string[]; fps: number }
   | { kind: 'lottie'; data: object };
 
-/** Avatar states plus a one-off clip played while Pimpek celebrates. */
-export type SkinPose = AvatarState | 'celebrate';
+/** Clips played while Pimpek is stroked, tickled or hugged. Optional: missing ones borrow happy. */
+export type TouchPose = 'petted' | 'tickled' | 'hugged';
+
+/** Avatar states, a one-off clip played while Pimpek celebrates, and the touch clips. */
+export type SkinPose = AvatarState | 'celebrate' | TouchPose;
 
 /** A look uploaded by the user as a .zip pack, already unpacked into playable clips. */
 export interface PetSkin {
   id: string;
   name: string;
   /** Every state has a clip — the ones missing from the pack borrow the fallback's. */
-  clips: Record<AvatarState, SkinClip> & { celebrate?: SkinClip };
+  clips: Record<AvatarState, SkinClip> & Partial<Record<'celebrate' | TouchPose, SkinClip>>;
   /** States the pack really drew, so the picker can show what's borrowed. */
   provided: readonly SkinPose[];
   /** Whether Pimpek's bounce and sway play on top of the pack's own animation. */

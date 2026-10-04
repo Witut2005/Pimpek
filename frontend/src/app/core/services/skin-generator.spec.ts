@@ -48,4 +48,14 @@ describe('SkinGenerator.pack', () => {
     expect(skin.provided).toEqual(['happy', 'neutral', 'celebrate']);
     skin.urls.forEach((url) => URL.revokeObjectURL(url));
   });
+
+  it('keeps the touch clips it drew and leaves the others to borrow happy', () => {
+    const zip = new SkinGenerator().pack('Chmurek', { neutral: SVG, petted: SVG, tickled: SVG });
+    const skin = readSkinPack('id', 'Chmurek.zip', zip);
+    expect(skin.clips.petted).toBeDefined();
+    expect(skin.clips.tickled).toBeDefined();
+    expect(skin.clips.hugged).toBeUndefined();
+    expect(skin.provided).toEqual(['neutral', 'petted', 'tickled']);
+    skin.urls.forEach((url) => URL.revokeObjectURL(url));
+  });
 });

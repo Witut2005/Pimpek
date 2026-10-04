@@ -1,9 +1,10 @@
 import { strFromU8, unzipSync } from 'fflate';
 import { AvatarState } from '../models/check-in.model';
-import { PetSkin, SkinClip, SkinPose } from '../models/skin.model';
+import { PetSkin, SkinClip, SkinPose, TouchPose } from '../models/skin.model';
 
-const STATES: readonly AvatarState[] = ['happy', 'neutral', 'sleepy', 'sad', 'sick'];
-const POSES: readonly SkinPose[] = [...STATES, 'celebrate'];
+export const SKIN_STATES: readonly AvatarState[] = ['happy', 'neutral', 'sleepy', 'sad', 'sick'];
+const TOUCHES: readonly TouchPose[] = ['petted', 'tickled', 'hugged'];
+const POSES: readonly SkinPose[] = [...SKIN_STATES, 'celebrate', ...TOUCHES];
 
 const IMAGE_TYPES: Record<string, string> = {
   svg: 'image/svg+xml',
@@ -175,8 +176,11 @@ export function readSkinPack(id: string, fileName: string, zip: Uint8Array): Pet
     id,
     name: (manifest.name?.trim() || fileName.replace(/\.zip$/i, '')).slice(0, 32),
     clips: {
-      ...(Object.fromEntries(STATES.map((s) => [s, found[s] ?? base])) as Record<AvatarState, SkinClip>),
+      ...(Object.fromEntries(SKIN_STATES.map((s) => [s, found[s] ?? base])) as Record<AvatarState, SkinClip>),
       celebrate: found.celebrate,
+      petted: found.petted,
+      tickled: found.tickled,
+      hugged: found.hugged,
     },
     provided: POSES.filter((pose) => found[pose]),
     motion: manifest.motion ?? true,

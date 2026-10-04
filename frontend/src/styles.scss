@@ -36,6 +36,12 @@
   --low: var(--rose-400);
   --danger-text: var(--terracotta-700);
 
+  // Journal moods, 4 = hapi hapi … 1 = zły. Soft enough to sit behind an emoji.
+  --mood-4: #9fc28e;
+  --mood-3: #cbd48f;
+  --mood-2: #ecc56f;
+  --mood-1: #e79a73;
+
   // Clay: a wide warm drop shadow, a light top bevel and a darker bottom bevel.
   --shadow-clay:
     0 0.9rem 1.8rem -0.7rem rgb(120 80 50 / 0.24),
@@ -212,6 +218,64 @@ textarea:focus-visible {
     background: var(--peach-100);
     color: var(--terracotta-700);
     box-shadow: var(--shadow-clay);
+  }
+}
+
+// Pill button with an icon, for the toys in Pimpek's rooms (soap, shower, ball, cups).
+.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: 2px solid transparent;
+  border-radius: 1.4rem;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-clay);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+
+  &:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--terracotta-400);
+    background: var(--peach-100);
+    color: var(--terracotta-700);
+  }
+
+  // Calls for a tap: what comes next.
+  &.ready:not([aria-pressed='true']) {
+    background: var(--accent);
+    color: var(--cream);
+    animation: tool-nudge 1.6s ease-in-out infinite;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  app-icon {
+    font-size: 1.15rem;
+  }
+}
+
+@keyframes tool-nudge {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool.ready {
+    animation: none;
   }
 }
 

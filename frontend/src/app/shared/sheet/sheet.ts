@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, input, viewChild } from '@angular/core';
+import { booleanAttribute, ChangeDetectionStrategy, Component, ElementRef, input, viewChild } from '@angular/core';
 import { Icon } from '../icon/icon';
 
 /** Bottom sheet built on the native <dialog> (focus trap, Esc and backdrop for free). */
@@ -6,7 +6,7 @@ import { Icon } from '../icon/icon';
   selector: 'app-sheet',
   imports: [Icon],
   template: `
-    <dialog #dialog (click)="onDialogClick($event)" [attr.aria-label]="title()">
+    <dialog #dialog [class.fixed]="fixed()" (click)="onDialogClick($event)" [attr.aria-label]="title()">
       <div class="panel">
         <header>
           <h2>{{ title() }}</h2>
@@ -23,6 +23,8 @@ import { Icon } from '../icon/icon';
 })
 export class Sheet {
   readonly title = input.required<string>();
+  /** Full height regardless of content, so the top edge never jumps as the content changes. */
+  readonly fixed = input(false, { transform: booleanAttribute });
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   open(): void {
