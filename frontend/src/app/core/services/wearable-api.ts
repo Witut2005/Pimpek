@@ -35,7 +35,7 @@ export type LoginResult =
 
 const orUndefined = <T>(value: T | null): T | undefined => value ?? undefined;
 
-/** The FastAPI backend (`/api`, proxied in dev). Identity is the backend's default user for now. */
+/** The FastAPI backend (`/api`, proxied in dev). Identity is a per-browser X-User-Id (user-id.interceptor.ts). */
 @Injectable({ providedIn: 'root' })
 export class WearableApi {
   private readonly http = inject(HttpClient);

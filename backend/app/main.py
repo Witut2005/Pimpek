@@ -1,7 +1,8 @@
 import logging
+import math
 from typing import Annotated, Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from garminconnect import (
     GarminConnectAuthenticationError,
@@ -19,6 +20,7 @@ from . import open_wearables as ow
 from . import user_profile
 from .config import settings
 from .main_deps import current_user
+from .rate_limit import RateLimiter
 from .wearables_router import router as wearables_router
 
 app = FastAPI(title="HackYeah API")
@@ -85,6 +87,31 @@ def _map_rating_errors(fn, *args):
     except food_rating.RatingUnavailable as e:
         log.warning("Could not reach Gemini: %s", e)
         raise HTTPException(502, "Could not reach Gemini")
+
+
+ai_rate_limiter = RateLimiter()
+
+
+def ai_rate_limit(request: Request, user: str = Depends(current_user)) -> str:
+    """The API is public and every call costs Gemini quota: cap each endpoint per IP and per user.
+
+    The IP comes from X-Forwarded-For, which uvicorn trusts (--proxy-headers) behind Coolify's proxy.
+    """
+    ip = request.client.host if request.client else "unknown"
+    path = request.url.path
+    for key, limit in (
+        (("ip", ip, path), settings.ai_rate_limit_per_ip),
+        (("user", user, path), settings.ai_rate_limit_per_user),
+    ):
+        retry_after = ai_rate_limiter.hit(key, limit)
+        if retry_after is not None:
+            raise HTTPException(
+                429,
+                "Too many AI requests, try again in a minute",
+                headers={"Retry-After": str(math.ceil(retry_after))},
+            )
+    return user
+
 
 app.include_router(wearables_router)
 
@@ -242,16 +269,16 @@ class FoodCheckBody(BaseModel):
 
 
 @app.post("/api/food/check")
-def check_food(body: FoodCheckBody, user: str = Depends(current_user)):
+def check_food(body: FoodCheckBody, user: str = Depends(ai_rate_limit)):
     """Whether a food typed in by hand is food at all. 503 when no GEMINI_API_KEY is set."""
     return _map_rating_errors(food_rating.check_food, body.model_dump(exclude_none=True))
 
 
 @app.post("/api/food/rating")
-def rate_food(body: RatingBody, user: str = Depends(current_user)):
+def rate_food(body: RatingBody, user: str = Depends(ai_rate_limit)):
     """Gemini's 0–100 rating of the day's food, with a short summary, positives and tips.
 
-    503 when no GEMINI_API_KEY is set: the frontend then shows its own rough estimate.
+    503 when no GEMINI_API_KEY is set, 429 over the rate limit: the frontend then shows its own rough estimate.
     """
     return _map_rating_errors(food_rating.rate, body.model_dump(exclude_none=True))
 
@@ -305,7 +332,7 @@ class ProfileBody(BaseModel):
 
 
 @app.post("/api/profile/summary")
-def summarize_profile(body: ProfileBody, user: str = Depends(current_user)):
+def summarize_profile(body: ProfileBody, user: str = Depends(ai_rate_limit)):
     """Gemini's read of the recent check-ins: what keeps repeating and the one need to work on.
 
     Stateless: the check-ins live in the browser's localStorage and come with the request.

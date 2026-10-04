@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     # Used when the main model stays overloaded ("high demand"). Empty: no fallback.
     gemini_fallback_model: str = "gemini-3.5-flash-lite"
     gemini_api_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    # Requests per minute to each Gemini endpoint, per X-User-Id and per client IP.
+    # The IP limit is looser: a whole hackathon room may share one public IP.
+    ai_rate_limit_per_user: int = 10
+    ai_rate_limit_per_ip: int = 60
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -79,3 +79,8 @@ summaries, so no mapping code is needed per brand. To enable one:
 - `DELETE /api/sources/{provider}` unlinks any of them.
 
 Identity is the `X-User-Id` header (defaults to the hardcoded UUID `82b25836-a99e-4f59-8c7b-34d451ddcd90`), which is a placeholder for real auth.
+The frontend sends a random id per browser, kept in localStorage (`pimpek.userId`).
+
+The Gemini endpoints (`/api/food/rating`, `/api/food/check`, `/api/profile/summary`) answer 429 with `Retry-After`
+over `AI_RATE_LIMIT_PER_USER` (default 10) requests a minute per user id, or `AI_RATE_LIMIT_PER_IP` (default 60) per IP.
+The counts are in memory, so they reset when the backend restarts.
