@@ -36,7 +36,6 @@ export class Home {
   protected readonly celebrating = signal(false);
   /** While Pimpek is hugged the room warms up; while breathing, its glow breathes along. */
   protected readonly cuddle = signal<Cuddle | null>(null);
-  protected readonly askReminders = signal(false);
 
   /** "Dodaj wpis": today's entry, or an offer to edit it if today already has one. */
   protected addEntry(): void {
@@ -58,13 +57,6 @@ export class Home {
 
   protected onSaved(): void {
     this.celebrate();
-    // Ask about reminders only once Pimpek has proven useful, never on the first screen.
-    if (!this.settings.settings().reminders.asked) setTimeout(() => this.askReminders.set(true), 2500);
-  }
-
-  protected answerReminders(enabled: boolean): void {
-    this.settings.updateReminders({ enabled, asked: true });
-    this.askReminders.set(false);
   }
 
   private celebrate(): void {

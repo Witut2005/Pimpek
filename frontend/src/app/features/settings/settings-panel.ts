@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { SCENARIOS } from '../../core/mocks/scenarios';
-import { bmiCategory, Body, PET_COLORS, PetColor } from '../../core/models/settings.model';
+import { PET_COLORS, PetColor } from '../../core/models/settings.model';
 import { PetSkin } from '../../core/models/skin.model';
+import { DEFAULT_LINES, LINE_MAX_LENGTH, SPEECH_SITUATIONS, SpeechSituation } from '../../core/models/speech.model';
 import { SKIN_STATES, SkinPackError } from '../../core/services/skin-pack';
-import { DemoControls } from '../../core/state/demo-controls';
 import { SettingsStore } from '../../core/state/settings.store';
 import { SkinStore } from '../../core/state/skin.store';
 import { Icon } from '../../shared/icon/icon';
 import { Sheet } from '../../shared/sheet/sheet';
-import { KEYS, readJson } from '../../shared/storage';
+import { skinDb } from '../../shared/skin-db';
+import { clearAll, KEYS, readJson } from '../../shared/storage';
 import { PimpekDrawing } from '../pimpek/pimpek-drawing';
 import { SkinPlayer } from '../pimpek/skin-player';
 import { SkinStudio } from '../skin-studio/skin-studio';
@@ -22,22 +22,21 @@ import { SkinStudio } from '../skin-studio/skin-studio';
 })
 export class SettingsPanel {
   protected readonly settings = inject(SettingsStore);
-  protected readonly demo = inject(DemoControls);
   protected readonly skins = inject(SkinStore);
 
-  protected readonly scenarios = SCENARIOS;
   protected readonly colors = Object.entries(PET_COLORS) as [PetColor, { label: string; hex: string }][];
   protected readonly confirmDelete = signal(false);
   protected readonly uploading = signal(false);
   protected readonly uploadError = signal<string | undefined>(undefined);
   protected readonly dragging = signal(false);
 
-  protected readonly bmiCategory = bmiCategory;
+  protected readonly situations = SPEECH_SITUATIONS;
+  protected readonly defaultLines = DEFAULT_LINES;
+  protected readonly lineMax = LINE_MAX_LENGTH;
 
-  /** An empty or non-positive field clears the value, so the BMI waits for both numbers. */
-  protected setBody(key: keyof Body, event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value.replace(',', '.'));
-    this.settings.updateBody({ [key]: value > 0 ? value : null });
+  /** Clears the field only when the line was taken, so a duplicate stays there to fix. */
+  protected addLine(situation: SpeechSituation, field: HTMLInputElement): void {
+    if (this.settings.addLine(situation, field.value)) field.value = '';
   }
 
   /** Renames whichever Pimpek is on screen — each look keeps its own name. */
@@ -83,10 +82,6 @@ export class SettingsPanel {
     return moods ? `${moods} z 5 nastrojów` : 'jedna na wszystko';
   }
 
-  protected setTime(key: 'checkInTime', event: Event): void {
-    this.settings.updateReminders({ [key]: (event.target as HTMLInputElement).value });
-  }
-
   /** RODO: the user can take everything we keep about them — except API keys, which are secrets. */
   protected exportData(): void {
     const data = Object.fromEntries(
@@ -98,5 +93,12 @@ export class SettingsPanel {
     const link = Object.assign(document.createElement('a'), { href: url, download: 'pimpek-moje-dane.json' });
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  /** Wipes everything and starts over at onboarding. A full reload keeps every store honest. */
+  protected async deleteAll(): Promise<void> {
+    clearAll();
+    await skinDb.clear().catch(() => undefined);
+    location.assign('/witaj');
   }
 }

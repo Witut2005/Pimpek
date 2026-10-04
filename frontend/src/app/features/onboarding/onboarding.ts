@@ -1,9 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MOODS } from '../../core/models/journal.model';
-import { DemoControls } from '../../core/state/demo-controls';
 import { SettingsStore } from '../../core/state/settings.store';
-import { Icon } from '../../shared/icon/icon';
 import { PimpekAvatar } from '../pimpek/pimpek-avatar';
 
 const STEP_COUNT = 3;
@@ -12,14 +10,13 @@ const HATCH_MS = 900;
 /** One question per screen, Pimpek as the guide: hatch and name him, see how the journal works, done. */
 @Component({
   selector: 'app-onboarding',
-  imports: [PimpekAvatar, Icon],
+  imports: [PimpekAvatar],
   templateUrl: './onboarding.html',
   styleUrl: './onboarding.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Onboarding {
   protected readonly settings = inject(SettingsStore);
-  private readonly demo = inject(DemoControls);
   private readonly router = inject(Router);
 
   protected readonly steps = Array.from({ length: STEP_COUNT }, (_, i) => i);
@@ -47,11 +44,6 @@ export class Onboarding {
 
   protected finish(): void {
     this.settings.update({ onboarded: true });
-    this.router.navigateByUrl('/');
-  }
-
-  protected startDemo(): void {
-    this.demo.load('good');
     this.router.navigateByUrl('/');
   }
 }

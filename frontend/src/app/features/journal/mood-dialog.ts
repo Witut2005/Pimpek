@@ -94,6 +94,7 @@ export class MoodDialog {
     const editing = this.editing();
     const entry = this.journal.save({ date: this.date(), mood, note: this.note().trim() || undefined }, editing?.date);
     this.close();
+    this.pet.showMood(mood);
     if (!editing) this.saved.emit(entry);
   }
 

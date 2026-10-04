@@ -19,12 +19,8 @@
     [class.breathing]="hug() === 'breathe'"
     [class.sighing]="sighing()"
     [style.--lean]="lean()"
-    (click)="onClick()"
-    [attr.aria-label]="needsAttention() ? 'Pimpek – dodaj dzisiejszy wpis' : 'Pimpek – edytuj dzisiejszy wpis'"
+    aria-label="Pimpek"
   >
-    @if (needsAttention() && !petting() && !hug()) {
-      <span class="badge" aria-hidden="true">!</span>
-    }
     @if (petting() && !tickling()) {
       <span class="purr-wave" aria-hidden="true"></span>
       <span class="purr-wave" aria-hidden="true"></span>

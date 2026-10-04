@@ -1,23 +1,27 @@
-/** Every key the app keeps in localStorage, so "reset demo" can wipe them all. */
+/** Every key the app keeps in localStorage, so "delete my data" can wipe them all. */
 export const KEYS = {
-  journal: 'pimpek.journal',
+  journal: 'pimpek.moods',
   settings: 'pimpek.settings',
-  scenario: 'pimpek.scenario',
-  clock: 'pimpek.clock',
   skin: 'pimpek.skin',
   ai: 'pimpek.ai',
 } as const;
 
-/** Left behind by older versions: daily check-ins, the leaf wallet and the removed wearable / Strava sync. */
+/**
+ * Left behind by older versions: the five-level journal, daily check-ins, the leaf wallet, the removed
+ * wearable / Strava sync and demo mode.
+ */
 export const LEGACY_KEYS = {
+  fiveLevelJournal: 'pimpek.journal',
   checkIns: 'pimpek.checkIns',
   sources: 'pimpek.sources',
   wearable: 'pimpek.wearable',
   strava: 'pimpek.strava',
   wallet: 'pimpek.wallet',
+  scenario: 'pimpek.scenario',
+  clock: 'pimpek.clock',
 } as const;
 
-/** localStorage that never throws (private mode, blocked storage) — the demo must not crash on it. */
+/** localStorage that never throws (private mode, blocked storage) — the app must not crash on it. */
 export function readJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);

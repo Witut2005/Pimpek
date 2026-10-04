@@ -12,6 +12,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { AvatarState } from '../../core/models/check-in.model';
+import { HUGS, THANKS } from '../../core/models/speech.model';
+import { SettingsStore } from '../../core/state/settings.store';
 import { Gaze } from './gaze';
 import { PimpekAvatar } from './pimpek-avatar';
 import { Playground } from './play';
@@ -51,23 +53,7 @@ const INHALE_MS = 4000;
 const SIGH_MS = 1600;
 const THANKS_MS = 2600;
 
-const PURRS = ['Mrrr… jak miło 💙', 'Hihi, łaskocze! 😊', 'Jeszcze, jeszcze! 🥰', 'Uwielbiam to 💛', 'Mrrr… mrrr… 💗'];
 const HEARTS = ['💗', '💛', '🧡', '💙'];
-const GIGGLES = ['Hihihi! Przestań! 😆', 'Hahaha, łaskocze! 🤣', 'Nie tam! Hihi! 😂'];
-const HUGS: Record<AvatarState, string> = {
-  happy: 'Przytulaaas! 🤗',
-  neutral: 'Ojej, przytulas 🤗',
-  sleepy: 'Mmm… cieplutko… 😴',
-  sad: 'Właśnie tego potrzebowałem… 🥺',
-  sick: 'Przytul mnie mocno… 🤒',
-};
-const THANKS: Record<AvatarState, string> = {
-  happy: 'Dzięki, potrzebowałem tego 🫶',
-  neutral: 'Dzięki, od razu lepiej 🫶',
-  sleepy: 'Mmm… teraz mogę spać 😴',
-  sad: 'Już mi trochę lepiej 💙',
-  sick: 'Dziękuję… już mi cieplej 💚',
-};
 
 /** Being hugged, and whether the hug has turned into breathing together. */
 export type Cuddle = 'hug' | 'breathe';
@@ -92,8 +78,6 @@ interface Heart {
   y: number;
   icon: string;
 }
-
-const pick = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)];
 
 function newStroke(x: number, y: number, pressed: boolean): Stroke {
   return { x, y, distance: 0, sinceHeart: 0, dirX: 0, dirY: 0, reversals: 0, flips: [], at: performance.now(), pressed };
@@ -120,10 +104,10 @@ export class Pimpek {
   /** Pimpek is waiting for today's check-in. */
   readonly needsAttention = input(false);
 
-  readonly petClick = output<void>();
   /** A hug started, turned into breathing, or ended (null) — the room warms up meanwhile. */
   readonly cuddle = output<Cuddle | null>();
 
+  private readonly settings = inject(SettingsStore);
   private readonly pet = viewChild.required<ElementRef<HTMLButtonElement>>('pet');
   private readonly mover = viewChild.required<ElementRef<HTMLElement>>('mover');
   private readonly rug = viewChild.required<ElementRef<HTMLElement>>('rug');
@@ -142,7 +126,7 @@ export class Pimpek {
   /** Where the stroking finger is across him, -1 (left) to 1: he leans into the hand. */
   protected readonly lean = signal(0);
   protected readonly hearts = signal<Heart[]>([]);
-  private readonly purr = signal(PURRS[0]);
+  private readonly purr = signal('');
   /** Giggles, hugs and their afterglow; wins over everything else in the bubble. */
   private readonly line = signal<string | null>(null);
   private readonly playLine = signal<string | null>(null);
@@ -160,8 +144,6 @@ export class Pimpek {
   protected readonly shownGaze = computed(() => this.ballGaze() ?? this.gaze());
 
   private stroke?: Stroke;
-  /** A press that turned into stroking, a hug or any drag must not also open the check-in. */
-  private strokedThisPress = false;
   private pressAt?: { x: number; y: number };
   private nextHeart = 0;
   private pettingSince = 0;
@@ -206,7 +188,6 @@ export class Pimpek {
       const stroke = (e: PointerEvent) => this.onStroke(e);
       // The stroke starts where the finger lands, so even one fast swipe counts.
       const press = (e: PointerEvent) => {
-        this.strokedThisPress = false;
         this.pressAt = { x: e.clientX, y: e.clientY };
         this.stroke = newStroke(e.clientX, e.clientY, true);
         clearTimeout(this.hugTimer);
@@ -241,14 +222,6 @@ export class Pimpek {
     });
   }
 
-  protected onClick(): void {
-    if (this.strokedThisPress) {
-      this.strokedThisPress = false;
-      return;
-    }
-    this.petClick.emit();
-  }
-
   /** Points the eyes at the pointer, once per frame. */
   private track(e: PointerEvent): void {
     const { clientX, clientY } = e;
@@ -271,7 +244,6 @@ export class Pimpek {
     if (this.hug()) return;
     const pressed = e.pointerType !== 'mouse' || e.buttons > 0;
     if (pressed && this.pressAt && Math.hypot(e.clientX - this.pressAt.x, e.clientY - this.pressAt.y) > TAP_SLOP_PX) {
-      this.strokedThisPress = true;
       clearTimeout(this.hugTimer);
     }
     const now = performance.now();
@@ -312,7 +284,7 @@ export class Pimpek {
 
   private petted(e: PointerEvent, s: Stroke, now: number): void {
     if (!this.petting()) {
-      this.purr.set(pick(PURRS));
+      this.purr.set(this.settings.line('petted'));
       this.petting.set(true);
       this.pettingSince = now;
       this.play?.calm();
@@ -351,7 +323,7 @@ export class Pimpek {
       this.tickling.set(true);
       this.melted.set(false);
       this.panting.set(false);
-      this.say(pick(GIGGLES));
+      this.say(this.settings.line('tickled'));
     }
     if (now - this.lastGiggleBuzz > 250) {
       this.lastGiggleBuzz = now;
@@ -368,12 +340,11 @@ export class Pimpek {
 
   /** Squeezes in with a heartbeat; held longer, he breathes slowly with you. */
   private startHug(): void {
-    this.strokedThisPress = true;
     this.play?.calm();
     clearTimeout(this.sighTimer);
     this.sighing.set(false);
     this.setHug('hug');
-    this.say(HUGS[this.state()]);
+    this.say(this.settings.line('hugged', [HUGS[this.state()]]));
     const beat = () => navigator.vibrate?.([30, 120, 30]);
     beat();
     this.beatTimer = setInterval(beat, HUG_BEAT_MS);
@@ -400,7 +371,7 @@ export class Pimpek {
     this.setHug(null);
     this.sighing.set(true);
     this.sighTimer = setTimeout(() => this.sighing.set(false), SIGH_MS);
-    this.say(THANKS[this.state()], THANKS_MS);
+    this.say(this.settings.line('thanks', [THANKS[this.state()]]), THANKS_MS);
   }
 
   private setHug(cuddle: Cuddle | null): void {

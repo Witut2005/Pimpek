@@ -86,7 +86,7 @@
 
 .moods {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.4rem;
   margin: 0;
   padding: 0;
@@ -117,16 +117,6 @@
     font-weight: 800;
     white-space: nowrap;
   }
-}
-
-.btn.demo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  border: 2px dashed var(--honey-400);
-  background: var(--honey-200);
-  color: var(--honey-700);
 }
 
 footer {

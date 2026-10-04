@@ -37,7 +37,6 @@
       [celebrating]="celebrating()"
       [color]="settings.petHex()"
       [needsAttention]="!store.todayEntry()"
-      (petClick)="addEntry()"
       (cuddle)="cuddle.set($event)"
     />
   </section>
@@ -71,14 +70,3 @@
 <app-sheet #settingsSheet title="Ty i Pimpek">
   <app-settings-panel />
 </app-sheet>
-
-@if (askReminders()) {
-  <div class="ask" role="dialog" aria-labelledby="ask-title">
-    <app-icon name="bell" />
-    <p id="ask-title">Przypomnieć Ci jutro o {{ settings.settings().reminders.checkInTime }}, żebyśmy razem podsumowali dzień?</p>
-    <div class="ask-actions">
-      <button type="button" class="btn ghost small" (click)="answerReminders(false)">Nie teraz</button>
-      <button type="button" class="btn primary small" (click)="answerReminders(true)">Tak, przypomnij</button>
-    </div>
-  </div>
-}
